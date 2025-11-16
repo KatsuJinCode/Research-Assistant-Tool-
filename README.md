@@ -10,7 +10,7 @@ An intelligent AI-powered research assistant that helps you gather, analyze, and
 
 ```bash
 # 1. Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/KatsuJinCode/Research-Assistant-Tool-.git
 cd Research-Assistant-Tool-
 
 # 2. Run interactive setup
