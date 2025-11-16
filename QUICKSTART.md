@@ -2,12 +2,12 @@
 
 Get the Research Assistant running in under a minute!
 
-## For Users with OpenAI API
+## For Users with OpenAI or Anthropic API
 
 ### 1. Clone & Setup (30 seconds)
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/KatsuJinCode/Research-Assistant-Tool-.git
 cd Research-Assistant-Tool-
 ./setup.sh
 ```
@@ -79,7 +79,7 @@ You now have a working AI research assistant.
 ./demo.sh
 ```
 
-## For Users WITHOUT OpenAI API
+## For Users WITHOUT Any API Key
 
 You can still use basic features without an API key:
 
