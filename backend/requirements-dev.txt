@@ -1,0 +1,9 @@
+# Include main requirements
+-r requirements.txt
+
+# Development tools
+ipython==8.20.0
+ipdb==0.13.13
+pytest-watch==4.2.0
+faker==22.6.0
+factory-boy==3.3.0
