@@ -8,6 +8,27 @@ An intelligent AI-powered research assistant that helps you gather, analyze, and
 
 **Ready to use NOW with OpenAI or Anthropic API:**
 
+### On Windows:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/KatsuJinCode/Research-Assistant-Tool-.git
+cd Research-Assistant-Tool-
+
+# 2. Double-click setup.bat OR run from Command Prompt/PowerShell:
+setup.bat
+# → Answer prompts to configure OpenAI, Anthropic, or both
+# → Choose your preferred model
+# → Start using immediately!
+
+# 3. Use your AI research assistant!
+research.bat create-project "My Research"
+research.bat add-document 1 sample_documents\ai_research.txt
+research.bat summarize 1
+```
+
+### On macOS/Linux:
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/KatsuJinCode/Research-Assistant-Tool-.git
@@ -23,7 +44,6 @@ cd Research-Assistant-Tool-
 ./research.sh create-project "My Research"
 ./research.sh add-document 1 sample_documents/ai_research.txt
 ./research.sh summarize 1
-./research.sh ask 1 "What are the main findings?"
 ```
 
 That's it! The interactive setup guides you through everything.
