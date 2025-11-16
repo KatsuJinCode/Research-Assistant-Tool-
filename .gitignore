@@ -118,3 +118,6 @@ models/
 # Cache
 .cache/
 .parcel-cache/
+
+# Research Assistant Config (contains API keys)
+.research_config

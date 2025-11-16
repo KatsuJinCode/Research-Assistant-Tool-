@@ -2,26 +2,31 @@
 
 An intelligent AI-powered research assistant that helps you gather, analyze, and synthesize information.
 
-## 🚀 Quick Start (3 Commands!)
+**Supports OpenAI (ChatGPT) and Anthropic (Claude)!**
 
-**Ready to use NOW with OpenAI API:**
+## 🚀 Quick Start (2 Commands!)
+
+**Ready to use NOW with OpenAI or Anthropic API:**
 
 ```bash
 # 1. Clone the repository
 git clone <your-repo-url>
 cd Research-Assistant-Tool-
 
-# 2. Run setup (installs dependencies)
+# 2. Run interactive setup
 ./setup.sh
+# → Answer prompts to configure OpenAI, Anthropic, or both
+# → Choose your preferred model
+# → Start using immediately!
 
-# 3. Set your OpenAI API key and start using!
-export OPENAI_API_KEY='sk-your-key-here'
+# 3. Use your AI research assistant!
 ./research.sh create-project "My Research"
 ./research.sh add-document 1 sample_documents/ai_research.txt
 ./research.sh summarize 1
+./research.sh ask 1 "What are the main findings?"
 ```
 
-That's it! You now have an AI research assistant running on your machine.
+That's it! The interactive setup guides you through everything.
 
 ## Overview
 
@@ -106,6 +111,8 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the complete roadmap.
 
 ## 📚 Documentation
 
+- **[QUICKSTART.md](QUICKSTART.md)** - 60-second getting started
+- **[MULTI_PROVIDER_GUIDE.md](MULTI_PROVIDER_GUIDE.md)** - Using OpenAI & Anthropic
 - **[CLI_README.md](CLI_README.md)** - Complete CLI reference
 - **[USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)** - Detailed examples and workflows
 - **[PROJECT_PLAN.md](PROJECT_PLAN.md)** - Full development roadmap
@@ -116,7 +123,8 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the complete roadmap.
 ### Current (CLI Version)
 - **Python 3.7+**: Core application
 - **SQLite**: Local database
-- **OpenAI API**: AI-powered features
+- **OpenAI API**: ChatGPT models (GPT-3.5, GPT-4, GPT-4o)
+- **Anthropic API**: Claude models (3.5 Sonnet, 3 Opus, 3 Haiku)
 
 ### Planned (Web Version)
 - **Backend**: FastAPI
@@ -128,17 +136,26 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the complete roadmap.
 ## 🛠️ Requirements
 
 - Python 3.7 or higher
-- OpenAI API key (for AI features)
+- OpenAI API key **OR** Anthropic API key (for AI features)
+  - OpenAI: https://platform.openai.com/api-keys
+  - Anthropic: https://console.anthropic.com/
 - Internet connection (for API calls)
 
 ## 💰 Cost Information
 
-The CLI tool uses OpenAI's API which has associated costs:
-- **Summarization**: ~$0.001-0.01 per document
-- **Q&A**: ~$0.001-0.01 per question
-- **Key points/Tags**: ~$0.001 per document
+The CLI tool supports both OpenAI and Anthropic with varying costs:
 
-Uses GPT-3.5-turbo by default for cost efficiency. Basic features (search, view, organize) are completely free.
+**OpenAI Pricing:**
+- GPT-3.5-turbo: ~$0.001-0.01 per operation (most economical)
+- GPT-4o: ~$0.005-0.03 per operation (balanced)
+- GPT-4-turbo: ~$0.01-0.05 per operation (premium)
+
+**Anthropic Pricing:**
+- Claude 3 Haiku: ~$0.001-0.005 per operation (most economical)
+- Claude 3.5 Sonnet: ~$0.003-0.015 per operation (recommended)
+- Claude 3 Opus: ~$0.015-0.075 per operation (premium)
+
+Basic features (search, view, organize) are completely free - no API needed!
 
 ## 🗺️ Development Roadmap
 

@@ -40,12 +40,12 @@ class SimpleResearchAssistant:
         if AI_AVAILABLE:
             self.ai = AIHelper()
             if self.ai.has_api:
-                print("✓ AI features enabled (OpenAI API detected)")
+                print(f"✓ AI features enabled ({self.ai.get_provider_info()})")
             else:
-                print("⚠ AI features limited (No OpenAI API key - set OPENAI_API_KEY)")
+                print("⚠ AI features unavailable (run: ./setup.sh to configure)")
         else:
             self.ai = None
-            print("⚠ AI features unavailable (run: python setup_cli.py)")
+            print("⚠ AI features unavailable (run: ./setup.sh)")
 
     def _init_database(self):
         """Initialize SQLite database."""
