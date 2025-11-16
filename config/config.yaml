@@ -1,0 +1,84 @@
+# ============================================================================
+# Research Verification Agent System - Configuration
+# ============================================================================
+
+database:
+  host: localhost
+  port: 5432
+  name: research_verification
+  user: postgres
+  password: ${DB_PASSWORD}  # From environment variable
+
+ai_providers:
+  # Default provider to use
+  default: anthropic
+
+  openai:
+    api_key: ${OPENAI_API_KEY}
+    model: gpt-4-turbo
+    temperature: 0.5
+    max_tokens: 4000
+
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-3-5-sonnet-20241022
+    temperature: 0.5
+    max_tokens: 4000
+
+agents:
+  # MVP: Only 3 agent types
+  support_empirical:
+    count: 2
+    enabled: true
+    description: "Find empirical evidence that supports claims"
+
+  challenge_empirical:
+    count: 2
+    enabled: true
+    description: "Find empirical evidence that challenges claims"
+
+  analysis_definitional:
+    count: 1
+    enabled: true
+    description: "Analyze and clarify key terms and definitions"
+
+confidence_thresholds:
+  # Confidence score ranges
+  high: 0.85
+  medium: 0.60
+  low: 0.00
+
+  # Adaptive investigation triggers
+  low_confidence_additional_agents: 5
+  low_confidence_depth_increase: 2
+
+normalization:
+  # Human validation requirements
+  require_human_validation: true
+  min_confidence_for_auto_approve: 0.95
+  max_candidates: 4
+
+  # Qualifier preservation is CRITICAL
+  auto_fail_if_qualifiers_lost: true
+
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: logs/research_agent.log
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_bytes: 10485760  # 10 MB
+  backup_count: 5
+
+system:
+  # Work queue polling
+  agent_poll_interval_seconds: 30
+
+  # Investigation timeouts
+  investigation_timeout_seconds: 300  # 5 minutes
+
+  # Scheduler intervals
+  expansion_scheduler_interval_hours: 1
+  discovery_scheduler_interval_hours: 6
+
+  # Performance limits
+  max_concurrent_investigations: 20
+  max_api_calls_per_minute: 60
