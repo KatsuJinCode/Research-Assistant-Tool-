@@ -2,12 +2,12 @@
 Real-time Document Processor with Live Updates
 
 Processes documents incrementally, sending updates to clients via callback.
-Uses Claude Code CLI agents for intelligent extraction and analysis.
+Uses configurable AI agent CLIs for intelligent extraction and analysis.
+Supports: Claude Code, OpenAI Codex, Gemini Code, and custom adapters.
 """
 
 import logging
 import json
-import subprocess
 from pathlib import Path
 from typing import Callable, Dict, Any, List
 from uuid import uuid4
@@ -15,6 +15,7 @@ from uuid import uuid4
 from research_agent.document_processing.pdf_extractor import PDFExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
 from research_agent.neo4j_database import Neo4jDatabase
+from web_ui.agent_config import get_agent_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -40,53 +41,10 @@ class LiveDocumentProcessor:
         """Emit progress update."""
         self.progress_callback(message, progress, data or {})
 
-    def _invoke_agent(self, prompt: str, task_type: str) -> str:
-        """
-        Invoke Claude Code CLI agent to perform a task.
-
-        Args:
-            prompt: The task prompt for the agent
-            task_type: Type of task (for logging)
-
-        Returns:
-            Agent's response as string
-        """
-        logger.info(f"Spawning Claude Code agent for {task_type}")
-
-        try:
-            # Invoke Claude Code CLI with JSON output format
-            # This runs: claude -p <prompt> --output-format json
-            result = subprocess.run(
-                ['claude', '-p', prompt, '--output-format', 'json'],
-                capture_output=True,
-                text=True,
-                timeout=120,  # 2 minute timeout
-                encoding='utf-8',
-                cwd=str(Path(__file__).parent.parent)  # Run from project root
-            )
-
-            if result.returncode != 0:
-                logger.error(f"Agent failed with code {result.returncode}: {result.stderr}")
-                raise RuntimeError(f"Agent process failed: {result.stderr}")
-
-            response = result.stdout.strip()
-            logger.info(f"Agent completed {task_type}: {len(response)} chars")
-
-            return response
-
-        except subprocess.TimeoutExpired:
-            logger.error(f"Agent timeout for {task_type}")
-            raise RuntimeError("Agent timed out")
-        except FileNotFoundError:
-            logger.error("Claude Code CLI not found - is it installed?")
-            raise RuntimeError("Claude Code CLI not available")
-        except Exception as e:
-            logger.error(f"Agent invocation failed: {e}")
-            raise
-
     def _invoke_agent_with_tool(self, prompt: str, tool_schema: Dict, task_type: str) -> Dict[str, Any]:
         """
-        Invoke Claude Code CLI with a tool definition to get structured output.
+        Invoke AI agent CLI with a tool definition to get structured output.
+        Uses the configured agent adapter (Claude, OpenAI, Gemini, or custom).
 
         Args:
             prompt: The task prompt for the agent
@@ -96,66 +54,22 @@ class LiveDocumentProcessor:
         Returns:
             Parsed tool input (the structured data)
         """
-        logger.info(f"Spawning Claude Code agent with tool for {task_type}")
+        adapter = get_agent_adapter()
+        logger.info(f"Spawning {adapter.__class__.__name__} for {task_type}")
 
-        # Create a temporary file with the tool definition
-        import tempfile
-        tool_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8')
         try:
-            json.dump([tool_schema], tool_file)
-            tool_file.close()
-
-            # Invoke Claude Code CLI with tools
-            result = subprocess.run(
-                ['claude', '-p', prompt, '--tools', tool_file.name, '--output-format', 'json'],
-                capture_output=True,
-                text=True,
-                timeout=120,
-                encoding='utf-8',
-                cwd=str(Path(__file__).parent.parent)
-            )
-
-            if result.returncode != 0:
-                logger.error(f"Agent failed with code {result.returncode}: {result.stderr}")
-                raise RuntimeError(f"Agent process failed: {result.stderr}")
-
-            response = result.stdout.strip()
+            # Invoke agent through adapter
+            response = adapter.invoke(prompt, tools=[tool_schema], timeout=120)
             logger.info(f"Agent completed {task_type}: {len(response)} chars")
 
-            # Parse the JSON response
-            response_data = json.loads(response)
+            # Parse tool response through adapter
+            tool_input = adapter.parse_tool_response(response)
+            logger.info(f"✓ Extracted structured data from tool use")
+            return tool_input
 
-            # Extract tool use from response
-            # Claude Code JSON format includes tool_uses in the response
-            if isinstance(response_data, dict):
-                # Look for tool_uses or content blocks
-                tool_uses = response_data.get('tool_uses', [])
-                if not tool_uses and 'content' in response_data:
-                    # Try to find tool use in content blocks
-                    for block in response_data.get('content', []):
-                        if isinstance(block, dict) and block.get('type') == 'tool_use':
-                            tool_uses.append(block)
-
-                if tool_uses:
-                    # Get the first tool use (there should only be one)
-                    tool_use = tool_uses[0]
-                    tool_input = tool_use.get('input', {})
-                    logger.info(f"✓ Extracted structured data from tool use")
-                    return tool_input
-                else:
-                    logger.error(f"No tool use found in response")
-                    raise RuntimeError("Agent did not call the required tool")
-            else:
-                logger.error(f"Unexpected response format: {type(response_data)}")
-                raise RuntimeError("Agent returned unexpected format")
-
-        finally:
-            # Clean up temp file
-            import os
-            try:
-                os.unlink(tool_file.name)
-            except:
-                pass
+        except Exception as e:
+            logger.error(f"Agent invocation failed: {e}")
+            raise
 
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
