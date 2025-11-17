@@ -35,7 +35,28 @@ const App = {
         });
 
         this.socket.on('processing_update', (data) => {
+            console.log('Processing update:', data);
+
+            // Update progress UI
             UI.updateProcessingStatus(data.message, data.progress);
+
+            // Handle different events from the nested data.data.event field
+            if (data.data && data.data.event === 'claim_added') {
+                // Incrementally add node to graph
+                console.log('New claim added:', data.data.claim_summary);
+                this.loadGraph();
+            } else if (data.data && data.data.event === 'processing_complete') {
+                // Reload full graph
+                console.log('Document processing complete');
+                UI.updateProcessingStatus('Processing complete!', 100);
+                this.loadGraph();
+                this.loadStats();
+            } else if (data.data && (data.data.event === 'claim_extraction_failed' ||
+                       data.data.event === 'claim_simplification_failed')) {
+                // Display error prominently
+                console.error('AI Agent failure:', data.data.error);
+                alert('AI AGENT FAILURE\n\n' + data.data.error + '\n\nCheck that your AI agent CLI is installed and configured properly.\nSee AGENT_CONFIGURATION.md for setup instructions.');
+            }
         });
 
         this.socket.on('claim_added', (data) => {
