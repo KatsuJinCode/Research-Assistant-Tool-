@@ -2,25 +2,35 @@
 Claim Space Optimizer - Rigorous Mathematical Approach
 
 This module finds the optimal representation of a claim space by:
-1. Analyzing semantic relationships between all claims
+1. Analyzing semantic relationships between all claims using embeddings
 2. Identifying subsumption (when one claim fully contains another)
 3. Detecting redundancy (claims that convey identical information)
 4. Finding hierarchical parent-child relationships
 5. Computing minimal spanning set that covers entire claim space
 
-Uses information-theoretic principles to ensure:
+Uses information-theoretic principles and semantic embeddings to ensure:
 - No duplication
 - Maximum coverage
 - Minimal redundancy
-- Natural hierarchy
+- Natural hierarchy based on meaning, not just tokens
 """
 
 import re
 import numpy as np
 from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+
+# Semantic embedding support
+try:
+    from sentence_transformers import SentenceTransformer
+    from sklearn.metrics.pairwise import cosine_similarity
+    EMBEDDINGS_AVAILABLE = True
+except ImportError:
+    EMBEDDINGS_AVAILABLE = False
+    print("WARNING: sentence-transformers not available. Install with: pip install sentence-transformers scikit-learn")
+    print("Falling back to token-based similarity only.")
 
 
 class RelationType(Enum):
@@ -43,18 +53,13 @@ class ClaimNode:
     text: str
     tokens: Set[str]
     length: int
+    embedding: Optional[np.ndarray] = None  # Semantic embedding vector
     specificity_score: float = 0.0
     information_content: float = 0.0
     is_redundant: bool = False
     subsumed_by: Optional[str] = None
-    parent_claims: List[str] = None
-    child_claims: List[str] = None
-
-    def __post_init__(self):
-        if self.parent_claims is None:
-            self.parent_claims = []
-        if self.child_claims is None:
-            self.child_claims = []
+    parent_claims: List[str] = field(default_factory=list)
+    child_claims: List[str] = field(default_factory=list)
 
 
 class ClaimSpaceOptimizer:
@@ -62,24 +67,55 @@ class ClaimSpaceOptimizer:
     Finds optimal representation of claim space using rigorous analysis.
 
     This is NOT a simple clustering algorithm. This performs:
-    - Semantic analysis of claim relationships
+    - Semantic analysis of claim relationships using embeddings
     - Information-theoretic redundancy detection
     - Hierarchical structure discovery
     - Optimal spanning set computation
     """
 
-    def __init__(self):
+    def __init__(self, use_embeddings: bool = True, model_name: str = 'all-mpnet-base-v2'):
+        """
+        Initialize optimizer.
+
+        Args:
+            use_embeddings: Whether to use semantic embeddings (requires sentence-transformers)
+            model_name: Name of sentence-transformer model to use
+                        Options:
+                        - 'all-MiniLM-L6-v2': Fastest, 384 dims
+                        - 'all-mpnet-base-v2': Best quality, 768 dims (default)
+                        - 'multi-qa-mpnet-base-dot-v1': Optimized for Q&A similarity
+        """
         self.claims: Dict[str, ClaimNode] = {}
         self.relationships: Dict[Tuple[str, str], RelationType] = {}
+        self.use_embeddings = use_embeddings and EMBEDDINGS_AVAILABLE
+        self.embedding_model = None
+
+        if self.use_embeddings:
+            print(f"Loading semantic embedding model: {model_name}...")
+            try:
+                self.embedding_model = SentenceTransformer(model_name)
+                print(f"  Model loaded: {model_name}")
+                print(f"  Embedding dimensions: {self.embedding_model.get_sentence_embedding_dimension()}")
+            except Exception as e:
+                print(f"WARNING: Failed to load embedding model: {e}")
+                print("Falling back to token-based similarity")
+                self.use_embeddings = False
 
     def add_claim(self, claim_id: str, text: str):
         """Add a claim to the analysis space."""
         tokens = self._tokenize(text)
+
+        # Generate embedding if using semantic embeddings
+        embedding = None
+        if self.use_embeddings and self.embedding_model:
+            embedding = self.embedding_model.encode(text, convert_to_numpy=True)
+
         node = ClaimNode(
             id=claim_id,
             text=text,
             tokens=tokens,
-            length=len(text)
+            length=len(text),
+            embedding=embedding
         )
         self.claims[claim_id] = node
 
@@ -120,11 +156,29 @@ class ClaimSpaceOptimizer:
         """
         Calculate semantic similarity between two claims.
 
-        Uses Jaccard similarity on token sets, weighted by token importance.
+        Uses semantic embeddings if available, otherwise falls back to token-based Jaccard similarity.
+
+        Returns:
+            Similarity score between 0.0 and 1.0
         """
         node1 = self.claims[claim1_id]
         node2 = self.claims[claim2_id]
 
+        # Use semantic embeddings if available
+        if self.use_embeddings and node1.embedding is not None and node2.embedding is not None:
+            # Cosine similarity between embeddings
+            # Reshape for sklearn: (1, n_features)
+            emb1 = node1.embedding.reshape(1, -1)
+            emb2 = node2.embedding.reshape(1, -1)
+
+            similarity = cosine_similarity(emb1, emb2)[0][0]
+
+            # Cosine similarity ranges from -1 to 1, normalize to 0 to 1
+            normalized = (similarity + 1) / 2
+
+            return normalized
+
+        # Fall back to token-based Jaccard similarity
         tokens1 = node1.tokens
         tokens2 = node2.tokens
 
