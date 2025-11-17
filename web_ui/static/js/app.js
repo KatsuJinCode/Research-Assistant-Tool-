@@ -81,44 +81,33 @@ const App = {
      * Setup UI event listeners
      */
     setupEventListeners() {
-        // Upload button
-        document.getElementById('upload-btn').addEventListener('click', () => {
-            UI.showUploadModal();
-        });
+        // Upload button - triggers file input
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInput = document.getElementById('file-input');
 
-        // File upload
-        document.getElementById('file-upload').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                UI.handleFileUpload(file);
-            }
-        });
+        if (uploadBtn && fileInput) {
+            uploadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // File upload handler
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UI.handleFileUpload(file);
+                    // Reset input so same file can be uploaded again
+                    fileInput.value = '';
+                }
+            });
+        }
 
         // Clear all button
-        document.getElementById('clear-all-btn').addEventListener('click', () => {
-            UI.confirmClearAll();
-        });
-
-        // Close modal buttons
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                UI.closeClaimModal();
-                UI.hideUploadModal();
+        const clearBtn = document.getElementById('clear-all-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                UI.confirmClearAll();
             });
-        });
-
-        // Click outside modal to close
-        window.addEventListener('click', (event) => {
-            const claimModal = document.getElementById('claim-modal');
-            const uploadModal = document.getElementById('upload-modal');
-
-            if (event.target === claimModal) {
-                UI.closeClaimModal();
-            }
-            if (event.target === uploadModal) {
-                UI.hideUploadModal();
-            }
-        });
+        }
 
         console.log('✓ Event listeners setup');
     },

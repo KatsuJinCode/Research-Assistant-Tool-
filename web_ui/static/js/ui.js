@@ -10,8 +10,9 @@ const UI = {
         try {
             const claim = await API.fetchClaim(claimId);
 
-            const modal = document.getElementById('claim-modal');
-            const modalContent = document.getElementById('modal-claim-text');
+            // Use the sidebar detail panel, not a modal
+            const detailPanel = document.getElementById('detail-panel');
+            const detailTitle = document.getElementById('detail-claim-text');
 
             // Calculate metrics that drive visual encoding
             const confidence = claim.confidence || claim.quality_score || 0.5;
@@ -156,8 +157,8 @@ const UI = {
                 detailsHTML += `</ul></div>`;
             }
 
-            modalContent.innerHTML = detailsHTML;
-            modal.style.display = 'flex';
+            detailTitle.innerHTML = detailsHTML;
+            detailPanel.style.display = 'block';
         } catch (error) {
             console.error('Failed to load claim details:', error);
             alert(`Failed to load claim: ${error.message}`);
@@ -186,11 +187,13 @@ const UI = {
     },
 
     /**
-     * Close claim details modal
+     * Close claim details panel
      */
     closeClaimModal() {
-        const modal = document.getElementById('claim-modal');
-        modal.style.display = 'none';
+        const detailPanel = document.getElementById('detail-panel');
+        if (detailPanel) {
+            detailPanel.style.display = 'none';
+        }
     },
 
     /**
@@ -218,24 +221,9 @@ const UI = {
     },
 
     /**
-     * Show upload modal
-     */
-    showUploadModal() {
-        document.getElementById('upload-modal').style.display = 'flex';
-    },
-
-    /**
-     * Hide upload modal
-     */
-    hideUploadModal() {
-        document.getElementById('upload-modal').style.display = 'none';
-    },
-
-    /**
      * Handle file upload
      */
     async handleFileUpload(file) {
-        this.hideUploadModal();
 
         document.getElementById('processing-panel').style.display = 'block';
         this.updateProcessingStatus('Uploading document...', 0);
