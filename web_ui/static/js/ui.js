@@ -294,11 +294,11 @@ const UI = {
     async handleFileUpload(file) {
         console.log('handleFileUpload called with:', file);
 
-        const processingPanel = document.getElementById('processing-panel');
+        const processingPanel = document.getElementById('processing-status');
         if (processingPanel) {
             processingPanel.style.display = 'block';
         } else {
-            console.warn('processing-panel element not found');
+            console.warn('processing-status element not found');
         }
 
         this.updateProcessingStatus('Uploading document...', 0);
@@ -309,11 +309,13 @@ const UI = {
             console.log('Upload successful!');
             this.updateProcessingStatus('Processing complete!', 100);
 
-            // Hide processing panel after 2 seconds
+            // Reload graph and stats to show new document
             setTimeout(() => {
                 if (processingPanel) {
                     processingPanel.style.display = 'none';
                 }
+                // Reload the page data
+                window.location.reload();
             }, 2000);
         } catch (error) {
             console.error('Upload failed:', error);
