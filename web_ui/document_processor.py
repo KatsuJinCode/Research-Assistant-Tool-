@@ -75,7 +75,7 @@ class LiveDocumentProcessor:
         })
 
         extractor = PDFExtractor(column_aware=True, postprocess=True)
-        extraction_result = extractor.extract(file_path)
+        extraction_result = extractor.extract(Path(file_path))
         text = extraction_result['text']
 
         self._emit(f"Extracted {len(text)} characters", 20, {
