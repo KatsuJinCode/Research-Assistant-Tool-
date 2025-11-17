@@ -54,34 +54,23 @@ class LiveDocumentProcessor:
         logger.info(f"Spawning Claude Code agent for {task_type}")
 
         try:
-            # Create a prompt file
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
-                f.write(prompt)
-                prompt_file = f.name
-
-            # Invoke Claude Code CLI
-            # This runs: claude --prompt-file <file> --output-only
+            # Invoke Claude Code CLI in print mode
+            # This runs: claude -p <prompt>
             result = subprocess.run(
-                ['claude', '--prompt-file', prompt_file, '--output-only'],
+                ['claude', '-p', prompt],
                 capture_output=True,
                 text=True,
                 timeout=120,  # 2 minute timeout
-                encoding='utf-8'
+                encoding='utf-8',
+                cwd=str(Path(__file__).parent.parent)  # Run from project root
             )
-
-            # Clean up prompt file
-            try:
-                Path(prompt_file).unlink()
-            except:
-                pass
 
             if result.returncode != 0:
                 logger.error(f"Agent failed with code {result.returncode}: {result.stderr}")
                 raise RuntimeError(f"Agent process failed: {result.stderr}")
 
             response = result.stdout.strip()
-            logger.info(f"Agent completed {task_type}")
+            logger.info(f"Agent completed {task_type}: {len(response)} chars")
 
             return response
 
@@ -101,53 +90,54 @@ class LiveDocumentProcessor:
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
         """
-        # Write text to temporary file for agent to process
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-            f.write(text[:8000])  # Limit to 8000 chars
-            temp_file = f.name
-
         try:
             # Spawn Claude Code agent to extract claims
-            agent_prompt = f"""Extract all factual claims from the research document at: {temp_file}
+            agent_prompt = f"""Extract factual research claims from this text. Ignore copyright notices, publication info, and page headers/footers.
 
-Read the file, then extract claims. For each claim:
-1. Extract the exact claim text (quote it precisely)
-2. Classify the type (factual, methodological, causal, interpretive, etc.)
-3. Assess extraction confidence (0.0-1.0)
+TEXT:
+{text[:8000]}
 
-Return ONLY a valid JSON array with this exact structure:
+For each ACTUAL RESEARCH CLAIM (not metadata):
+1. Extract the exact claim text
+2. Classify type (factual, methodological, causal, interpretive)
+3. Rate confidence (0.0-1.0)
+
+Return ONLY valid JSON array:
 [
-  {{"text": "exact claim text", "type": "factual", "confidence": 0.95}},
+  {{"text": "exact claim", "type": "factual", "confidence": 0.95}},
   ...
 ]
 
-Important:
-- Extract 10-30 claims maximum
-- Be precise and preserve qualifiers (may, might, can, all, some, etc.)
-- Return ONLY the JSON array, nothing else"""
+Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata."""
 
             result = self._invoke_agent(agent_prompt, "claim-extraction")
 
-            # Parse JSON response
+            # Try to extract JSON from response (handle markdown code blocks)
+            import re
+            json_match = re.search(r'```json\s*(\[.*?\])\s*```', result, re.DOTALL)
+            if json_match:
+                result = json_match.group(1)
+            elif result.strip().startswith('['):
+                # Already pure JSON
+                pass
+            else:
+                # Try to find JSON array anywhere in response
+                json_match = re.search(r'\[.*\]', result, re.DOTALL)
+                if json_match:
+                    result = json_match.group(0)
+
             claims = json.loads(result)
 
             if not isinstance(claims, list):
                 logger.error(f"Agent returned non-list: {type(claims)}")
                 return self._fallback_claim_extraction(text)
 
-            logger.info(f"Agent extracted {len(claims)} claims")
+            logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
             return claims
 
         except Exception as e:
-            logger.error(f"Agent extraction failed: {e}")
+            logger.warning(f"Agent extraction failed, using fallback: {e}")
             return self._fallback_claim_extraction(text)
-        finally:
-            # Clean up temp file
-            try:
-                Path(temp_file).unlink()
-            except:
-                pass
 
     def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
         """
@@ -155,33 +145,41 @@ Important:
 
         Returns dict with 'simplified', 'normalized' versions.
         """
-        agent_prompt = f"""Simplify this research claim while preserving all qualifiers and meaning:
+        agent_prompt = f"""Simplify this claim, preserving all qualifiers:
 
-Original claim: "{claim_text}"
+"{claim_text}"
 
-Provide:
-1. simplified: A concise 5-10 word version that captures the core assertion
-2. normalized: A medium 15-20 word version with key details
+Return ONLY JSON:
+{{"simplified": "5-10 word core assertion", "normalized": "15-20 word version"}}
 
-Return ONLY valid JSON with this exact structure:
-{{"simplified": "...", "normalized": "..."}}
-
-Important: Preserve qualifiers like may, might, can, could, all, some, etc."""
+Preserve: may, might, can, all, some, etc."""
 
         try:
             result = self._invoke_agent(agent_prompt, "claim-simplification")
 
-            # Parse JSON response
+            # Extract JSON from response
+            import re
+            json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', result, re.DOTALL)
+            if json_match:
+                result = json_match.group(1)
+            elif result.strip().startswith('{'):
+                pass
+            else:
+                json_match = re.search(r'\{{.*\}}', result, re.DOTALL)
+                if json_match:
+                    result = json_match.group(0)
+
             simplification = json.loads(result)
 
             if 'simplified' not in simplification or 'normalized' not in simplification:
-                logger.error(f"Agent returned incomplete response: {simplification}")
+                logger.warning(f"Agent returned incomplete response, using fallback")
                 return self._fallback_simplification(claim_text)
 
+            logger.info(f"✓ Claude Code agent simplified claim")
             return simplification
 
         except Exception as e:
-            logger.error(f"Agent simplification failed: {e}")
+            logger.warning(f"Agent simplification failed, using fallback: {e}")
             return self._fallback_simplification(claim_text)
 
     def _fallback_simplification(self, claim_text: str) -> Dict[str, str]:
