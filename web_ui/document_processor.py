@@ -12,7 +12,7 @@ from uuid import uuid4
 from research_agent.document_processing.pdf_extractor import PDFExtractor
 from research_agent.document_processing.claim_extractor import ClaimExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
-from research_agent.claim_analysis.intelligent_summarizer import IntelligentSummarizer
+from research_agent.claim_analysis.claim_simplifier_agent import ClaimSimplifierAgent
 from research_agent.neo4j_database import Neo4jDatabase
 
 logger = logging.getLogger(__name__)
@@ -100,20 +100,21 @@ class LiveDocumentProcessor:
         })
 
         # 4. Add claims to graph incrementally with live updates
-        summarizer = IntelligentSummarizer()
+        simplifier = ClaimSimplifierAgent()
 
         for i, claim_data in enumerate(claims):
             progress = 50 + (i / len(claims)) * 30  # 50% to 80%
 
             # Create claim node
             claim_id = str(uuid4())
-            summary_result = summarizer.summarize_claim(claim_data['text'], target_length=8)
+            simplification = simplifier.simplify_claim(claim_data['text'])
 
             claim_node = {
                 'id': claim_id,
                 'text': claim_data['text'],
-                'summary': summary_result['summary'],
-                'normalized': summary_result['normalized'],
+                'summary': simplification['simplified'],
+                'simplified': simplification['simplified'],
+                'normalized': simplification['normalized'],
                 'is_optimal': True  # Will be updated by optimizer
             }
 
@@ -125,7 +126,7 @@ class LiveDocumentProcessor:
                 'event': 'claim_added',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
-                'claim_summary': summary_result['summary'],
+                'claim_summary': simplification['simplified'],
                 'total_claims': len(claims),
                 'current_claim': i + 1
             })
