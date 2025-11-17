@@ -103,13 +103,22 @@ const App = {
             if (uploadZone) {
                 uploadZone.addEventListener('click', (e) => {
                     console.log('Upload zone clicked!');
+                    console.log('Click target:', e.target);
+                    console.log('Target ID:', e.target.id);
+                    console.log('Is upload button?', e.target === uploadBtn);
+                    console.log('Is URL input?', e.target.id === 'url-input');
+
                     // Don't trigger if clicking the button or URL input
                     if (e.target === uploadBtn || e.target.id === 'url-input') {
                         console.log('Ignoring click on button/input within zone');
                         return;
                     }
+
+                    console.log('About to trigger file picker...');
                     e.preventDefault();
+                    e.stopPropagation();
                     fileInput.click();
+                    console.log('File picker triggered!');
                 });
             }
 
