@@ -337,7 +337,7 @@ def upload_document():
                         'message': message,
                         'progress': progress,
                         'data': data
-                    }, broadcast=True)
+                    })
                     logger.debug(f"Emitted processing_update: {progress:.0f}%")
 
             logger.info(f"Starting background processing for: {filepath}")
@@ -347,13 +347,13 @@ def upload_document():
 
             # Emit completion (also needs app context)
             with app.app_context():
-                socketio.emit('document_processed', {'document_id': doc_id}, broadcast=True)
+                socketio.emit('document_processed', {'document_id': doc_id})
 
         except Exception as e:
             logger.error(f"BACKGROUND THREAD ERROR: {e}")
             logger.error(traceback.format_exc())
             with app.app_context():
-                socketio.emit('processing_error', {'error': str(e)}, broadcast=True)
+                socketio.emit('processing_error', {'error': str(e)})
 
     thread = threading.Thread(target=process_with_updates, args=(filepath,))
     thread.daemon = True  # Thread will exit when main program exits
