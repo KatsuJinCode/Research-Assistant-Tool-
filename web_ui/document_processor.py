@@ -66,7 +66,7 @@ class LiveDocumentProcessor:
             'source_file': file_path,
             'status': 'processing'
         }
-        self.db.create_node('Document', doc_id, doc_node)
+        self.db.create_node('Document', doc_node)
 
         # 2. Extract text
         self._emit("Extracting text from PDF...", 10, {
@@ -118,7 +118,7 @@ class LiveDocumentProcessor:
                 'is_optimal': True  # Will be updated by optimizer
             }
 
-            self.db.create_node('Claim', claim_id, claim_node)
+            self.db.create_node('Claim', claim_node)
             self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {})
 
             # Emit live update for each claim
