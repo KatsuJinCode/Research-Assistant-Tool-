@@ -330,25 +330,30 @@ def upload_document():
     def process_with_updates(filepath):
         try:
             def progress_callback(message, progress, data):
-                # Emit to all connected clients
-                socketio.emit('processing_update', {
-                    'message': message,
-                    'progress': progress,
-                    'data': data
-                })
+                # CRITICAL: socketio.emit() from background thread requires app context
+                logger.info(f"[PROGRESS {progress:.0f}%] {message}")
+                with app.app_context():
+                    socketio.emit('processing_update', {
+                        'message': message,
+                        'progress': progress,
+                        'data': data
+                    }, broadcast=True)
+                    logger.debug(f"Emitted processing_update: {progress:.0f}%")
 
             logger.info(f"Starting background processing for: {filepath}")
             processor = LiveDocumentProcessor(progress_callback)
             doc_id = processor.process_document(filepath)
             logger.info(f"Background processing completed: {doc_id}")
 
-            # Emit completion
-            socketio.emit('document_processed', {'document_id': doc_id})
+            # Emit completion (also needs app context)
+            with app.app_context():
+                socketio.emit('document_processed', {'document_id': doc_id}, broadcast=True)
 
         except Exception as e:
             logger.error(f"BACKGROUND THREAD ERROR: {e}")
             logger.error(traceback.format_exc())
-            socketio.emit('processing_error', {'error': str(e)})
+            with app.app_context():
+                socketio.emit('processing_error', {'error': str(e)}, broadcast=True)
 
     thread = threading.Thread(target=process_with_updates, args=(filepath,))
     thread.daemon = True  # Thread will exit when main program exits
