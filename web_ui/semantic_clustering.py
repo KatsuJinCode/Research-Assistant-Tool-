@@ -112,19 +112,22 @@ class SemanticClaimClusterer:
         logger.info(f"Clustering {len(claims)} claims using semantic embeddings...")
 
         # 1. Generate embeddings
+        logger.info(f"  [1/4] Generating embeddings for {len(claims)} claims...")
         claim_texts = [c['text'] for c in claims]
         embeddings = self.model.encode(claim_texts, show_progress_bar=False)
-        logger.info(f"✓ Generated embeddings: shape {embeddings.shape}")
+        logger.info(f"  ✓ Generated embeddings: shape {embeddings.shape}")
 
         # 2. Find optimal number of clusters
+        logger.info(f"  [2/4] Finding optimal number of clusters ({min_clusters}-{min(max_clusters, len(claims) - 1)})...")
         optimal_k, best_score = self._find_optimal_k(
             embeddings,
             min_k=min_clusters,
             max_k=min(max_clusters, len(claims) - 1)
         )
-        logger.info(f"✓ Optimal K={optimal_k} (silhouette score: {best_score:.3f})")
+        logger.info(f"  ✓ Optimal K={optimal_k} (silhouette score: {best_score:.3f})")
 
         # 3. Perform clustering with optimal K
+        logger.info(f"  [3/4] Running agglomerative clustering with K={optimal_k}...")
         clustering = AgglomerativeClustering(
             n_clusters=optimal_k,
             metric='cosine',
@@ -133,6 +136,7 @@ class SemanticClaimClusterer:
         cluster_labels = clustering.fit_predict(embeddings)
 
         # 4. Calculate quality metrics
+        logger.info(f"  [4/4] Calculating cluster quality metrics...")
         silhouette = silhouette_score(embeddings, cluster_labels, metric='cosine')
         davies_bouldin = davies_bouldin_score(embeddings, cluster_labels)
 
@@ -143,9 +147,10 @@ class SemanticClaimClusterer:
             method='semantic-embedding'
         )
 
-        logger.info(f"✓ Clustering quality - Silhouette: {silhouette:.3f}, Davies-Bouldin: {davies_bouldin:.3f}")
+        logger.info(f"  ✓ Clustering quality - Silhouette: {silhouette:.3f}, Davies-Bouldin: {davies_bouldin:.3f}")
 
         # 5. Create cluster results
+        logger.info(f"  Generating super-claims for {optimal_k} clusters...")
         cluster_results = []
         for cluster_id in range(optimal_k):
             cluster_mask = cluster_labels == cluster_id

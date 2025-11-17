@@ -960,16 +960,21 @@
             });
         }
 
-        // Smooth progress bar with interpolation
+        // Intelligent progress bar - never goes backwards, predicts completion
         let currentProgress = 0;
         let targetProgress = 0;
         let progressInterval = null;
+        let lastStepStartTime = Date.now();
+        let estimatedStepDuration = 5000; // Assume 5 seconds per step
+        let predictedProgress = 0;
 
         function showProcessingStatus(message) {
             document.getElementById('processing-status').style.display = 'block';
             document.getElementById('status-text').textContent = message;
             currentProgress = 0;
             targetProgress = 10;
+            lastStepStartTime = Date.now();
+            predictedProgress = 0;
             startProgressAnimation();
         }
 
@@ -979,11 +984,20 @@
             document.getElementById('progress-bar').style.width = '0%';
             currentProgress = 0;
             targetProgress = 0;
+            predictedProgress = 0;
         }
 
         function updateProcessingStatus(message, progress) {
             document.getElementById('status-text').textContent = message;
-            targetProgress = progress;
+
+            // NEVER GO BACKWARDS - only update if new progress is higher
+            if (progress > targetProgress) {
+                // Step completed faster than expected - jump ahead
+                targetProgress = progress;
+                lastStepStartTime = Date.now();
+            }
+            // If progress <= targetProgress, we're still working on current step
+            // Just update the message, not the progress
 
             // If no animation running, start it
             if (!progressInterval) {
@@ -995,27 +1009,40 @@
             if (progressInterval) clearInterval(progressInterval);
 
             progressInterval = setInterval(() => {
-                // Smoothly interpolate toward target
-                const diff = targetProgress - currentProgress;
+                const now = Date.now();
+                const elapsed = now - lastStepStartTime;
 
-                if (Math.abs(diff) < 0.5) {
-                    currentProgress = targetProgress;
+                // Calculate predicted progress based on estimated duration
+                // Assume current step will take 5x longer than expected (conservative)
+                const timeBasedProgress = Math.min(
+                    (elapsed / (estimatedStepDuration * 5)) * 10, // Slowly creep forward
+                    10 // Cap at 10% beyond current target
+                );
+
+                // Predicted progress: current target + slow creep
+                predictedProgress = Math.min(targetProgress + timeBasedProgress, 99.9);
+
+                // Smoothly interpolate toward predicted progress
+                const diff = predictedProgress - currentProgress;
+
+                if (Math.abs(diff) < 0.1) {
+                    currentProgress = predictedProgress;
                 } else {
-                    // Move 20% of the remaining distance each frame
-                    currentProgress += diff * 0.2;
+                    // Move 15% of the remaining distance each frame
+                    currentProgress += diff * 0.15;
                 }
 
-                // Add small idle animation when waiting (subtle pulse)
-                let displayProgress = currentProgress;
-                if (Math.abs(diff) < 1 && currentProgress < 100) {
-                    // Idle pulse: slowly drift forward
-                    displayProgress += Math.sin(Date.now() / 1000) * 0.5;
+                // NEVER go backwards
+                if (currentProgress > 99.9) {
+                    currentProgress = 99.9; // Cap at 99.9% until completion
                 }
 
-                document.getElementById('progress-bar').style.width = displayProgress + '%';
+                document.getElementById('progress-bar').style.width = currentProgress + '%';
 
-                // Stop if we've reached 100%
-                if (currentProgress >= 100) {
+                // Stop if we've reached 100% actual target
+                if (targetProgress >= 100 && currentProgress >= 99.5) {
+                    currentProgress = 100;
+                    document.getElementById('progress-bar').style.width = '100%';
                     clearInterval(progressInterval);
                     progressInterval = null;
                 }

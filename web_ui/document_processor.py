@@ -600,6 +600,82 @@ Create:
         logger.info(f"✓ AI agent simplified claim via structured JSON")
         return result
 
+    def _preprocess_text(self, text: str) -> str:
+        """
+        Clean and preprocess extracted text before sending to agent.
+
+        Removes:
+        - Copyright notices and legal boilerplate
+        - ISBN numbers and publication metadata
+        - Page headers/footers
+        - Excessive whitespace and formatting artifacts
+
+        Returns:
+            Cleaned text suitable for claim extraction
+        """
+        import re
+
+        logger.info("Preprocessing extracted text to remove metadata and artifacts...")
+
+        # Split into lines for processing
+        lines = text.split('\n')
+        cleaned_lines = []
+
+        # Patterns to identify metadata/boilerplate
+        copyright_patterns = [
+            r'(?i)copyright\s*©?\s*\d{4}',
+            r'(?i)all rights reserved',
+            r'(?i)no part of this.*may be reproduced',
+            r'(?i)published (by|simultaneously)',
+            r'ISBN\s*[\d-]+',
+            r'(?i)printed in the',
+            r'(?i)harper\s*&\s*row',
+            r'(?i)perennial\s*library',
+        ]
+
+        # Page number patterns
+        page_num_patterns = [
+            r'^\s*\d+\s*$',  # Standalone page numbers
+            r'^\s*[ivxlcdm]+\s*$',  # Roman numerals alone
+        ]
+
+        for line in lines:
+            line = line.strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Skip copyright/metadata lines
+            is_metadata = any(re.search(pattern, line) for pattern in copyright_patterns)
+            if is_metadata:
+                continue
+
+            # Skip page numbers
+            is_page_num = any(re.match(pattern, line) for pattern in page_num_patterns)
+            if is_page_num:
+                continue
+
+            # Skip very short lines (likely artifacts) unless they end with punctuation
+            if len(line) < 20 and not re.search(r'[.!?]$', line):
+                continue
+
+            cleaned_lines.append(line)
+
+        # Rejoin into paragraphs (join lines until we hit a break)
+        cleaned_text = ' '.join(cleaned_lines)
+
+        # Normalize whitespace
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+
+        # Limit to first 50,000 characters (reasonable size for processing)
+        if len(cleaned_text) > 50000:
+            logger.info(f"Text too long ({len(cleaned_text)} chars), truncating to 50,000")
+            cleaned_text = cleaned_text[:50000]
+
+        logger.info(f"✓ Text preprocessed: {len(text)} → {len(cleaned_text)} chars")
+        return cleaned_text
+
     def process_document(self, file_path: str, doc_id: str = None) -> str:
         """
         Process document with live updates.
@@ -637,12 +713,52 @@ Create:
 
         extractor = PDFExtractor(column_aware=True, postprocess=True)
         extraction_result = extractor.extract(Path(file_path))
-        text = extraction_result['full_text']
+        raw_text = extraction_result['full_text']
 
-        self._emit(f"Extracted {len(text)} characters", 20, {
+        self._emit(f"Extracted {len(raw_text)} characters", 15, {
             'event': 'text_extracted',
             'doc_id': doc_id,
+            'char_count': len(raw_text)
+        })
+
+        # 2.1. Preprocess text to remove metadata and artifacts
+        self._emit("Cleaning extracted text...", 18, {
+            'event': 'text_preprocessing_started',
+            'doc_id': doc_id
+        })
+
+        text = self._preprocess_text(raw_text)
+
+        self._emit(f"Preprocessed {len(text)} characters", 20, {
+            'event': 'text_preprocessed',
+            'doc_id': doc_id,
             'char_count': len(text)
+        })
+
+        # 2.5. Extract actual document title
+        self._emit("Extracting document title...", 25, {
+            'event': 'title_extraction_started',
+            'doc_id': doc_id
+        })
+
+        try:
+            actual_title = self._extract_document_title(text)
+            logger.info(f"✓ Extracted document title: {actual_title}")
+        except Exception as e:
+            logger.warning(f"Failed to extract document title: {e}")
+            actual_title = Path(file_path).stem  # Fallback to filename
+
+        # Update document node with actual title
+        self.db.driver.session(database=self.db.database).run(
+            "MATCH (d:Document {id: $doc_id}) SET d.title = $title",
+            doc_id=doc_id,
+            title=actual_title
+        )
+
+        self._emit(f"Document title: {actual_title}", 28, {
+            'event': 'title_extracted',
+            'doc_id': doc_id,
+            'title': actual_title
         })
 
         # 3. Extract hierarchical claims using Claude Code agent
