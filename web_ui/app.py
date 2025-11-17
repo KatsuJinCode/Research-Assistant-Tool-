@@ -326,38 +326,34 @@ def upload_document():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Start processing in background thread
+    # Start processing in background task (must use socketio.start_background_task for eventlet compatibility)
     def process_with_updates(filepath):
         try:
             def progress_callback(message, progress, data):
-                # CRITICAL: socketio.emit() from background thread requires app context
                 logger.info(f"[PROGRESS {progress:.0f}%] {message}")
-                with app.app_context():
-                    socketio.emit('processing_update', {
-                        'message': message,
-                        'progress': progress,
-                        'data': data
-                    })
-                    logger.debug(f"Emitted processing_update: {progress:.0f}%")
+                socketio.emit('processing_update', {
+                    'message': message,
+                    'progress': progress,
+                    'data': data
+                })
+                logger.debug(f"Emitted processing_update: {progress:.0f}%")
 
             logger.info(f"Starting background processing for: {filepath}")
             processor = LiveDocumentProcessor(progress_callback)
             doc_id = processor.process_document(filepath)
             logger.info(f"Background processing completed: {doc_id}")
 
-            # Emit completion (also needs app context)
-            with app.app_context():
-                socketio.emit('document_processed', {'document_id': doc_id})
+            # Emit completion
+            socketio.emit('document_processed', {'document_id': doc_id})
 
         except Exception as e:
             logger.error(f"BACKGROUND THREAD ERROR: {e}")
             logger.error(traceback.format_exc())
-            with app.app_context():
-                socketio.emit('processing_error', {'error': str(e)})
+            socketio.emit('processing_error', {'error': str(e)})
 
-    thread = threading.Thread(target=process_with_updates, args=(filepath,))
-    thread.daemon = True  # Thread will exit when main program exits
-    thread.start()
+    # CRITICAL: Use socketio.start_background_task() instead of threading.Thread()
+    # This ensures the task runs in the eventlet greenthread context where Socket.IO events work
+    socketio.start_background_task(process_with_updates, filepath)
 
     return jsonify({
         'status': 'processing_started',
