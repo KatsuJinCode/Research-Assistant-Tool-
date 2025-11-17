@@ -147,10 +147,6 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                 # Otherwise, continue to next retry
                 continue
 
-        except Exception as e:
-            logger.error(f"Agent invocation failed for {task_type}: {e}")
-            raise
-
     def _extract_json_from_response(self, text: str, task_type: str) -> Dict[str, Any]:
         """
         Robust JSON extraction - tries multiple strategies to find JSON in response.

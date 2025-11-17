@@ -163,10 +163,10 @@ class TestStructuredOutputNoFallbacks(unittest.TestCase):
             )
 
         error_msg = str(context.exception)
-        # Check for clear error message
-        self.assertIn("Could not extract valid JSON", error_msg)
-        self.assertIn("Parse error", error_msg)
-        self.assertIn("Agent returned", error_msg)
+        # Check for clear error message (now with retry mechanism)
+        self.assertIn("Failed after", error_msg)
+        self.assertIn("attempts", error_msg)
+        self.assertIn("Last response", error_msg)
 
     @patch('web_ui.document_processor.get_agent_adapter')
     def test_agent_returns_json_embedded_in_text(self, mock_get_adapter):
@@ -430,6 +430,146 @@ class TestClaimSimplificationValidation(unittest.TestCase):
 
         self.assertIn("missing required fields", str(context.exception).lower())
         self.assertIn("normalized", str(context.exception))
+
+
+class TestRetryMechanism(unittest.TestCase):
+    """Test retry mechanism with re-prompting"""
+
+    def setUp(self):
+        """Set up test processor"""
+        self.processor = LiveDocumentProcessor()
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_retry_fixes_invalid_json_on_second_attempt(self, mock_get_adapter):
+        """Test that retry with re-prompting fixes bad response"""
+        mock_adapter = Mock()
+
+        # First attempt: returns garbage
+        # Second attempt: returns valid JSON
+        responses = [
+            json.dumps({"type": "result", "result": "Invalid response"}),
+            json.dumps({"type": "result", "result": '{"answer": "42"}'}),
+        ]
+        mock_adapter.invoke.side_effect = responses
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"]
+        }
+
+        # Should SUCCEED on second attempt
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "test-task"
+        )
+
+        # Verify we got the correct result
+        self.assertEqual(result["answer"], "42")
+        # Verify agent was called twice
+        self.assertEqual(mock_adapter.invoke.call_count, 2)
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_retry_fixes_schema_violation_on_third_attempt(self, mock_get_adapter):
+        """Test that retry fixes schema violations"""
+        mock_adapter = Mock()
+
+        # Attempt 1: Missing required field
+        # Attempt 2: Wrong type
+        # Attempt 3: Correct!
+        responses = [
+            json.dumps({"type": "result", "result": '{"wrong_field": "value"}'}),
+            json.dumps({"type": "result", "result": '{"answer": 123}'}),  # Should be string
+            json.dumps({"type": "result", "result": '{"answer": "correct"}'}),
+        ]
+        mock_adapter.invoke.side_effect = responses
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"]
+        }
+
+        # Should SUCCEED on third attempt
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "test-task"
+        )
+
+        self.assertEqual(result["answer"], "correct")
+        self.assertEqual(mock_adapter.invoke.call_count, 3)
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_retry_exhausted_after_three_attempts(self, mock_get_adapter):
+        """Test that we fail after 3 attempts with clear error"""
+        mock_adapter = Mock()
+
+        # All 3 attempts return invalid JSON
+        responses = [
+            json.dumps({"type": "result", "result": "Invalid 1"}),
+            json.dumps({"type": "result", "result": "Invalid 2"}),
+            json.dumps({"type": "result", "result": "Invalid 3"}),
+        ]
+        mock_adapter.invoke.side_effect = responses
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"]
+        }
+
+        # Should FAIL after 3 attempts
+        with self.assertRaises(RuntimeError) as context:
+            self.processor._invoke_agent_with_structured_output(
+                "Test prompt",
+                schema,
+                "test-task"
+            )
+
+        error_msg = str(context.exception)
+        self.assertIn("Failed after 3 attempts", error_msg)
+        self.assertIn("Final error", error_msg)
+        self.assertEqual(mock_adapter.invoke.call_count, 3)
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_retry_prompt_includes_previous_error(self, mock_get_adapter):
+        """Test that retry prompt includes the error from previous attempt"""
+        mock_adapter = Mock()
+
+        # First attempt: bad response
+        # Second attempt: good response
+        responses = [
+            json.dumps({"type": "result", "result": '{"wrong": "data"}'}),
+            json.dumps({"type": "result", "result": '{"answer": "42"}'}),
+        ]
+        mock_adapter.invoke.side_effect = responses
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"]
+        }
+
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "test-task"
+        )
+
+        # Verify retry prompt included error details
+        retry_call = mock_adapter.invoke.call_args_list[1]
+        retry_prompt = retry_call[0][0]
+
+        self.assertIn("RETRY", retry_prompt)
+        self.assertIn("Previous response that failed validation", retry_prompt)
+        self.assertIn("Error encountered", retry_prompt)
+        self.assertIn("missing required fields", retry_prompt.lower())
 
 
 if __name__ == '__main__':
