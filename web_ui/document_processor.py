@@ -796,7 +796,7 @@ Optimal candidates (all attempting same goal):
     def _validate_final(self, original: str, analysis: str, clarified: str, candidates: dict) -> dict:
         """
         STAGE 4: Final validation - check candidates against ALL previous stages.
-        Returns scores and selected candidate.
+        Returns fidelity scores, quality score, and disposition.
         """
         schema = {
             "type": "object",
@@ -805,10 +805,14 @@ Optimal candidates (all attempting same goal):
                 "score_2": {"type": "number"},
                 "score_3": {"type": "number"},
                 "best_candidate": {"type": "string", "enum": ["1", "2", "3", "none"]},
-                "reason": {"type": "string"},
-                "specific_issues": {"type": "string"}
+                "fidelity_reason": {"type": "string"},
+                "quality_score": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "quality_reason": {"type": "string"},
+                "disposition": {"type": "string", "enum": ["central", "child", "review", "discard"]},
+                "recommendation": {"type": "string"}
             },
-            "required": ["score_1", "score_2", "score_3", "best_candidate", "reason"]
+            "required": ["score_1", "score_2", "score_3", "best_candidate", "fidelity_reason",
+                        "quality_score", "quality_reason", "disposition", "recommendation"]
         }
 
         prompt = f"""Final validation: Check these simplified candidates against the full processing chain.
@@ -827,7 +831,8 @@ SIMPLIFIED CANDIDATES:
 2. "{candidates['candidate_2']}"
 3. "{candidates['candidate_3']}"
 
-Score each candidate (0.0-1.0) on:
+PART 1 - FIDELITY SCORING:
+Score each candidate (0.0-1.0) on how well it preserves meaning:
 - Preserves meaning from ANALYSIS? (0.3 points)
 - Preserves meaning from CLARIFIED? (0.3 points)
 - Preserves qualifiers from ORIGINAL? (0.2 points)
@@ -835,7 +840,41 @@ Score each candidate (0.0-1.0) on:
 - Optimal simplification (no redundancy)? (0.05 points)
 
 SELECT best_candidate (1/2/3) with highest score, OR "none" if ALL score < 0.7.
-Provide reason for selection and specific_issues if rejecting all.
+Provide fidelity_reason for selection.
+
+PART 2 - QUALITY SCORING:
+After selecting the best simplified version, evaluate the OVERALL CLAIM QUALITY (0.0-1.0):
+
+HIGH QUALITY (0.7-1.0) - Disposition: "central"
+- Makes a specific, testable assertion
+- Contains meaningful qualifiers that add nuance (not just hedging)
+- Provides actionable information worth investigating
+- Should be a central/trunk node in knowledge graph
+
+MEDIUM QUALITY (0.4-0.69) - Disposition: "child"
+- Too vague or heavily hedged to be a central claim
+- Derivative of more fundamental claims
+- Should be attached as child to related superclaim
+- Provides context but not primary focus
+
+LOW QUALITY (0.0-0.39) - Disposition: "review" or "discard"
+- Essentially meaningless (too many qualifiers, no substance)
+- Circular reasoning or tautology
+- Too vague to verify or investigate
+- Flag for user review - likely not worth adding to database
+
+Provide:
+- quality_score: Overall claim quality (0.0-1.0)
+- quality_reason: Why this score? Is claim specific and testable, or vague and meaningless?
+- disposition: "central" / "child" / "review" / "discard"
+- recommendation: What should be done with this claim in the knowledge graph?
+
+EXAMPLE - LOW QUALITY CLAIM:
+"The study suggests that some users who regularly utilize the system might experience improved performance metrics"
+→ Quality: 0.35 (LOW)
+→ Reason: "While simplification correctly preserves all qualifiers, the claim is too heavily hedged to provide meaningful information. It essentially says 'maybe something happens sometimes for some people under some conditions.' This provides no actionable research direction."
+→ Disposition: "child"
+→ Recommendation: "Attach as supporting detail to more specific claim about system effectiveness, or flag for review. Consider discarding if isolated."
 """
 
         result = self._invoke_agent_with_structured_output(prompt, schema, "validate-final")
