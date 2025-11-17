@@ -1,16 +1,18 @@
-# Claude Code CLI - Agent Instructions
+# Codex CLI - Agent Instructions
 
 **📄 This file references the master instructions to prevent sync issues.**
 
----
-
-## ⚡ Quick Reference
-
-See **[AGENT_INSTRUCTIONS.md](../AGENT_INSTRUCTIONS.md)** for complete, up-to-date workflow.
+**Official Codex location** - See [AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md) for complete workflow
 
 ---
 
-## 🚀 TL;DR for Claude Code
+## ⚡ Quick Reference for Codex
+
+See **[AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md)** for complete, up-to-date instructions.
+
+---
+
+## 🚀 TL;DR
 
 1. **Silently check** if system installed
 2. **If not**: Auto-install everything
@@ -57,4 +59,4 @@ python test_full_pipeline.py
 
 ---
 
-**For complete workflow, see**: [AGENT_INSTRUCTIONS.md](../AGENT_INSTRUCTIONS.md)
+**For complete workflow, see**: [AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md)

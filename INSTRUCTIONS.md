@@ -1,16 +1,18 @@
-# Claude Code CLI - Agent Instructions
+# AI Agent Setup Instructions
 
 **📄 This file references the master instructions to prevent sync issues.**
 
----
-
-## ⚡ Quick Reference
-
-See **[AGENT_INSTRUCTIONS.md](../AGENT_INSTRUCTIONS.md)** for complete, up-to-date workflow.
+**For: Cursor, Aider, and other AI coding assistants**
 
 ---
 
-## 🚀 TL;DR for Claude Code
+## ⚡ Complete Instructions
+
+See **[AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md)** for complete, up-to-date workflow.
+
+---
+
+## 🚀 Quick Start
 
 1. **Silently check** if system installed
 2. **If not**: Auto-install everything
@@ -26,19 +28,14 @@ See **[AGENT_INSTRUCTIONS.md](../AGENT_INSTRUCTIONS.md)** for complete, up-to-da
 
 ### Check Installation
 ```bash
-python -c "import pytest, networkx, arxiv, PyPDF2, pdfplumber; from research_agent.graph_database import GraphDatabase; print('INSTALLED')" 2>&1
+python -c "import pytest, networkx, arxiv, PyPDF2; print('OK')" 2>&1
 ```
 
 ### Install Dependencies
 ```bash
-pip install -q -r requirements.txt
-pip install -q -r requirements-test.txt
-pip install -q -r requirements-neo4j.txt
-```
-
-### Install Neo4j (Windows)
-```powershell
-powershell -ExecutionPolicy Bypass -File install_neo4j_windows.ps1
+pip install -r requirements.txt
+pip install -r requirements-test.txt
+pip install -r requirements-neo4j.txt
 ```
 
 ### Run Tests
@@ -57,4 +54,4 @@ python test_full_pipeline.py
 
 ---
 
-**For complete workflow, see**: [AGENT_INSTRUCTIONS.md](../AGENT_INSTRUCTIONS.md)
+**For complete workflow, see**: [AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md)

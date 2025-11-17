@@ -11,9 +11,12 @@
 git clone <repository-url>
 cd Research-Assistant-Tool-
 
-# 2. Start your AI agent (Claude Code or Codex)
-claude
-# or: codex
+# 2. Start your AI agent (any of these work!)
+claude        # Claude Code CLI
+# or: codex   # OpenAI Codex CLI
+# or: cursor  # Cursor AI
+# or: aider   # Aider
+# or any other AI coding assistant
 
 # 3. That's it! Your agent will:
 #    - Install all dependencies automatically
@@ -22,7 +25,7 @@ claude
 #    - Ask what you'd like to do
 ```
 
-**No Python knowledge required. No manual installation. The agent handles everything!**
+**No Python knowledge required. No manual installation. Works with ANY AI coding agent!**
 
 ---
 
@@ -73,7 +76,14 @@ Agent: "Here's your knowledge graph. I've clustered similar claims together..."
 
 ---
 
-## 🤖 For AI Agents (Claude/Codex)
+## 🤖 For AI Agents (Multi-Agent Support!)
+
+**This project works with ANY AI coding assistant:**
+- ✅ Claude Code CLI (reads `.claude/CLAUDE.md`)
+- ✅ OpenAI Codex CLI (reads `AGENTS.md`)
+- ✅ Cursor AI (reads `INSTRUCTIONS.md`)
+- ✅ Aider (reads `INSTRUCTIONS.md`)
+- ✅ Any other AI agent (reads `INSTRUCTIONS.md` or `README.md`)
 
 **When you start in this directory**, you will automatically:
 
@@ -83,7 +93,11 @@ Agent: "Here's your knowledge graph. I've clustered similar claims together..."
 4. Troubleshoot any issues
 5. Present ready system to user
 
-**See `.claude/CLAUDE.md` for complete agent workflow.**
+**See agent-specific instructions:**
+- `.claude/CLAUDE.md` - Claude Code
+- `.codex/CODEX.md` - Codex
+- `AGENTS.md` - Codex (official location)
+- `INSTRUCTIONS.md` - Universal fallback
 
 **User never needs to know about:**
 - Python dependencies
