@@ -78,7 +78,7 @@ Output ONLY the raw JSON object."""
             response = adapter.invoke(enhanced_prompt, tools=None, timeout=120)
             logger.info(f"Agent completed {task_type}: {len(response)} chars")
 
-            # Parse response - handle both direct JSON and CLI wrapper format
+            # Parse response - handle CLI wrapper format
             response_data = json.loads(response)
 
             # Extract actual result from CLI wrapper if present
@@ -87,28 +87,74 @@ Output ONLY the raw JSON object."""
             else:
                 result_text = response
 
-            # Try to parse as JSON
-            try:
-                parsed_json = json.loads(result_text)
-                logger.info(f"✓ Extracted structured JSON output")
-                return parsed_json
-            except json.JSONDecodeError:
-                # Try to extract JSON from markdown code blocks
-                import re
-                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', result_text, re.DOTALL)
-                if json_match:
-                    parsed_json = json.loads(json_match.group(1))
-                    logger.info(f"✓ Extracted JSON from code block")
-                    return parsed_json
-                else:
-                    raise RuntimeError(f"Agent did not return valid JSON. Response: {result_text[:200]}...")
+            # Parse as JSON - NO FALLBACKS
+            parsed_json = json.loads(result_text)
+            logger.info(f"✓ Agent returned valid JSON")
+
+            # Validate against schema - check required fields
+            self._validate_json_schema(parsed_json, expected_schema, task_type)
+
+            return parsed_json
 
         except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing failed: {e}")
-            raise RuntimeError(f"Agent response is not valid JSON: {e}")
+            error_msg = f"Agent did not return valid JSON for {task_type}. Parse error: {e}. Response preview: {result_text[:300]}..."
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
         except Exception as e:
-            logger.error(f"Agent invocation failed: {e}")
+            logger.error(f"Agent invocation failed for {task_type}: {e}")
             raise
+
+    def _validate_json_schema(self, data: Dict, schema: Dict, task_type: str):
+        """
+        Validate JSON data against schema - check required fields exist.
+
+        Args:
+            data: Parsed JSON data
+            schema: Expected JSON schema
+            task_type: Description for error messages
+
+        Raises:
+            RuntimeError: If validation fails
+        """
+        if not isinstance(data, dict):
+            raise RuntimeError(f"{task_type}: Expected object, got {type(data).__name__}")
+
+        # Check required fields at root level
+        required_fields = schema.get('required', [])
+        missing_fields = [field for field in required_fields if field not in data]
+
+        if missing_fields:
+            raise RuntimeError(
+                f"{task_type}: JSON missing required fields: {missing_fields}. "
+                f"Got fields: {list(data.keys())}"
+            )
+
+        # Validate field types if specified
+        properties = schema.get('properties', {})
+        for field_name, field_schema in properties.items():
+            if field_name in data:
+                expected_type = field_schema.get('type')
+                actual_value = data[field_name]
+
+                # Type checking
+                if expected_type == 'array' and not isinstance(actual_value, list):
+                    raise RuntimeError(
+                        f"{task_type}: Field '{field_name}' should be array, got {type(actual_value).__name__}"
+                    )
+                elif expected_type == 'object' and not isinstance(actual_value, dict):
+                    raise RuntimeError(
+                        f"{task_type}: Field '{field_name}' should be object, got {type(actual_value).__name__}"
+                    )
+                elif expected_type == 'string' and not isinstance(actual_value, str):
+                    raise RuntimeError(
+                        f"{task_type}: Field '{field_name}' should be string, got {type(actual_value).__name__}"
+                    )
+                elif expected_type == 'number' and not isinstance(actual_value, (int, float)):
+                    raise RuntimeError(
+                        f"{task_type}: Field '{field_name}' should be number, got {type(actual_value).__name__}"
+                    )
+
+        logger.info(f"✓ JSON schema validation passed for {task_type}")
 
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
