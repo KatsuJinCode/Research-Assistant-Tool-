@@ -566,11 +566,15 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         logger.info(f"✓ AI agent extracted {len(claims)} claims via structured JSON")
         return claims
 
-    def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
+    def _simplify_claim_with_agent(self, claim_text: str) -> str:
         """
-        Use AI agent to simplify and normalize a claim with structured JSON output.
+        Use AI agent to simplify claim while preserving qualifiers.
 
-        Returns dict with 'simplified', 'normalized' versions.
+        Args:
+            claim_text: Full claim text to simplify
+
+        Returns:
+            Simplified claim string (5-12 words, qualifiers preserved)
 
         Raises:
             RuntimeError: If agent fails or returns invalid data
@@ -579,13 +583,12 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         expected_schema = {
             "type": "object",
             "properties": {
-                "simplified": {"type": "string", "description": "5-10 word core assertion"},
-                "normalized": {"type": "string", "description": "15-20 word normalized version"}
+                "summary": {"type": "string", "description": "Simplified claim (5-12 words) with qualifiers preserved"}
             },
-            "required": ["simplified", "normalized"]
+            "required": ["summary"]
         }
 
-        agent_prompt = f"""Summarize this research claim using intelligent simplification while PRESERVING ALL QUALIFIERS.
+        agent_prompt = f"""Simplify this research claim while PRESERVING ALL QUALIFIERS.
 
 CLAIM: "{claim_text}"
 
@@ -593,26 +596,25 @@ CRITICAL REQUIREMENTS:
 1. NEVER remove qualifiers (may, might, can, could, should, would, must, all, some, few, many, most)
 2. Simplify by removing redundancy and verbose constructions, NOT by removing meaning
 3. Keep the core assertion AND its uncertainty/scope markers
-
-Create TWO versions:
-1. simplified: Ultra-concise (5-12 words) - core assertion with key qualifiers
-2. normalized: Medium-length (15-25 words) - more complete but still simplified
+4. Target length: 5-12 words (flexible, but keep it concise)
 
 EXAMPLES:
 - Original: "The study suggests that some users who regularly utilize the system might experience improved performance metrics"
-- simplified: "Some users might experience improved performance"
-- normalized: "Study suggests some regular users might experience improved performance metrics"
+- summary: "Some users might experience improved performance"
+
+- Original: "A person's belief cannot be explained by a defect or disease of the nervous system"
+- summary: "Beliefs can't be explained by nervous system defects"
 
 PRESERVE QUALIFIERS - they change the meaning!"""
 
         result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "claim-simplification")
 
-        if 'simplified' not in result or 'normalized' not in result:
-            logger.error(f"Response missing required fields: {result.keys()}")
-            raise RuntimeError("Response missing 'simplified' or 'normalized' fields")
+        if 'summary' not in result:
+            logger.error(f"Response missing 'summary' field: {result.keys()}")
+            raise RuntimeError("Response missing 'summary' field")
 
-        logger.info(f"✓ AI agent simplified claim via structured JSON")
-        return result
+        logger.info(f"✓ AI agent simplified claim: '{result['summary']}'")
+        return result['summary']
 
     def _extract_document_title(self, text: str) -> str:
         """
@@ -901,14 +903,12 @@ Find the main title/heading at the top of the document. Return just the title te
                 claim_id = str(uuid4())
 
                 # Generate intelligent summary using Claude Code CLI
-                summary_result = self._simplify_claim_with_agent(claim_data['text'])
+                summary = self._simplify_claim_with_agent(claim_data['text'])
 
                 claim_node = {
                     'id': claim_id,
                     'text': claim_data['text'],
-                    'summary': summary_result['simplified'],  # Short AI summary preserving qualifiers
-                    'simplified': summary_result['simplified'],
-                    'normalized': summary_result['normalized'],  # Medium-length version
+                    'summary': summary,  # AI-simplified (5-12 words, qualifiers preserved)
                     'parent_super_claim': super_claim_id,
                     'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
                     'confidence': claim_data.get('confidence', 0.5),
