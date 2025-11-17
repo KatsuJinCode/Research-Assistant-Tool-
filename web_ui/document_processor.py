@@ -678,9 +678,44 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
             result['processing_stage'] = 'error'
             return result
 
-    def _clarify_claim(self, claim_text: str) -> str:
+    def _analyze_claim(self, claim_text: str) -> str:
         """
-        STAGE 1: Make implicit meaning explicit (may make text longer).
+        STAGE 1: Deep analysis - verbose paragraph(s) fully understanding the claim.
+        This can be 1-2 paragraphs expanding on all context and implications.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "analysis": {"type": "string"}
+            },
+            "required": ["analysis"]
+        }
+
+        prompt = f"""Provide a deep analysis of this claim. Write 1-2 paragraphs that fully unpack:
+- What is the claim actually saying?
+- What are the implicit assumptions?
+- What is evidence vs stated fact?
+- What is correlation vs causation?
+- What are the qualifiers and conditions?
+- What context is needed to understand this properly?
+
+ORIGINAL CLAIM:
+"{claim_text}"
+
+OUTPUT: 1-2 paragraphs of analysis (verbose is OK - we need full understanding)
+
+EXAMPLE:
+Original: "Mental illness derives its main support from syphilis of the brain"
+Analysis: "This claim is stating that the concept or theory of mental illness as a disease entity derives its primary evidential support from the case of neurosyphilis (syphilis infection of the brain). The key word is 'support' - not that mental illness IS caused by brain disease, but that the THEORY of mental illness as brain disease gains its justification by pointing to neurosyphilis as an analogous case. In neurosyphilis, observable mental symptoms are caused by a known physical brain disease. Proponents use this as evidence that other mental illnesses must likewise have brain disease causes, even when no such disease can be identified. The claim is about epistemological support for a theory, not an assertion of causation."
+"""
+
+        result = self._invoke_agent_with_structured_output(prompt, schema, "analyze-claim")
+        return result['analysis']
+
+    def _clarify_claim(self, claim_text: str, analysis: str) -> str:
+        """
+        STAGE 2: Clarification - reword the original claim to be fully explicit.
+        Should be similar length to original, just with implicit meaning made explicit.
         """
         schema = {
             "type": "object",
@@ -690,29 +725,25 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
             "required": ["clarified"]
         }
 
-        prompt = f"""Make the implicit meaning in this claim EXPLICIT. Output may be LONGER than input.
+        prompt = f"""Reword this claim to make all implicit meaning EXPLICIT.
+Should be roughly the SAME LENGTH as original - just clearer.
+Do NOT add supporting sentences - just clarify the original phrasing.
 
 ORIGINAL CLAIM:
 "{claim_text}"
 
-YOUR TASK:
-1. Identify any implicit assumptions or implications
-2. Make colloquialisms explicit
-3. Clarify what "this/that/it" refers to
-4. Make causation vs correlation explicit
-5. State if something is used as EVIDENCE vs stated as FACT
-6. Distinguish "supports theory" from "causes effect"
-7. Expand abbreviations or unclear references
+ANALYSIS (for context):
+"{analysis}"
 
-OUTPUT: A CLEARER version (don't worry about length - clarity over brevity here)
+OUTPUT: The claim reworded with implicit meaning made explicit (similar length to original)
 
 EXAMPLES:
 
 Original: "Mental illness derives support from brain syphilis"
-Clarified: "The theory of mental illness as a disease gains support by using brain syphilis as an analogous example. Proponents argue that just as brain disease causes observable symptoms, mental symptoms must also come from brain disease."
+Clarified: "The theory of mental illness as brain disease derives evidential support from neurosyphilis as an analogous case"
 
 Original: "This suggests users might improve"
-Clarified: "The study's findings suggest that some users might experience performance improvements"
+Clarified: "The study's findings suggest some users might experience performance improvements"
 
 Original: "It cannot be explained by defects"
 Clarified: "A person's belief cannot be explained by nervous system defects or disease"
@@ -721,58 +752,58 @@ Clarified: "A person's belief cannot be explained by nervous system defects or d
         result = self._invoke_agent_with_structured_output(prompt, schema, "clarify-claim")
         return result['clarified']
 
-    def _generate_candidate_summaries(self, clarified_text: str) -> dict:
+    def _simplify_claim_candidates(self, clarified_text: str) -> dict:
         """
-        STAGE 2: Generate 3 simplified candidates with different strategies.
+        STAGE 3: Generate 3 simplified candidates using SAME optimization goal.
+        All 3 use identical prompt - they're just different attempts (random seeds).
+        Goal: Find the mathematically optimal simplification.
         """
         schema = {
             "type": "object",
             "properties": {
-                "candidate_1": {"type": "string", "description": "Maximum brevity (5-8 words)"},
-                "candidate_2": {"type": "string", "description": "Balanced (8-10 words)"},
-                "candidate_3": {"type": "string", "description": "More complete (10-12 words)"}
+                "candidate_1": {"type": "string"},
+                "candidate_2": {"type": "string"},
+                "candidate_3": {"type": "string"}
             },
             "required": ["candidate_1", "candidate_2", "candidate_3"]
         }
 
-        prompt = f"""Generate 3 different simplified versions of this CLARIFIED claim.
+        prompt = f"""Simplify this clarified claim to its OPTIMAL shortest form.
 
-CLARIFIED TEXT:
+CLARIFIED CLAIM:
 "{clarified_text}"
 
-Create 3 candidates with different brevity levels:
-- candidate_1: Maximum brevity (5-8 words) - absolute minimum
-- candidate_2: Balanced (8-10 words) - good middle ground
-- candidate_3: More complete (10-12 words) - preserve more nuance
+GOAL: Mathematical optimization - find the absolute simplest way to state this while:
+1. Preserving ALL qualifiers (may/might/can/must/some/all/possibly/likely/etc)
+2. Preserving exact meaning from clarified version
+3. Keeping causation vs correlation distinction
+4. Keeping "supports/evidence" vs "causes/is" distinction
+5. Removing ALL redundancy
 
-CRITICAL REQUIREMENTS FOR ALL CANDIDATES:
-1. Preserve ALL qualifiers (may/might/can/must/some/all/etc)
-2. Preserve core meaning - do NOT reverse it
-3. Keep causation vs correlation distinction
-4. Keep "supports theory" vs "causes effect" distinction
-5. Remove redundancy and verbose constructions
+Generate 3 independent attempts at this optimization (they should be similar but may differ slightly):
 
-GOOD EXAMPLES:
-Clarified: "The theory gains support by using brain disease as analogous example"
-- candidate_1: "Theory supported by brain disease analogy"  (6 words)
-- candidate_2: "Mental illness theory uses brain disease as evidence" (9 words)
-- candidate_3: "Mental illness concept derives support from brain disease examples" (10 words)
+EXAMPLE:
+Clarified: "The theory of mental illness as brain disease derives evidential support from neurosyphilis as an analogous case"
+Optimal candidates (all attempting same goal):
+- candidate_1: "Mental illness theory derives support from neurosyphilis analogy"
+- candidate_2: "Brain disease theory gains evidential support from neurosyphilis case"
+- candidate_3: "Mental illness concept supported by neurosyphilis as analogous example"
 """
 
-        result = self._invoke_agent_with_structured_output(prompt, schema, "generate-candidates")
+        result = self._invoke_agent_with_structured_output(prompt, schema, "simplify-candidates")
         return result
 
-    def _validate_candidates(self, original: str, clarified: str, candidates: dict) -> dict:
+    def _validate_final(self, original: str, analysis: str, clarified: str, candidates: dict) -> dict:
         """
-        STAGE 3: Validate candidates against BOTH original and clarified versions.
+        STAGE 4: Final validation - check candidates against ALL previous stages.
         Returns scores and selected candidate.
         """
         schema = {
             "type": "object",
             "properties": {
-                "score_1": {"type": "number", "description": "Score 0-1 for candidate_1"},
-                "score_2": {"type": "number", "description": "Score 0-1 for candidate_2"},
-                "score_3": {"type": "number", "description": "Score 0-1 for candidate_3"},
+                "score_1": {"type": "number"},
+                "score_2": {"type": "number"},
+                "score_3": {"type": "number"},
                 "best_candidate": {"type": "string", "enum": ["1", "2", "3", "none"]},
                 "reason": {"type": "string"},
                 "specific_issues": {"type": "string"}
@@ -780,32 +811,34 @@ Clarified: "The theory gains support by using brain disease as analogous example
             "required": ["score_1", "score_2", "score_3", "best_candidate", "reason"]
         }
 
-        prompt = f"""Validate these simplified candidates and assign scores.
+        prompt = f"""Final validation: Check these simplified candidates against the full processing chain.
 
-ORIGINAL:
+ORIGINAL SOURCE:
 "{original}"
 
-CLARIFIED (explicit meaning):
+ANALYSIS (deep understanding):
+"{analysis}"
+
+CLARIFIED (explicit rewording):
 "{clarified}"
 
-CANDIDATES:
+SIMPLIFIED CANDIDATES:
 1. "{candidates['candidate_1']}"
 2. "{candidates['candidate_2']}"
 3. "{candidates['candidate_3']}"
 
-For EACH candidate, score 0-1 based on:
-- Preserves CLARIFIED meaning? (0.4 points)
-- Preserves qualifiers from ORIGINAL? (0.3 points)
-- No reversed meaning (evidence→cause)? (0.2 points)
-- Appropriate length (5-12 words)? (0.1 points)
+Score each candidate (0.0-1.0) on:
+- Preserves meaning from ANALYSIS? (0.3 points)
+- Preserves meaning from CLARIFIED? (0.3 points)
+- Preserves qualifiers from ORIGINAL? (0.2 points)
+- No reversed meaning (evidence→cause, correlation→causation)? (0.15 points)
+- Optimal simplification (no redundancy)? (0.05 points)
 
-SELECT best_candidate (1/2/3) with highest score, OR "none" if ALL score < 0.6.
-If "none", explain specific_issues so we can retry.
-
-Provide scores (0.0 to 1.0) for each candidate and select the best.
+SELECT best_candidate (1/2/3) with highest score, OR "none" if ALL score < 0.7.
+Provide reason for selection and specific_issues if rejecting all.
 """
 
-        result = self._invoke_agent_with_structured_output(prompt, schema, "validate-candidates")
+        result = self._invoke_agent_with_structured_output(prompt, schema, "validate-final")
         return result
 
     def _extract_document_title(self, text: str) -> str:
