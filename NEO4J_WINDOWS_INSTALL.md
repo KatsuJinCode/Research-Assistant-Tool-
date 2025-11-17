@@ -17,9 +17,49 @@ Based on your research, Neo4j provides critical features for this project:
 
 ## Installation Options for Windows
 
-### Option 1: Neo4j Desktop (RECOMMENDED - No Docker!)
+### Option 1: Automated CLI Install (RECOMMENDED - Easiest!)
 
-**Best for**: Windows users who want the full Neo4j experience without Docker
+**Best for**: Windows users who want everything automated
+
+Simply run the auto-installer:
+
+```bash
+auto_install.bat
+```
+
+When asked "Would you like to install Neo4j Community Edition?", answer `y`
+
+**This automatically**:
+- ✅ Downloads Neo4j Community Edition 5.26.0
+- ✅ Installs Java 21 (if needed)
+- ✅ Extracts and configures Neo4j
+- ✅ Sets password to `research123`
+- ✅ Installs as Windows Service
+- ✅ Starts Neo4j automatically
+- ✅ Creates `.env` configuration file
+
+**No manual steps!** Everything is automated via PowerShell.
+
+**Note**: Requires Administrator privileges (you'll be prompted)
+
+---
+
+### Option 2: Manual PowerShell Install
+
+If you want to install ONLY Neo4j (not all dependencies):
+
+```powershell
+# Run PowerShell as Administrator
+powershell -ExecutionPolicy Bypass -File install_neo4j_windows.ps1
+```
+
+This runs the same automated installer as Option 1.
+
+---
+
+### Option 3: Neo4j Desktop (Manual GUI)
+
+**Best for**: Users who prefer a graphical interface
 
 #### Step 1: Download
 - Go to: https://neo4j.com/download-center/#desktop
@@ -61,7 +101,9 @@ python -c "from research_agent.neo4j_database import Neo4jDatabase; db = Neo4jDa
 
 ---
 
-### Option 2: Docker Desktop
+### Option 4: Docker Desktop (Legacy)
+
+**Note**: Docker is no longer needed! Use Option 1 (CLI install) instead.
 
 **Best for**: Users who already have Docker or want containerized setup
 
@@ -83,7 +125,7 @@ docker run --name research-neo4j -p7474:7474 -p7687:7687 -d -v "%CD%\neo4j\data:
 
 ---
 
-### Option 3: Start Without Neo4j (NetworkX Only)
+### Option 5: Start Without Neo4j (NetworkX Only)
 
 **Best for**: Quick start, testing, or if you don't need Neo4j features yet
 
@@ -205,18 +247,19 @@ LIMIT 100;
 
 ---
 
-## Neo4j Desktop vs Docker: Which to Choose?
+## Installation Comparison
 
-| Feature | Neo4j Desktop | Docker |
-|---------|---------------|--------|
-| **Installation** | Windows installer | Requires Docker Desktop |
-| **Ease of use** | Very easy | Moderate |
-| **Visual tools** | Built-in | Browser only |
-| **Performance** | Native | Containerized |
-| **Multiple databases** | Easy to manage | Need multiple containers |
-| **Recommended for** | Windows development | CI/CD, production |
+| Feature | CLI Auto-Install | Neo4j Desktop | Docker |
+|---------|------------------|---------------|--------|
+| **Installation** | Automated script | Manual download | Requires Docker Desktop |
+| **Ease of use** | Easiest (one command) | Easy (GUI) | Moderate |
+| **Setup time** | 2-3 minutes | 5 minutes | 5-10 minutes |
+| **Visual tools** | Browser only | Built-in | Browser only |
+| **Performance** | Native | Native | Containerized |
+| **Java required** | Auto-installs | Bundled | Not needed |
+| **Recommended for** | **Windows development** | GUI preference | Existing Docker users |
 
-**For this project on Windows: Neo4j Desktop is easier!**
+**For this project on Windows: CLI Auto-Install is fastest and easiest!**
 
 ---
 

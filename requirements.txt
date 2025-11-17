@@ -18,6 +18,7 @@ networkx>=3.0
 
 # Research APIs
 arxiv>=2.0.0
+orkg>=1.0.0
 
 # Database
 asyncpg==0.29.0

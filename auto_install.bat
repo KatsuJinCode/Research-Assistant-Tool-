@@ -71,74 +71,35 @@ python -m pytest -v -m critical tests/
 echo   Tests completed!
 echo.
 
-REM Check Docker
-echo Checking for Docker...
-docker --version >nul 2>&1
-if errorlevel 1 (
-    echo   Docker not found - Neo4j installation skipped
-    echo   To use Neo4j, install Docker Desktop from:
-    echo   https://www.docker.com/products/docker-desktop
-    goto :skip_docker
-)
-
-echo   Docker found!
-docker ps >nul 2>&1
-if errorlevel 1 (
-    echo   WARNING: Docker Desktop is not running
-    echo   Please start Docker Desktop to install Neo4j
-    goto :skip_docker
-)
-
-echo   Docker is running!
+REM Install Neo4j (Windows native - no Docker needed!)
 echo.
-set /p INSTALL_NEO4J="Would you like to install Neo4j via Docker? (y/n): "
-if /i not "%INSTALL_NEO4J%"=="y" goto :skip_docker
-
-echo.
-echo Installing Neo4j via Docker...
-
-REM Create directories
-if not exist "neo4j\data" mkdir neo4j\data
-if not exist "neo4j\logs" mkdir neo4j\logs
-if not exist "neo4j\import" mkdir neo4j\import
-if not exist "neo4j\plugins" mkdir neo4j\plugins
-
-REM Check for existing container
-docker ps -a --filter "name=research-neo4j" --format "{{.Names}}" | findstr /C:"research-neo4j" >nul 2>&1
-if not errorlevel 1 (
-    echo   Container 'research-neo4j' already exists
-    set /p RECREATE="  Remove and recreate? (y/n): "
-    if /i "!RECREATE!"=="y" (
-        docker rm -f research-neo4j >nul 2>&1
+echo Checking for Neo4j...
+where neo4j >nul 2>&1
+if errorlevel 1 (
+    echo   Neo4j not found
+    set /p INSTALL_NEO4J="Would you like to install Neo4j Community Edition? (y/n): "
+    if /i "%INSTALL_NEO4J%"=="y" (
+        echo.
+        echo   Installing Neo4j via PowerShell...
+        echo   ^(This requires Administrator privileges^)
+        echo.
+        powershell -ExecutionPolicy Bypass -File "%~dp0install_neo4j_windows.ps1"
+        if errorlevel 1 (
+            echo   WARNING: Neo4j installation failed or was cancelled
+            echo   You can install manually later with:
+            echo   powershell -ExecutionPolicy Bypass -File install_neo4j_windows.ps1
+        ) else (
+            echo.
+            echo   Neo4j installed successfully!
+        )
+    ) else (
+        echo   Skipping Neo4j installation
+        echo   ^(You can install later with: install_neo4j_windows.ps1^)
     )
+) else (
+    echo   Neo4j already installed!
+    neo4j status
 )
-
-REM Start Neo4j container
-echo   Starting Neo4j container...
-docker run --name research-neo4j -p7474:7474 -p7687:7687 -d -v "%CD%\neo4j\data:/data" -v "%CD%\neo4j\logs:/logs" -v "%CD%\neo4j\import:/var/lib/neo4j/import" -v "%CD%\neo4j\plugins:/plugins" --env NEO4J_AUTH=neo4j/research123 neo4j:latest >nul 2>&1
-
-echo   Neo4j container started!
-echo   Waiting for Neo4j to initialize (30 seconds)...
-timeout /t 30 /nobreak >nul
-
-REM Create .env file
-(
-echo # Neo4j Connection
-echo NEO4J_URI=bolt://localhost:7687
-echo NEO4J_USER=neo4j
-echo NEO4J_PASSWORD=research123
-echo NEO4J_DATABASE=neo4j
-) > .env
-
-echo   Created .env file
-echo.
-echo   Neo4j is ready!
-echo   Browser: http://localhost:7474
-echo   Username: neo4j
-echo   Password: research123
-echo.
-
-:skip_docker
 
 REM Summary
 echo.
