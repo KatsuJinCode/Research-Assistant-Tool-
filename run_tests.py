@@ -22,9 +22,9 @@ def run_command(cmd, description):
 
     print()
     if result.returncode == 0:
-        print(f"✅ {description} - PASSED")
+        print(f"[PASS] {description}")
     else:
-        print(f"❌ {description} - FAILED")
+        print(f"[FAIL] {description}")
         return False
 
     print()
@@ -97,7 +97,7 @@ def main():
     }
 
     if command not in commands:
-        print(f"❌ Unknown command: {command}")
+        print(f"[ERROR] Unknown command: {command}")
         print()
         print("Run without arguments to see available commands.")
         return 1
