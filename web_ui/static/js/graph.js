@@ -216,8 +216,13 @@ const GraphRenderer = {
             .attr('pointer-events', 'none')
             .style('text-shadow', '0 0 3px rgba(0,0,0,0.8), 0 0 5px rgba(0,0,0,0.6)')  // Black glow for readability
             .text(d => {
-                // Prefer summary over raw text, and truncate appropriately
-                const displayText = d.fullData?.summary || d.label;
+                // REQUIRE summary - no fallbacks hiding bugs!
+                const summary = d.fullData?.summary;
+                if (!summary && d.type !== 'document') {
+                    console.error('MISSING SUMMARY for claim:', d.id, d.fullData);
+                    return '[NO SUMMARY - BUG!]';
+                }
+                const displayText = summary || d.label;  // Documents use label (title)
                 return displayText.length > 35 ? displayText.substring(0, 35) + '...' : displayText;
             });
 
@@ -299,13 +304,13 @@ const GraphRenderer = {
                     return (sourceId === d.id || targetId === d.id) ? baseWidth * 1.5 : baseWidth;
                 });
 
-            // Show details for claim nodes
+            // Show details for all clickable nodes
             if (d.type === 'super' || d.type === 'sub') {
                 window.showClaimDetails(d.id);
             } else if (d.type === 'document') {
-                console.log('Clicked document:', d.label);
+                UI.showDocumentDetails(d);
             } else if (d.type === 'evidence') {
-                console.log('Clicked evidence:', d.label);
+                UI.showEvidenceDetails(d);
             }
         });
 

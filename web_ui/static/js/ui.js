@@ -187,6 +187,57 @@ const UI = {
     },
 
     /**
+     * Show document details
+     */
+    showDocumentDetails(docNode) {
+        const detailPanel = document.getElementById('detail-panel');
+        const detailTitle = document.getElementById('detail-claim-text');
+
+        const doc = docNode.fullData;
+        const detailsHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #4CAF50;">📄 ${doc.title || docNode.label}</h3>
+
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Document Information</h4>
+                    <p><strong>Status:</strong> ${doc.status || 'Unknown'}</p>
+                    <p><strong>ID:</strong> <span style="font-family: monospace; font-size: 11px;">${doc.id || docNode.id}</span></p>
+                </div>
+
+                <p><em>Click on claims in the graph to see detailed analysis.</em></p>
+            </div>
+        `;
+
+        detailTitle.innerHTML = detailsHTML;
+        detailPanel.style.display = 'block';
+    },
+
+    /**
+     * Show evidence details
+     */
+    showEvidenceDetails(evidenceNode) {
+        const detailPanel = document.getElementById('detail-panel');
+        const detailTitle = document.getElementById('detail-claim-text');
+
+        const ev = evidenceNode.fullData;
+        const detailsHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #FF9800;">📚 ${ev.title || evidenceNode.label}</h3>
+
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Evidence Information</h4>
+                    <p><strong>Type:</strong> ${ev.type || 'Unknown'}</p>
+                    ${ev.url ? `<p><strong>URL:</strong> <a href="${ev.url}" target="_blank" style="color: #2196F3;">${ev.url}</a></p>` : ''}
+                    <p><strong>ID:</strong> <span style="font-family: monospace; font-size: 11px;">${ev.id || evidenceNode.id}</span></p>
+                </div>
+            </div>
+        `;
+
+        detailTitle.innerHTML = detailsHTML;
+        detailPanel.style.display = 'block';
+    },
+
+    /**
      * Close claim details panel
      */
     closeClaimModal() {

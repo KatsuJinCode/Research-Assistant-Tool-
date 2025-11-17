@@ -85,20 +85,32 @@ const App = {
         const uploadBtn = document.getElementById('upload-btn');
         const fileInput = document.getElementById('file-input');
 
+        console.log('Upload button found:', uploadBtn);
+        console.log('File input found:', fileInput);
+
         if (uploadBtn && fileInput) {
-            uploadBtn.addEventListener('click', () => {
+            uploadBtn.addEventListener('click', (e) => {
+                console.log('Upload button clicked!');
+                e.preventDefault();
+                e.stopPropagation();
                 fileInput.click();
             });
 
             // File upload handler
             fileInput.addEventListener('change', (e) => {
+                console.log('File selected:', e.target.files);
                 const file = e.target.files[0];
                 if (file) {
+                    console.log('Processing file:', file.name);
                     UI.handleFileUpload(file);
                     // Reset input so same file can be uploaded again
                     fileInput.value = '';
                 }
             });
+        } else {
+            console.error('CRITICAL: Upload elements not found!');
+            console.error('uploadBtn:', uploadBtn);
+            console.error('fileInput:', fileInput);
         }
 
         // Clear all button
@@ -109,7 +121,7 @@ const App = {
             });
         }
 
-        console.log('✓ Event listeners setup');
+        console.log('✓ Event listeners setup complete');
     },
 
     /**
