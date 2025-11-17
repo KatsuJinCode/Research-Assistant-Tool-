@@ -64,14 +64,21 @@ class ClaudeCodeAdapter(AgentAdapter):
         cmd = [self.executable, '-p', prompt, '--output-format', 'json']
 
         # Add tools if provided
-        tool_file = None
+        tool_file_path = None
         if tools:
-            tool_file = tempfile.NamedTemporaryFile(
-                mode='w', suffix='.json', delete=False, encoding='utf-8'
-            )
-            json.dump(tools, tool_file)
-            tool_file.close()
-            cmd.extend(['--tools', tool_file.name])
+            # Create temp file with explicit close and write
+            fd, tool_file_path = tempfile.mkstemp(suffix='.json', text=True)
+            try:
+                # Write JSON to file and close file descriptor
+                with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                    json.dump(tools, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+            except:
+                os.close(fd)
+                raise
+
+            cmd.extend(['--tools', tool_file_path])
 
         try:
             result = subprocess.run(
@@ -91,9 +98,9 @@ class ClaudeCodeAdapter(AgentAdapter):
 
         finally:
             # Clean up temp file
-            if tool_file:
+            if tool_file_path:
                 try:
-                    os.unlink(tool_file.name)
+                    os.unlink(tool_file_path)
                 except:
                     pass
 
