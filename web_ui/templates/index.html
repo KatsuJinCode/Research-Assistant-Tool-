@@ -440,15 +440,14 @@
         });
 
         function addClaimToGraph(data) {
-            // TODO: Implement incremental node addition
+            // Real-time node-by-node updates
             console.log('New claim:', data.claim_summary);
 
-            // For now, just reload the graph periodically
-            if (Math.random() < 0.1) {  // Only reload 10% of the time to avoid too many reloads
-                fetch('/api/full-graph')
-                    .then(r => r.json())
-                    .then(graphData => buildUnifiedGraph(graphData));
-            }
+            // Reload graph on EVERY claim for true real-time updates
+            fetch('/api/full-graph')
+                .then(r => r.json())
+                .then(graphData => buildUnifiedGraph(graphData))
+                .catch(err => console.error('Graph reload failed:', err));
         }
 
         // File upload handlers
@@ -842,19 +841,32 @@
             const width = document.getElementById('graph-area').clientWidth;
             const height = document.getElementById('graph-area').clientHeight;
 
+            // Create zoom/pan container
+            const g = svg.append('g');
+
+            // Setup cursor-anchored zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 4])  // Min/max zoom levels
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+
+            // Apply zoom behavior to SVG
+            svg.call(zoom);
+
             const simulation = d3.forceSimulation(nodes)
                 .force('link', d3.forceLink(links).id(d => d.id).distance(150))
                 .force('charge', d3.forceManyBody().strength(-300))
                 .force('center', d3.forceCenter(width / 2, height / 2));
 
-            const link = svg.append('g')
+            const link = g.append('g')
                 .selectAll('path')
                 .data(links)
                 .join('path')
                 .attr('class', d => `link link-${d.type}`)
                 .attr('marker-end', 'url(#arrow)');
 
-            const node = svg.append('g')
+            const node = g.append('g')
                 .selectAll('g')
                 .data(nodes)
                 .join('g')

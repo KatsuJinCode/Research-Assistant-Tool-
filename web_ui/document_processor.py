@@ -54,10 +54,10 @@ class LiveDocumentProcessor:
         logger.info(f"Spawning Claude Code agent for {task_type}")
 
         try:
-            # Invoke Claude Code CLI in print mode
-            # This runs: claude -p <prompt>
+            # Invoke Claude Code CLI with JSON output format
+            # This runs: claude -p <prompt> --output-format json
             result = subprocess.run(
-                ['claude', '-p', prompt],
+                ['claude', '-p', prompt, '--output-format', 'json'],
                 capture_output=True,
                 text=True,
                 timeout=120,  # 2 minute timeout
@@ -114,24 +114,38 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
 
         result = self._invoke_agent(agent_prompt, "claim-extraction")
 
-        # Try to extract JSON from response (handle markdown code blocks)
+        # Parse JSON output from --output-format json
+        # The result is a JSON object like: {"result": "...", "output": "..."}
+        try:
+            wrapper = json.loads(result)
+            # Extract the actual content from the wrapper
+            content = wrapper.get('result', wrapper.get('output', result))
+        except json.JSONDecodeError:
+            content = result
+
+        # Now parse the actual claims JSON
         import re
-        json_match = re.search(r'```json\s*(\[.*?\])\s*```', result, re.DOTALL)
+        json_match = re.search(r'```json\s*(\[.*?\])\s*```', content, re.DOTALL)
         if json_match:
-            result = json_match.group(1)
-        elif result.strip().startswith('['):
-            # Already pure JSON
+            content = json_match.group(1)
+        elif isinstance(content, list):
+            # Already parsed as list
+            claims = content
+            logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
+            return claims
+        elif content.strip().startswith('['):
+            # Pure JSON array
             pass
         else:
             # Try to find JSON array anywhere in response
-            json_match = re.search(r'\[.*\]', result, re.DOTALL)
+            json_match = re.search(r'\[.*\]', content, re.DOTALL)
             if json_match:
-                result = json_match.group(0)
+                content = json_match.group(0)
             else:
                 logger.error(f"Agent response does not contain valid JSON array")
                 raise RuntimeError("Agent failed to return valid JSON array")
 
-        claims = json.loads(result)
+        claims = json.loads(content)
 
         if not isinstance(claims, list):
             logger.error(f"Agent returned non-list: {type(claims)}")
@@ -160,22 +174,38 @@ Preserve: may, might, can, all, some, etc."""
 
         result = self._invoke_agent(agent_prompt, "claim-simplification")
 
+        # Parse JSON output from --output-format json
+        try:
+            wrapper = json.loads(result)
+            content = wrapper.get('result', wrapper.get('output', result))
+        except json.JSONDecodeError:
+            content = result
+
         # Extract JSON from response
         import re
-        json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', result, re.DOTALL)
+        json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', content, re.DOTALL)
         if json_match:
-            result = json_match.group(1)
-        elif result.strip().startswith('{'):
+            content = json_match.group(1)
+        elif isinstance(content, dict):
+            # Already parsed as dict
+            simplification = content
+            if 'simplified' in simplification and 'normalized' in simplification:
+                logger.info(f"✓ Claude Code agent simplified claim")
+                return simplification
+            else:
+                logger.error(f"Agent returned incomplete response: missing required fields")
+                raise RuntimeError("Agent response missing 'simplified' or 'normalized' fields")
+        elif content.strip().startswith('{'):
             pass
         else:
-            json_match = re.search(r'\{{.*\}}', result, re.DOTALL)
+            json_match = re.search(r'\{{.*\}}', content, re.DOTALL)
             if json_match:
-                result = json_match.group(0)
+                content = json_match.group(0)
             else:
                 logger.error(f"Agent response does not contain valid JSON object")
                 raise RuntimeError("Agent failed to return valid JSON object")
 
-        simplification = json.loads(result)
+        simplification = json.loads(content)
 
         if 'simplified' not in simplification or 'normalized' not in simplification:
             logger.error(f"Agent returned incomplete response: missing required fields")
