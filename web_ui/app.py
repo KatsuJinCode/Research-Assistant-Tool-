@@ -331,11 +331,13 @@ def upload_document():
         try:
             def progress_callback(message, progress, data):
                 logger.info(f"[PROGRESS {progress:.0f}%] {message}")
+                socketio.sleep(0)  # Yield to eventlet event loop before emitting
                 socketio.emit('processing_update', {
                     'message': message,
                     'progress': progress,
                     'data': data
                 })
+                socketio.sleep(0)  # Yield again after emitting to allow event delivery
                 logger.debug(f"Emitted processing_update: {progress:.0f}%")
 
             logger.info(f"Starting background processing for: {filepath}")
