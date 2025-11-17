@@ -75,38 +75,78 @@ Required JSON schema:
 Output ONLY the JSON object. Nothing before it, nothing after it.
 Your response will be parsed by json.loads() - it must be valid JSON."""
 
-        try:
-            # Invoke agent without tools (since --tools doesn't work as expected)
-            response = adapter.invoke(enhanced_prompt, tools=None, timeout=120)
-            logger.info(f"Agent completed {task_type}: {len(response)} chars")
+        # Retry loop: Try up to 3 times with re-prompting if validation fails
+        max_retries = 3
+        last_error = None
+        last_response_text = None
 
-            # Parse response - handle CLI wrapper format
-            response_data = json.loads(response)
+        for attempt in range(max_retries):
+            try:
+                # For retries, add correction prompt
+                if attempt > 0:
+                    retry_prompt = f"""RETRY {attempt}/{max_retries-1}: Your previous response had errors.
 
-            # Extract actual result from CLI wrapper if present
-            if isinstance(response_data, dict) and 'result' in response_data:
-                result_text = response_data['result']
-            else:
-                result_text = response
+Previous response that failed validation:
+{last_response_text[:500]}
 
-            # Robust JSON extraction - try multiple strategies
-            parsed_json = self._extract_json_from_response(result_text, task_type)
-            logger.info(f"✓ Agent returned valid JSON")
+Error encountered:
+{last_error}
 
-            # Validate against schema - check required fields STRICTLY
-            self._validate_json_schema(parsed_json, expected_schema, task_type)
+Required JSON schema:
+{schema_str}
 
-            return parsed_json
+Please fix the response. Output ONLY valid JSON matching the schema exactly.
+No explanations, no markdown, no code blocks. Just raw JSON."""
+                    logger.info(f"{task_type}: Retry attempt {attempt} - re-prompting agent to fix response")
+                    current_prompt = retry_prompt
+                else:
+                    current_prompt = enhanced_prompt
 
-        except json.JSONDecodeError as e:
-            error_msg = (
-                f"❌ AGENT ERROR ({task_type}): Could not extract valid JSON from response.\n\n"
-                f"Parse error: {e}\n\n"
-                f"Agent returned:\n{result_text[:300]}...\n\n"
-                f"Tried multiple extraction strategies but found no valid JSON."
-            )
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
+                # Invoke agent
+                response = adapter.invoke(current_prompt, tools=None, timeout=120)
+                logger.info(f"Agent completed {task_type} (attempt {attempt+1}): {len(response)} chars")
+
+                # Parse response - handle CLI wrapper format
+                response_data = json.loads(response)
+
+                # Extract actual result from CLI wrapper if present
+                if isinstance(response_data, dict) and 'result' in response_data:
+                    result_text = response_data['result']
+                else:
+                    result_text = response
+
+                last_response_text = result_text  # Save for retry prompt
+
+                # Robust JSON extraction - try multiple strategies
+                parsed_json = self._extract_json_from_response(result_text, task_type)
+                logger.info(f"✓ Agent returned valid JSON (attempt {attempt+1})")
+
+                # Validate against schema - check required fields STRICTLY
+                self._validate_json_schema(parsed_json, expected_schema, task_type)
+
+                if attempt > 0:
+                    logger.info(f"✓ {task_type}: Validation succeeded after {attempt+1} attempts")
+
+                return parsed_json
+
+            except (json.JSONDecodeError, RuntimeError) as e:
+                last_error = str(e)
+                logger.warning(f"{task_type}: Attempt {attempt+1} failed: {e}")
+
+                # If this was the last attempt, raise the error
+                if attempt == max_retries - 1:
+                    error_msg = (
+                        f"❌ AGENT ERROR ({task_type}): Failed after {max_retries} attempts.\n\n"
+                        f"Final error: {last_error}\n\n"
+                        f"Last response:\n{last_response_text[:300] if last_response_text else 'No response'}...\n\n"
+                        f"The agent could not produce valid JSON matching the schema after multiple retries."
+                    )
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+
+                # Otherwise, continue to next retry
+                continue
+
         except Exception as e:
             logger.error(f"Agent invocation failed for {task_type}: {e}")
             raise
