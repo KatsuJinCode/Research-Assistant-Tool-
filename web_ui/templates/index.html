@@ -317,12 +317,13 @@
             <h2 style="margin-bottom: 15px;">Documents</h2>
 
             <!-- Upload area -->
-            <div id="upload-zone" style="background: #333; border: 2px dashed #666; border-radius: 8px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer;">
-                <div style="font-size: 48px; color: #666; margin-bottom: 10px;">📄</div>
-                <div style="color: #999; margin-bottom: 10px;">Drop PDF or paste URL</div>
-                <input type="file" id="file-input" accept=".pdf" style="display: none;">
-                <input type="text" id="url-input" placeholder="https://arxiv.org/..." style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #555; color: #e0e0e0; border-radius: 4px; margin-top: 10px;">
-                <button id="upload-btn" class="btn btn-primary" style="margin-top: 10px; width: 100%;">Process Document</button>
+            <div id="upload-zone" style="background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%); border: 3px dashed #BA68C8; border-radius: 12px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: all 0.3s;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                <div style="color: white; font-weight: bold; margin-bottom: 5px;">Drop File or Paste URL</div>
+                <div style="color: #E1BEE7; font-size: 12px; margin-bottom: 10px;">Supported: PDF, TXT, DOCX, URLs</div>
+                <input type="file" id="file-input" accept=".pdf,.txt,.docx" style="display: none;">
+                <input type="text" id="url-input" placeholder="https://arxiv.org/..." style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 10px;">
+                <button id="upload-btn" class="btn btn-primary" style="margin-top: 10px; width: 100%; background: white; color: #9C27B0; font-weight: bold;">Process Document</button>
             </div>
 
             <!-- Processing status -->
@@ -703,10 +704,22 @@
                 const docCard = document.createElement('div');
                 docCard.className = 'claim-card';
                 docCard.style.borderLeftColor = '#9C27B0';
+                docCard.style.position = 'relative';
                 docCard.innerHTML = `
                     <div class="claim-text" style="font-weight: bold;">${doc.doc_title || 'Document'}</div>
                     <div class="claim-meta">${doc.root_claims.length} root claims</div>
+                    <button class="delete-doc-btn" data-doc-id="${doc.doc_id}" style="position: absolute; top: 10px; right: 10px; background: #F44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️ Delete</button>
                 `;
+
+                // Add delete handler
+                const deleteBtn = docCard.querySelector('.delete-doc-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete "${doc.doc_title}" and all its claims?`)) {
+                        deleteDocument(doc.doc_id);
+                    }
+                });
+
                 sidebar.appendChild(docCard);
 
                 // Add root claims
@@ -888,6 +901,23 @@
                 event.subject.fx = null;
                 event.subject.fy = null;
             }
+        }
+
+        function deleteDocument(docId) {
+            fetch(`/api/delete-document/${docId}`, {
+                method: 'DELETE'
+            })
+            .then(r => r.json())
+            .then(result => {
+                console.log('Delete result:', result);
+                // Reload graph
+                fetch('/api/full-graph')
+                    .then(r => r.json())
+                    .then(data => buildUnifiedGraph(data));
+            })
+            .catch(err => {
+                alert('Delete failed: ' + err.message);
+            });
         }
 
         function investigateClaim(type) {

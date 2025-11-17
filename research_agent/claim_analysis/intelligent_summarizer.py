@@ -19,7 +19,7 @@ class IntelligentSummarizer:
         """Initialize summarizer."""
         self.qualifier_extractor = QualifierExtractor()
 
-    def summarize_claim(self, claim_text: str, target_length: int = 50) -> Dict[str, Any]:
+    def summarize_claim(self, claim_text: str, target_length: int = 5) -> Dict[str, Any]:
         """
         Create intelligent summary of a claim.
 
@@ -76,47 +76,43 @@ class IntelligentSummarizer:
 
     def _extractive_summarize(self, text: str, target_words: int) -> str:
         """
-        Create extractive summary by keeping most important sentences.
+        Extract key concept words from text.
 
-        For now: Just take first N words intelligently.
-        TODO: Use sentence importance scoring.
+        Extracts the most meaningful nouns/verbs, skipping filler words.
         """
-        words = text.split()
+        # Remove punctuation and split
+        import string
+        text_clean = text.translate(str.maketrans('', '', string.punctuation))
+        words = text_clean.split()
 
         if len(words) <= target_words:
             return text
 
-        # Find sentence boundaries
-        sentences = []
-        current_sentence = []
+        # Skip common filler words
+        filler_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'from', 'as', 'is', 'are', 'was', 'were', 'be',
+            'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+            'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
+            'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+            'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all', 'each',
+            'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'than'
+        }
 
+        # Extract key words (content words)
+        key_words = []
         for word in words:
-            current_sentence.append(word)
-            if word.endswith(('.', '!', '?', ';')):
-                sentences.append(' '.join(current_sentence))
-                current_sentence = []
+            word_lower = word.lower()
+            if word_lower not in filler_words and len(word) > 3:
+                key_words.append(word)
+                if len(key_words) >= target_words:
+                    break
 
-        if current_sentence:
-            sentences.append(' '.join(current_sentence))
+        # If we didn't get enough, just take first N words
+        if len(key_words) < target_words:
+            return ' '.join(words[:target_words])
 
-        # Take complete sentences up to target
-        summary_words = 0
-        summary_sentences = []
-
-        for sentence in sentences:
-            sentence_word_count = len(sentence.split())
-            if summary_words + sentence_word_count <= target_words:
-                summary_sentences.append(sentence)
-                summary_words += sentence_word_count
-            else:
-                break
-
-        # If we got at least one sentence, use it
-        if summary_sentences:
-            return ' '.join(summary_sentences)
-
-        # Otherwise, just truncate at word boundary
-        return ' '.join(words[:target_words]) + '...'
+        return ' '.join(key_words)
 
     def _verify_qualifiers_preserved(
         self,

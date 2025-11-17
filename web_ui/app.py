@@ -325,6 +325,31 @@ def handle_disconnect():
     print('Client disconnected')
 
 
+@app.route('/api/delete-document/<doc_id>', methods=['DELETE'])
+def delete_document(doc_id):
+    """Delete document and all its associated claims."""
+    query = """
+    // Find document and all connected claims
+    MATCH (d:Document {id: $doc_id})
+    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(c:Claim)
+
+    // Delete all relationships and nodes
+    DETACH DELETE d, c
+
+    RETURN count(d) as deleted_docs, count(c) as deleted_claims
+    """
+
+    with db.driver.session(database=db.database) as session:
+        result = session.run(query, doc_id=doc_id)
+        record = result.single()
+
+    return jsonify({
+        'status': 'deleted',
+        'deleted_documents': record['deleted_docs'],
+        'deleted_claims': record['deleted_claims']
+    })
+
+
 if __name__ == '__main__':
     print("=" * 80)
     print("RESEARCH GRAPH WEB INTERFACE - LIVE UPDATES ENABLED".center(80))
