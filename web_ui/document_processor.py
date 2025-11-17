@@ -40,38 +40,114 @@ class LiveDocumentProcessor:
         """Emit progress update."""
         self.progress_callback(message, progress, data or {})
 
+    def _invoke_agent(self, prompt: str, task_type: str) -> str:
+        """
+        Invoke Claude Code CLI agent to perform a task.
+
+        Args:
+            prompt: The task prompt for the agent
+            task_type: Type of task (for logging)
+
+        Returns:
+            Agent's response as string
+        """
+        logger.info(f"Spawning Claude Code agent for {task_type}")
+
+        try:
+            # Create a prompt file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
+                f.write(prompt)
+                prompt_file = f.name
+
+            # Invoke Claude Code CLI
+            # This runs: claude --prompt-file <file> --output-only
+            result = subprocess.run(
+                ['claude', '--prompt-file', prompt_file, '--output-only'],
+                capture_output=True,
+                text=True,
+                timeout=120,  # 2 minute timeout
+                encoding='utf-8'
+            )
+
+            # Clean up prompt file
+            try:
+                Path(prompt_file).unlink()
+            except:
+                pass
+
+            if result.returncode != 0:
+                logger.error(f"Agent failed with code {result.returncode}: {result.stderr}")
+                raise RuntimeError(f"Agent process failed: {result.stderr}")
+
+            response = result.stdout.strip()
+            logger.info(f"Agent completed {task_type}")
+
+            return response
+
+        except subprocess.TimeoutExpired:
+            logger.error(f"Agent timeout for {task_type}")
+            raise RuntimeError("Agent timed out")
+        except FileNotFoundError:
+            logger.error("Claude Code CLI not found - is it installed?")
+            raise RuntimeError("Claude Code CLI not available")
+        except Exception as e:
+            logger.error(f"Agent invocation failed: {e}")
+            raise
+
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
         Use Claude Code agent to extract claims from text.
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
         """
-        prompt = f"""Extract all factual claims from this research document text.
+        # Write text to temporary file for agent to process
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+            f.write(text[:8000])  # Limit to 8000 chars
+            temp_file = f.name
 
-For each claim, provide:
-1. The exact claim text (quote it precisely)
-2. The type of claim (factual, methodological, causal, interpretive, etc.)
-3. Your confidence in the extraction (0.0-1.0)
+        try:
+            # Spawn Claude Code agent to extract claims
+            agent_prompt = f"""Extract all factual claims from the research document at: {temp_file}
 
-Return ONLY a valid JSON array of claim objects with this structure:
+Read the file, then extract claims. For each claim:
+1. Extract the exact claim text (quote it precisely)
+2. Classify the type (factual, methodological, causal, interpretive, etc.)
+3. Assess extraction confidence (0.0-1.0)
+
+Return ONLY a valid JSON array with this exact structure:
 [
   {{"text": "exact claim text", "type": "factual", "confidence": 0.95}},
   ...
 ]
 
-Document text:
-{text[:8000]}
+Important:
+- Extract 10-30 claims maximum
+- Be precise and preserve qualifiers (may, might, can, all, some, etc.)
+- Return ONLY the JSON array, nothing else"""
 
-Return the JSON array:"""
+            result = self._invoke_agent(agent_prompt, "claim-extraction")
 
-        try:
-            # This would be where we invoke a Claude Code agent
-            # For now, use a simple sentence-based extraction as fallback
-            logger.warning("Claude Code agent integration pending - using fallback extraction")
-            return self._fallback_claim_extraction(text)
+            # Parse JSON response
+            claims = json.loads(result)
+
+            if not isinstance(claims, list):
+                logger.error(f"Agent returned non-list: {type(claims)}")
+                return self._fallback_claim_extraction(text)
+
+            logger.info(f"Agent extracted {len(claims)} claims")
+            return claims
+
         except Exception as e:
             logger.error(f"Agent extraction failed: {e}")
             return self._fallback_claim_extraction(text)
+        finally:
+            # Clean up temp file
+            try:
+                Path(temp_file).unlink()
+            except:
+                pass
 
     def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
         """
@@ -79,26 +155,43 @@ Return the JSON array:"""
 
         Returns dict with 'simplified', 'normalized' versions.
         """
-        prompt = f"""Simplify this research claim while preserving all qualifiers and meaning:
+        agent_prompt = f"""Simplify this research claim while preserving all qualifiers and meaning:
 
 Original claim: "{claim_text}"
 
 Provide:
-1. simplified: A concise 5-10 word version
-2. normalized: A medium 15-20 word version
+1. simplified: A concise 5-10 word version that captures the core assertion
+2. normalized: A medium 15-20 word version with key details
 
-Return ONLY valid JSON:
-{{"simplified": "...", "normalized": "..."}}"""
+Return ONLY valid JSON with this exact structure:
+{{"simplified": "...", "normalized": "..."}}
+
+Important: Preserve qualifiers like may, might, can, could, all, some, etc."""
 
         try:
-            # This would invoke a Claude Code agent
-            logger.warning("Claude Code agent integration pending - using rule-based simplification")
-            # For now, use the existing simplifier
+            result = self._invoke_agent(agent_prompt, "claim-simplification")
+
+            # Parse JSON response
+            simplification = json.loads(result)
+
+            if 'simplified' not in simplification or 'normalized' not in simplification:
+                logger.error(f"Agent returned incomplete response: {simplification}")
+                return self._fallback_simplification(claim_text)
+
+            return simplification
+
+        except Exception as e:
+            logger.error(f"Agent simplification failed: {e}")
+            return self._fallback_simplification(claim_text)
+
+    def _fallback_simplification(self, claim_text: str) -> Dict[str, str]:
+        """Fallback simplification using rule-based agent."""
+        try:
             from research_agent.claim_analysis.claim_simplifier_agent import ClaimSimplifierAgent
             simplifier = ClaimSimplifierAgent()
             return simplifier.simplify_claim(claim_text)
         except Exception as e:
-            logger.error(f"Agent simplification failed: {e}")
+            logger.error(f"Fallback simplification failed: {e}")
             return {'simplified': claim_text[:50], 'normalized': claim_text[:100]}
 
     def _fallback_claim_extraction(self, text: str) -> List[Dict[str, Any]]:
@@ -206,19 +299,15 @@ Return ONLY valid JSON:
                 'current_claim': i + 1
             })
 
-        # 5. Optimize claim space (find hierarchies)
-        self._emit("Analyzing claim relationships...", 80, {
-            'event': 'optimization_started',
+        # 5. Skip optimization for now (too slow for web interface)
+        self._emit("Skipping claim hierarchy analysis (can run later)", 90, {
+            'event': 'optimization_skipped',
             'doc_id': doc_id
         })
 
-        optimizer = ClaimSpaceOptimizer()
-        optimizer.optimize_claim_space(self.db)
-
-        self._emit("Optimization complete", 90, {
-            'event': 'optimization_complete',
-            'doc_id': doc_id
-        })
+        # TODO: Run optimization in background or on-demand
+        # optimizer = ClaimSpaceOptimizer()
+        # optimizer.optimize_claim_space(self.db)
 
         # 6. Mark document as complete
         self.db.driver.session(database=self.db.database).run(
