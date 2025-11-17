@@ -872,7 +872,8 @@ Find the main title/heading at the top of the document. Return just the title te
                 'event': 'super_claim_added',
                 'doc_id': doc_id,
                 'super_claim_id': super_claim_id,
-                'super_claim_text': super_claim_text
+                'super_claim_text': super_claim_text,
+                'node_data': super_claim_node  # Full node data for immediate rendering
             })
 
             # Add sub-claims under this super-claim
@@ -915,7 +916,8 @@ Find the main title/heading at the top of the document. Return just the title te
                     'super_claim_id': super_claim_id,
                     'claim_summary': claim_data['text'][:100],
                     'total_claims': total_subclaims,
-                    'current_claim': all_claims_processed
+                    'current_claim': all_claims_processed,
+                    'node_data': claim_node  # Full node data for immediate rendering
                 })
 
         # 5. Skip optimization for now (too slow for web interface)
