@@ -493,14 +493,15 @@ Create:
             'char_count': len(text)
         })
 
-        # 3. Extract claims using Claude Code agent
-        self._emit("Extracting claims with AI...", 30, {
+        # 3. Extract hierarchical claims using Claude Code agent
+        self._emit("Extracting hierarchical claims with AI...", 30, {
             'event': 'claim_extraction_started',
             'doc_id': doc_id
         })
 
         try:
-            claims = self._extract_claims_with_agent(text)
+            hierarchical_result = self._extract_hierarchical_claims_with_agent(text)
+            categories = hierarchical_result.get('categories', [])
         except Exception as e:
             error_msg = f"Claude Code agent failed to extract claims: {str(e)}"
             logger.error(error_msg)
@@ -517,60 +518,89 @@ Create:
             )
             raise
 
-        self._emit(f"Extracted {len(claims)} claims", 50, {
+        total_subclaims = sum(len(cat.get('sub_claims', [])) for cat in categories)
+        self._emit(f"Extracted {len(categories)} categories with {total_subclaims} specific claims", 50, {
             'event': 'claims_extracted',
             'doc_id': doc_id,
-            'claim_count': len(claims)
+            'category_count': len(categories),
+            'claim_count': total_subclaims
         })
 
-        # 4. Add claims to graph incrementally with live updates
-        for i, claim_data in enumerate(claims):
-            progress = 50 + (i / len(claims)) * 30  # 50% to 80%
+        # 4. Add hierarchical claims to graph incrementally with live updates
+        all_claims_processed = 0
+        for cat_idx, category in enumerate(categories):
+            super_claim_text = category.get('super_claim', '')
+            category_desc = category.get('category_description', '')
+            sub_claims = category.get('sub_claims', [])
 
-            # Create claim node
-            claim_id = str(uuid4())
-
-            # Simplify using agent
-            try:
-                simplification = self._simplify_claim_with_agent(claim_data['text'])
-            except Exception as e:
-                error_msg = f"Claude Code agent failed to simplify claim {i+1}: {str(e)}"
-                logger.error(error_msg)
-                self._emit(f"ERROR: {error_msg}", progress, {
-                    'event': 'claim_simplification_failed',
-                    'doc_id': doc_id,
-                    'claim_index': i + 1,
-                    'error': str(e)
-                })
-                # Mark document as failed
-                self.db.driver.session(database=self.db.database).run(
-                    "MATCH (d:Document {id: $doc_id}) SET d.status = 'failed', d.error = $error",
-                    doc_id=doc_id,
-                    error=error_msg
-                )
-                raise
-
-            claim_node = {
-                'id': claim_id,
-                'text': claim_data['text'],
-                'summary': simplification['simplified'],
-                'simplified': simplification['simplified'],
-                'normalized': simplification['normalized'],
-                'is_optimal': True  # Will be updated by optimizer
+            # Create super-claim node
+            super_claim_id = str(uuid4())
+            super_claim_node = {
+                'id': super_claim_id,
+                'text': super_claim_text,
+                'summary': super_claim_text,  # Super-claims are already concise
+                'simplified': super_claim_text,
+                'normalized': super_claim_text,
+                'category_description': category_desc,
+                'is_super_claim': True,
+                'is_optimal': True
             }
+            self.db.create_node('Claim', super_claim_node)
 
-            self.db.create_node('Claim', claim_node)
-            self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {})
+            # Link super-claim to document
+            self.db.create_relationship(
+                doc_id, super_claim_id,
+                'CONTAINS_CLAIM',
+                {'is_super_claim': True}
+            )
 
-            # Emit live update for each claim
-            self._emit(f"Added claim {i+1}/{len(claims)}", progress, {
-                'event': 'claim_added',
+            self._emit(f"Created category: {super_claim_text[:50]}...", 50 + (cat_idx / len(categories)) * 10, {
+                'event': 'super_claim_added',
                 'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_summary': simplification['simplified'],
-                'total_claims': len(claims),
-                'current_claim': i + 1
+                'super_claim_id': super_claim_id,
+                'super_claim_text': super_claim_text
             })
+
+            # Add sub-claims under this super-claim
+            for sub_idx, claim_data in enumerate(sub_claims):
+                all_claims_processed += 1
+                progress = 60 + (all_claims_processed / total_subclaims) * 30  # 60% to 90%
+
+                # Create sub-claim node
+                claim_id = str(uuid4())
+
+                claim_node = {
+                    'id': claim_id,
+                    'text': claim_data['text'],
+                    'summary': claim_data['text'][:100],  # Use first 100 chars as summary
+                    'simplified': claim_data['text'][:100],
+                    'normalized': claim_data['text'],
+                    'parent_super_claim': super_claim_id,
+                    'is_optimal': True  # Will be updated by optimizer
+                }
+
+                self.db.create_node('Claim', claim_node)
+
+                # Link sub-claim to super-claim (hierarchical relationship)
+                self.db.create_relationship(
+                    super_claim_id, claim_id,
+                    'HAS_SUB_CLAIM',
+                    {'order': sub_idx}
+                )
+
+                # Also link sub-claim to document for easier querying
+                self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'is_sub_claim': True})
+
+                # Emit live update for each sub-claim
+                self._emit(f"Added sub-claim {all_claims_processed}/{total_subclaims}", progress, {
+                    'event': 'claim_added',
+                    'doc_id': doc_id,
+                    'claim_id': claim_id,
+                    'super_claim_id': super_claim_id,
+                    'claim_summary': claim_data['text'][:100],
+                    'total_claims': total_subclaims,
+                    'current_claim': all_claims_processed
+                })
 
         # 5. Skip optimization for now (too slow for web interface)
         self._emit("Skipping claim hierarchy analysis (can run later)", 90, {
