@@ -327,7 +327,7 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
             logger.info("Using PRIMARY method: Semantic embedding-based clustering")
             logger.info("=" * 80)
 
-            self._emit("Clustering claims using semantic embeddings (PRIMARY method)...", 50, {
+            self._emit("Organizing hierarchically using embedding models...", 50, {
                 'event': 'semantic_clustering_started',
                 'method': 'PRIMARY'
             })
@@ -365,7 +365,7 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
         logger.warning("Reason: Semantic clustering not available or failed")
         logger.warning("=" * 80)
 
-        self._emit("Clustering claims using LLM (FALLBACK method)...", 50, {
+        self._emit("Organizing hierarchically using LLM categorization (FALLBACK)...", 50, {
             'event': 'llm_clustering_started',
             'method': 'FALLBACK',
             'reason': 'semantic_clustering_unavailable'
@@ -800,8 +800,8 @@ Find the main title/heading at the top of the document. Return just the title te
             'title': actual_title
         })
 
-        # 3. Extract hierarchical claims using Claude Code agent
-        self._emit("Extracting hierarchical claims with AI...", 30, {
+        # 3. Extract claims with AI, then organize hierarchically
+        self._emit("Extracting claims with AI...", 30, {
             'event': 'claim_extraction_started',
             'doc_id': doc_id
         })
