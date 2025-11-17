@@ -66,11 +66,16 @@ class TextPostProcessor:
 
                     # Check if this makes a known word (case-insensitive)
                     if combined_word.lower() in ['my', 'in', 'as', 'it', 'is']:
-                        # Replace the single letter line with combined word
+                        # Combine drop cap with rest of line into single line
                         next_line_rest = ' '.join(next_line.split()[1:])
+                        combined_line = combined_word + ' ' + next_line_rest if next_line_rest else combined_word
 
-                        lines[i] = combined_word
-                        lines[i + 1] = next_line_rest
+                        # Remove the drop cap line and replace next line with combined
+                        lines[i] = ''  # Remove drop cap line
+                        lines[i + 1] = combined_line
+
+                        # Remove empty lines
+                        lines = [l for l in lines if l != '']
 
                         fixed_text = '\n'.join(lines)
                         logger.info(f"Fixed drop cap: '{line}' + '{first_word}' -> '{combined_word}'")
