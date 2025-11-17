@@ -4,7 +4,7 @@
 
 const UI = {
     /**
-     * Show claim details in modal
+     * Show claim details in modal with visual metrics dashboard
      */
     async showClaimDetails(claimId) {
         try {
@@ -13,39 +13,147 @@ const UI = {
             const modal = document.getElementById('claim-modal');
             const modalContent = document.getElementById('modal-claim-text');
 
+            // Calculate metrics that drive visual encoding
+            const confidence = claim.confidence || claim.quality_score || 0.5;
+            const childCount = claim.children ? claim.children.length : 0;
+            const evidenceCount = claim.evidence ? claim.evidence.length : 0;
+            const supportingEvidence = claim.evidence ? claim.evidence.filter(e => e.type === 'SUPPORTS').length : 0;
+            const contradictingEvidence = claim.evidence ? claim.evidence.filter(e => e.type === 'CONTRADICTS').length : 0;
+            const specificity = claim.specificity || 0.5;
+
+            // Pre-calculate formatted values
+            const nodeSize = this.calculateNodeSize(childCount);
+            const specificityLabel = this.getSpecificityLabel(specificity);
+
+            // Build metrics dashboard
             let detailsHTML = `
-                <h3>${claim.text || 'Claim'}</h3>
-                <p><strong>Summary:</strong> ${claim.summary || 'N/A'}</p>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">${claim.text || 'Claim'}</h3>
+
+                    <!-- Visual Metrics Dashboard -->
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Visual Metrics</h4>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <!-- Confidence (Border Thickness) -->
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Confidence</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(confidence * 100).toFixed(0)}%</div>
+                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
+                                    Border: ${(2 + confidence * 3).toFixed(1)}px thick
+                                </div>
+                            </div>
+
+                            <!-- Size (Descendant Count) -->
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #9C27B0;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Sub-Claims</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">${childCount}</div>
+                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
+                                    Node size: ${nodeSize}
+                                </div>
+                            </div>
+
+                            <!-- Color Brightness (Quality) -->
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Quality Score</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(confidence * 100).toFixed(0)}%</div>
+                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
+                                    Brightness: ${(60 + confidence * 40).toFixed(0)}%
+                                </div>
+                            </div>
+
+                            <!-- Evidence Count -->
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #FF9800;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Evidence</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">${evidenceCount}</div>
+                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
+                                    <span style="color: #4CAF50;">✓ ${supportingEvidence}</span> /
+                                    <span style="color: #F44336;">✗ ${contradictingEvidence}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    ${claim.summary ? `<p><strong>Summary:</strong> ${claim.summary}</p>` : ''}
+
+                    <!-- Specificity -->
+                    ${claim.specificity ? `
+                        <p><strong>Specificity:</strong> ${claim.specificity.toFixed(2)}
+                        <span style="font-size: 11px; color: #888;">(${specificityLabel})</span>
+                        </p>
+                    ` : ''}
+                </div>
             `;
 
-            if (claim.specificity) {
-                detailsHTML += `<p><strong>Specificity:</strong> ${claim.specificity.toFixed(2)}</p>`;
-            }
-
+            // Child Claims
             if (claim.children && claim.children.length > 0) {
-                detailsHTML += `<h4>Child Claims (${claim.children.length}):</h4><ul>`;
+                detailsHTML += `
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 8px;">Child Claims (${claim.children.length})</h4>
+                        <ul style="margin: 0; padding-left: 20px;">
+                `;
                 claim.children.forEach(child => {
-                    detailsHTML += `<li>${child.summary || child.text}</li>`;
+                    detailsHTML += `<li style="margin-bottom: 5px;">${child.summary || child.text}</li>`;
                 });
-                detailsHTML += `</ul>`;
+                detailsHTML += `</ul></div>`;
             }
 
+            // Evidence Details
             if (claim.evidence && claim.evidence.length > 0) {
-                detailsHTML += `<h4>Evidence (${claim.evidence.length}):</h4><ul>`;
-                claim.evidence.forEach(ev => {
-                    detailsHTML += `<li>${ev.title} (${ev.type})</li>`;
-                });
-                detailsHTML += `</ul>`;
+                detailsHTML += `
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 8px;">Evidence (${claim.evidence.length})</h4>
+                `;
+
+                // Supporting Evidence
+                const supporting = claim.evidence.filter(e => e.type === 'SUPPORTS');
+                if (supporting.length > 0) {
+                    detailsHTML += `
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #4CAF50;">Supporting (${supporting.length}):</strong>
+                            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    `;
+                    supporting.forEach(ev => {
+                        detailsHTML += `<li style="margin-bottom: 3px;">${ev.title}</li>`;
+                    });
+                    detailsHTML += `</ul></div>`;
+                }
+
+                // Contradicting Evidence
+                const contradicting = claim.evidence.filter(e => e.type === 'CONTRADICTS');
+                if (contradicting.length > 0) {
+                    detailsHTML += `
+                        <div>
+                            <strong style="color: #F44336;">Contradicting (${contradicting.length}):</strong>
+                            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    `;
+                    contradicting.forEach(ev => {
+                        detailsHTML += `<li style="margin-bottom: 3px;">${ev.title}</li>`;
+                    });
+                    detailsHTML += `</ul></div>`;
+                }
+                detailsHTML += `</div>`;
             }
 
+            // Source Locations
             if (claim.sources && claim.sources.length > 0) {
-                detailsHTML += `<h4>Source Locations:</h4><ul>`;
+                detailsHTML += `
+                    <div>
+                        <h4 style="margin-bottom: 8px;">Source Locations (${claim.sources.length})</h4>
+                        <ul style="margin: 0; padding-left: 20px;">
+                `;
                 claim.sources.forEach(src => {
                     if (src.page) {
-                        detailsHTML += `<li>Page ${src.page}, Line ${src.line}: ${src.sentence}</li>`;
+                        detailsHTML += `
+                            <li style="margin-bottom: 5px; font-size: 12px;">
+                                <strong>Page ${src.page}, Line ${src.line}</strong>
+                                <div style="color: #666; margin-top: 2px;">${src.sentence}</div>
+                            </li>
+                        `;
                     }
                 });
-                detailsHTML += `</ul>`;
+                detailsHTML += `</ul></div>`;
             }
 
             modalContent.innerHTML = detailsHTML;
@@ -54,6 +162,27 @@ const UI = {
             console.error('Failed to load claim details:', error);
             alert(`Failed to load claim: ${error.message}`);
         }
+    },
+
+    /**
+     * Calculate visual node size description
+     */
+    calculateNodeSize(childCount) {
+        const baseRadius = 20;
+        const scaleFactor = Math.log(childCount + 1) * 3;
+        const totalRadius = Math.min(baseRadius + scaleFactor, 40);
+        return totalRadius.toFixed(0) + 'px radius';
+    },
+
+    /**
+     * Get human-readable specificity label
+     */
+    getSpecificityLabel(specificity) {
+        if (specificity >= 0.8) return 'Very Specific';
+        if (specificity >= 0.6) return 'Specific';
+        if (specificity >= 0.4) return 'Moderate';
+        if (specificity >= 0.2) return 'General';
+        return 'Very General';
     },
 
     /**
