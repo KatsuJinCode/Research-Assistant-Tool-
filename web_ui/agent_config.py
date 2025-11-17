@@ -105,45 +105,17 @@ class ClaudeCodeAdapter(AgentAdapter):
                     pass
 
     def parse_tool_response(self, response: str) -> Dict[str, Any]:
-        """Parse Claude Code tool use response"""
-        response_data = json.loads(response)
+        """
+        Parse Claude Code tool use response.
 
-        if isinstance(response_data, dict):
-            # Claude Code CLI returns wrapper format: {"type": "result", "result": "..."}
-            # The tool calling doesn't seem to work as expected with --tools flag
-            # Claude just returns text instead of calling tools
-
-            # Look for tool_uses or content blocks
-            tool_uses = response_data.get('tool_uses', [])
-            if not tool_uses and 'content' in response_data:
-                # Try to find tool use in content blocks
-                for block in response_data.get('content', []):
-                    if isinstance(block, dict) and block.get('type') == 'tool_use':
-                        tool_uses.append(block)
-
-            if tool_uses:
-                tool_use = tool_uses[0]
-                return tool_use.get('input', {})
-
-            # If no tool use found, try to parse JSON from the text result
-            # This is a workaround since Claude Code CLI --tools flag doesn't force tool use
-            if 'result' in response_data:
-                result_text = response_data['result']
-                # Try to extract JSON from the result text
-                try:
-                    # Look for JSON in code blocks or raw JSON
-                    import re
-                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', result_text, re.DOTALL)
-                    if json_match:
-                        return json.loads(json_match.group(1))
-                    # Try parsing the entire result as JSON
-                    return json.loads(result_text)
-                except (json.JSONDecodeError, AttributeError):
-                    pass
-
-            raise RuntimeError(f"Agent did not call the required tool. Response format: {list(response_data.keys())}")
-        else:
-            raise RuntimeError("Agent returned unexpected format")
+        NOTE: This method is deprecated since Claude Code CLI doesn't support
+        the --tools flag. Use prompt-based JSON output instead.
+        See document_processor._invoke_agent_with_structured_output()
+        """
+        raise NotImplementedError(
+            "Claude Code CLI does not support tool calling. "
+            "Use prompt-based JSON output via _invoke_agent_with_structured_output() instead."
+        )
 
     def supports_tools(self) -> bool:
         return True
