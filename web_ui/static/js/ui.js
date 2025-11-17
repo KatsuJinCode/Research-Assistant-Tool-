@@ -307,16 +307,10 @@ const UI = {
             console.log('Calling API.uploadDocument...');
             await API.uploadDocument(file);
             console.log('Upload successful!');
-            this.updateProcessingStatus('Processing complete!', 100);
+            this.updateProcessingStatus('Upload successful! Processing started...', 10);
 
-            // Reload graph and stats to show new document
-            setTimeout(() => {
-                if (processingPanel) {
-                    processingPanel.style.display = 'none';
-                }
-                // Reload the page data
-                window.location.reload();
-            }, 2000);
+            // DON'T reload here - wait for WebSocket 'document_processed' event
+            // Processing happens in background thread and may take several minutes
         } catch (error) {
             console.error('Upload failed:', error);
             this.updateProcessingStatus(`Error: ${error.message}`, 0);
