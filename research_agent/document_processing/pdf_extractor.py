@@ -1,22 +1,29 @@
 """
-PDF text extraction using pdfplumber.
+PDF text extraction using pdfplumber with column detection.
 """
 
 import logging
 from pathlib import Path
 from typing import Dict, List, Any
 import pdfplumber
+from .column_detector import ColumnDetector
 
 
 logger = logging.getLogger(__name__)
 
 
 class PDFExtractor:
-    """Extract text and metadata from PDF files."""
+    """Extract text and metadata from PDF files with column-awareness."""
 
-    def __init__(self):
-        """Initialize PDF extractor."""
-        pass
+    def __init__(self, column_aware: bool = True):
+        """
+        Initialize PDF extractor.
+
+        Args:
+            column_aware: If True, detects and handles multi-column layouts
+        """
+        self.column_aware = column_aware
+        self.column_detector = ColumnDetector() if column_aware else None
 
     def extract(self, pdf_path: Path) -> Dict[str, Any]:
         """
@@ -31,6 +38,8 @@ class PDFExtractor:
                 - pages: List of page dicts with text
                 - page_count: Number of pages
                 - metadata: PDF metadata
+                - warnings: List of warnings (e.g., multi-column detection)
+                - column_layout: Info about column detection
 
         Raises:
             FileNotFoundError: If PDF file not found
@@ -39,13 +48,27 @@ class PDFExtractor:
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
+        warnings = []
+        column_info = {}
+
         try:
+            # First, analyze for column layout if enabled
+            if self.column_aware:
+                column_analysis = self.column_detector.analyze_pdf(str(pdf_path))
+                column_info = column_analysis
+                warnings.extend(column_analysis.get('warnings', []))
+
             with pdfplumber.open(pdf_path) as pdf:
                 pages = []
                 full_text = ""
 
                 for i, page in enumerate(pdf.pages):
-                    page_text = page.extract_text() or ""
+                    # Use column-aware extraction if enabled
+                    if self.column_aware:
+                        page_text = self.column_detector.extract_text_in_reading_order(page)
+                    else:
+                        page_text = page.extract_text() or ""
+
                     pages.append({
                         'page_number': i + 1,
                         'text': page_text,
@@ -69,7 +92,9 @@ class PDFExtractor:
                     'page_count': len(pages),
                     'metadata': metadata,
                     'total_chars': len(full_text),
-                    'avg_chars_per_page': len(full_text) // len(pages) if pages else 0
+                    'avg_chars_per_page': len(full_text) // len(pages) if pages else 0,
+                    'warnings': warnings,
+                    'column_layout': column_info
                 }
 
                 logger.info(

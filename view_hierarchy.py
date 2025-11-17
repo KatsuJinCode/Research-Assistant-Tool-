@@ -307,7 +307,10 @@ def generate_html_visualization():
     def add_claim_html(claim, level=0):
         class_name = ['root', 'child', 'grandchild'][min(level, 2)]
         text = claim['text'][:200] + ('...' if len(claim['text']) > 200 else '')
-        spec = claim['specificity']
+        spec = claim.get('specificity', 0.0)
+
+        if spec is None:
+            spec = 0.0
 
         html_out = f"""
         <div class="claim {class_name}">
