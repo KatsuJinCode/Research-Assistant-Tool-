@@ -85,11 +85,11 @@ class ClaimNormalizer:
             qualifiers_preserved = verification['preserved']
 
             if qualifiers_preserved:
-                logger.info("✓ Qualifiers preserved successfully")
+                logger.info("[OK] Qualifiers preserved successfully")
                 break
             else:
                 logger.error(
-                    f"✗ Qualifiers lost: {verification['missing']}"
+                    f"[X] Qualifiers lost: {verification['missing']}"
                 )
 
         # Step 4: Calculate confidence

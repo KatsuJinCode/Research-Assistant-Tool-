@@ -39,7 +39,7 @@ def demonstrate_qualifier_extraction():
         qualifiers = extractor.extract(claim)
 
         if qualifiers:
-            print(f"  ✓ Found {len(qualifiers)} qualifier(s):")
+            print(f"  [OK] Found {len(qualifiers)} qualifier(s):")
             for q in qualifiers:
                 print(f"    • Type: {q['type']}")
                 print(f"      Text: '{q['text']}'")
@@ -54,7 +54,7 @@ def demonstrate_qualifier_extraction():
             print(f"    - Has temporal constraint: {analysis['has_temporal_constraint']}")
             print()
         else:
-            print("  ℹ No qualifiers found (absolute statement)")
+            print("  [INFO] No qualifiers found (absolute statement)")
             print()
 
         print("-" * 80)
@@ -77,17 +77,17 @@ def demonstrate_qualifier_extraction():
     print(f'Original: "{original}"')
     print()
 
-    print(f'✓ GOOD normalization: "{good_normalized}"')
+    print(f'[OK] GOOD normalization: "{good_normalized}"')
     result = extractor.verify_preservation(original, good_normalized)
     print(f"  Qualifiers preserved: {result['preserved']}")
     print()
 
-    print(f'✗ BAD normalization: "{bad_normalized}"')
+    print(f'[X] BAD normalization: "{bad_normalized}"')
     result = extractor.verify_preservation(original, bad_normalized)
     print(f"  Qualifiers preserved: {result['preserved']}")
     if result['missing']:
         print(f"  Missing qualifiers: {result['missing']}")
-        print("  ❌ AUTO-FAIL - Normalization rejected!")
+        print("  [FAIL] AUTO-FAIL - Normalization rejected!")
     print()
 
     print("=" * 80)

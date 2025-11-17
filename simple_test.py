@@ -22,13 +22,13 @@ def extract_pdf_text(pdf_path):
         reader = PyPDF2.PdfReader(file)
 
         num_pages = len(reader.pages)
-        print(f"✓ Total pages: {num_pages}")
+        print(f"[OK] Total pages: {num_pages}")
         print()
 
         # Extract metadata
         metadata = reader.metadata
         if metadata:
-            print("📋 Metadata:")
+            print("[DOC] Metadata:")
             if metadata.title:
                 print(f"  Title: {metadata.title}")
             if metadata.author:
@@ -43,7 +43,7 @@ def extract_pdf_text(pdf_path):
             text = page.extract_text()
             full_text += text + "\n\n"
 
-        print(f"✓ Total characters extracted: {len(full_text):,}")
+        print(f"[OK] Total characters extracted: {len(full_text):,}")
         print()
 
         # Show first 1000 characters
@@ -63,7 +63,7 @@ def extract_pdf_text(pdf_path):
         print()
 
         print("=" * 80)
-        print("✓ EXTRACTION COMPLETE")
+        print("[OK] EXTRACTION COMPLETE")
         print("=" * 80)
 
         return full_text

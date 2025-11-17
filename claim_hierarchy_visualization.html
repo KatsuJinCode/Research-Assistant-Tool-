@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Claim Hierarchy Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .stats {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .claim {
+            background: white;
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .claim.root {
+            border-left-color: #2196F3;
+            font-weight: bold;
+        }
+        .claim.child {
+            margin-left: 40px;
+            border-left-color: #FF9800;
+        }
+        .claim.grandchild {
+            margin-left: 80px;
+            border-left-color: #9C27B0;
+        }
+        .specificity {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .text {
+            color: #333;
+            line-height: 1.6;
+        }
+        .controls {
+            background: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+    <script>
+        function expandAll() {
+            document.querySelectorAll('.claim').forEach(el => el.style.display = 'block');
+        }
+        function collapseAll() {
+            document.querySelectorAll('.child, .grandchild').forEach(el => el.style.display = 'none');
+        }
+        function showRoots() {
+            collapseAll();
+            document.querySelectorAll('.root').forEach(el => el.style.display = 'block');
+        }
+    </script>
+</head>
+<body>
+    <h1>🌳 Claim Hierarchy Visualization</h1>
+
+    <div class="stats">
+        <h2>Statistics</h2>
+
+        <p><strong>Total Claims:</strong> 20</p>
+        <p><strong>Hierarchical Relationships:</strong> 114</p>
+        <p><strong>Support Relationships:</strong> 160</p>
+        <p><strong>Overlap Relationships:</strong> 106</p>
+    </div>
+
+    <div class="controls">
+        <button onclick="expandAll()">Expand All</button>
+        <button onclick="collapseAll()">Collapse All</button>
+        <button onclick="showRoots()">Show Roots Only</button>
+    </div>
+
+    <div class="hierarchy">
+        <h2>Hierarchy Tree</h2>
+
+        <div class="claim root">
+            <div class="text">All problems in living are attributed to pecially indicated.</div>
+            <div class="specificity">Specificity: 0.503</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness—as a de- mistakes in observation or reasoning, as such, but formity of the personality, so to speak—is then rather to the way in which we organize and express regarded as the cause of t...</div>
+            <div class="specificity">Specificity: 0.693</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This view mental illness is widely regarded in a somewhat rests on and expresses what are, in my opinion, similar fashion, that is, as the cause of innumerable two fundamental errors. diverse happenin...</div>
+            <div class="specificity">Specificity: 0.686</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness—as a de- mistakes in observation or reasoning, as such, but formity of the personality, so to speak—is then rather to the way in which we organize and express regarded as the cause of t...</div>
+            <div class="specificity">Specificity: 0.693</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This view mental illness is widely regarded in a somewhat rests on and expresses what are, in my opinion, similar fashion, that is, as the cause of innumerable two fundamental errors. diverse happenin...</div>
+            <div class="specificity">Specificity: 0.686</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">Yet, familiar no different than all other diseases (that is, of the theories are in the habit of posing, sooner or later body).</div>
+            <div class="specificity">Specificity: 0.610</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to raise the ques- trists, physicians, and other scientists hold this tion "Is there such a thing as menta...</div>
+            <div class="specificity">Specificity: 0.812</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to raise the ques- trists, physicians, and other scientists hold this tion "Is there such a thing as menta...</div>
+            <div class="specificity">Specificity: 0.812</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim grandchild">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">The only difference, in this view, between —at least to those who come to believe in them mental and bodily diseases is that the former, af- •—as "objective truths" (or "facts").</div>
+            <div class="specificity">Specificity: 0.661</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">It would not be some emotion or cause—-let us ask this question: What is meant complex bit of behavior.</div>
+            <div class="specificity">Specificity: 0.568</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">Rather, it would be blind- when it is asserted that someone is mentally ill? ness or a paralysis of some part of the body.</div>
+            <div class="specificity">Specificity: 0.647</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">The In what follows I shall describe briefly the main crux of the matter is that a disease of the brain, uses to which the concept of mental illness has been analogous to a disease of the skin or bone...</div>
+            <div class="specificity">Specificity: 0.661</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">Explanations of this sort of occurrence— peculiarities or disorders of thinking and behavior. assuming that one is interested in the belief itself Correctly speaking, however, these are diseases of th...</div>
+            <div class="specificity">Specificity: 0.715</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">According to one and does not regard it simply as a "symptom" or school of thought, all so-called mental illness is of expression of something else that is more interesting this type.</div>
+            <div class="specificity">Specificity: 0.726</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same s...</div>
+            <div class="specificity">Specificity: 1.024</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">Many contemporary psychia- ourselves and the world about us, as mere symptoms 113 114 THE AMERICAN PSYCHOLOGIST of neurological functioning is epistemological.</div>
+            <div class="specificity">Specificity: 0.709</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">In the present case, the error lies It is implicit in this view that social intercourse in making a symmetrical dualism between mental between people is regarded as something inherently and physical (...</div>
+            <div class="specificity">Specificity: 1.196</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">On MENTAL ILLNESS AS A SIGN OF BRAIN DISEASE the other hand, a person's belie}—whether this be a belief in Christianity, in Communism, or in the The notion of mental illness derives it main sup- idea ...</div>
+            <div class="specificity">Specificity: 1.206</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">I shall argue that this notion has outlived neurological defect, and not a problem in living. whatever usefulness it might have had and that it For example, a deject in a person's visual field may now...</div>
+            <div class="specificity">Specificity: 1.082</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—bec...</div>
+            <div class="specificity">Specificity: 1.078</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">In identify or describe some feature of an individual's other words, it is an error pertaining not to any so-called personality.</div>
+            <div class="specificity">Specificity: 0.581</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim child">
+            <div class="text">The assumption is made that some —must be sought along different lines. neurological defect, perhaps a very subtle one, will The second error in regarding complex psycho- ultimately be found for all t...</div>
+            <div class="specificity">Specificity: 1.189</div>
+        </div>
+
+        <div class="claim root">
+            <div class="text">This is obviously fallacious reasoning, for it makes Let us see if this is so.</div>
+            <div class="specificity">Specificity: 0.431</div>
+        </div>
+
+    </div>
+
+    <div class="stats">
+        <h2>How to Use</h2>
+        <ul>
+            <li><strong>Expand All:</strong> Show all claims in the hierarchy</li>
+            <li><strong>Collapse All:</strong> Hide child claims, show roots only</li>
+            <li><strong>Show Roots Only:</strong> Display only the most general claims</li>
+        </ul>
+        <p><strong>Color coding:</strong></p>
+        <ul>
+            <li><span style="color: #2196F3;">Blue</span> = Root claims (most general)</li>
+            <li><span style="color: #FF9800;">Orange</span> = Child claims</li>
+            <li><span style="color: #9C27B0;">Purple</span> = Grandchild claims (most specific)</li>
+        </ul>
+    </div>
+</body>
+</html>

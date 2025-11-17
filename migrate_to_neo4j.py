@@ -55,9 +55,9 @@ def load_from_cypher_file(db: Neo4jDatabase, cypher_file: str):
 
             try:
                 session.run(statement)
-                print(f"  ✓ Success")
+                print(f"  [OK] Success")
             except Exception as e:
-                print(f"  ✗ Error: {e}")
+                print(f"  [X] Error: {e}")
                 print(f"  Statement: {statement[:100]}...")
                 # Continue with other statements
 
@@ -65,7 +65,7 @@ def load_from_cypher_file(db: Neo4jDatabase, cypher_file: str):
                 print()
 
     print()
-    print("✓ Migration complete!")
+    print("[OK] Migration complete!")
     print()
 
 
@@ -104,7 +104,7 @@ def verify_migration(db: Neo4jDatabase):
     # Find a document
     docs = db.find_nodes('Document')
     if docs:
-        print(f"✓ Found {len(docs)} document(s)")
+        print(f"[OK] Found {len(docs)} document(s)")
         doc = docs[0]
         print(f"  Title: {doc.get('title')}")
         print()
@@ -112,14 +112,14 @@ def verify_migration(db: Neo4jDatabase):
     # Find claims
     claims = db.find_nodes('Claim')
     if claims:
-        print(f"✓ Found {len(claims)} claim(s)")
+        print(f"[OK] Found {len(claims)} claim(s)")
         print(f"  Sample: {claims[0].get('text', '')[:80]}...")
         print()
 
     # Find super-claims
     super_claims = db.find_nodes('SuperClaim')
     if super_claims:
-        print(f"✓ Found {len(super_claims)} super-claim(s)")
+        print(f"[OK] Found {len(super_claims)} super-claim(s)")
         print(f"  Sample: {super_claims[0].get('text', '')[:80]}...")
         print()
 
@@ -127,11 +127,11 @@ def verify_migration(db: Neo4jDatabase):
     if claims:
         claim_id = claims[0]['id']
         similar = db.find_similar_claims(claim_id, min_score=0.7)
-        print(f"✓ Similarity search works ({len(similar)} similar claims found)")
+        print(f"[OK] Similarity search works ({len(similar)} similar claims found)")
         print()
 
     print("=" * 80)
-    print("✅ MIGRATION VERIFIED")
+    print("[SUCCESS] MIGRATION VERIFIED")
     print("=" * 80)
     print()
 
@@ -140,14 +140,14 @@ def main():
     """Run migration."""
     print()
     print("╔" + "═" * 78 + "╗")
-    print("║" + " NETWORKX → NEO4J MIGRATION".center(78) + "║")
+    print("║" + " NETWORKX -> NEO4J MIGRATION".center(78) + "║")
     print("╚" + "═" * 78 + "╝")
     print()
 
     # Check for Cypher file
     cypher_file = 'szasz_claims_graph.cypher'
     if not Path(cypher_file).exists():
-        print(f"❌ Cypher file not found: {cypher_file}")
+        print(f"[FAIL] Cypher file not found: {cypher_file}")
         print()
         print("Please run extract_and_cluster_claims.py first to generate the file.")
         print()
@@ -159,11 +159,11 @@ def main():
 
     try:
         db = Neo4jDatabase()
-        print(f"✓ Connected to Neo4j at {db.uri}")
+        print(f"[OK] Connected to Neo4j at {db.uri}")
         print(f"  Database: {db.database}")
         print()
     except Exception as e:
-        print(f"❌ Could not connect to Neo4j: {e}")
+        print(f"[FAIL] Could not connect to Neo4j: {e}")
         print()
         print("Please ensure:")
         print("  1. Neo4j is installed and running")
@@ -177,7 +177,7 @@ def main():
         return 1
 
     # Ask for confirmation to clear existing data
-    print("⚠️  This will clear all existing data in the Neo4j database!")
+    print("[WARNING]  This will clear all existing data in the Neo4j database!")
     print()
     response = input("Continue? (yes/no): ").strip().lower()
     print()
@@ -190,7 +190,7 @@ def main():
     # Clear database
     print("Clearing existing data...")
     db.clear_database()
-    print("✓ Database cleared")
+    print("[OK] Database cleared")
     print()
 
     # Load data
@@ -202,7 +202,7 @@ def main():
     # Close connection
     db.close()
 
-    print("Migration successful! 🎉")
+    print("Migration successful! [*]")
     print()
     print("Next steps:")
     print("  1. Access Neo4j Browser: http://localhost:7474")

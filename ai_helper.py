@@ -26,7 +26,7 @@ class AIHelper:
         elif self.provider == 'anthropic':
             self._init_anthropic()
         else:
-            print(f"⚠ Unknown provider: {self.provider}")
+            print(f"[WARNING] Unknown provider: {self.provider}")
 
     def _load_config(self, config_file: str) -> Dict[str, str]:
         """Load configuration from file."""
@@ -63,9 +63,9 @@ class AIHelper:
             self.has_api = True
             self.provider = 'openai'
         except ImportError:
-            print("⚠ openai package not installed. Run: pip install openai")
+            print("[WARNING] openai package not installed. Run: pip install openai")
         except Exception as e:
-            print(f"⚠ OpenAI initialization failed: {e}")
+            print(f"[WARNING] OpenAI initialization failed: {e}")
 
     def _init_anthropic(self):
         """Initialize Anthropic client."""
@@ -81,9 +81,9 @@ class AIHelper:
             self.has_api = True
             self.provider = 'anthropic'
         except ImportError:
-            print("⚠ anthropic package not installed. Run: pip install anthropic")
+            print("[WARNING] anthropic package not installed. Run: pip install anthropic")
         except Exception as e:
-            print(f"⚠ Anthropic initialization failed: {e}")
+            print(f"[WARNING] Anthropic initialization failed: {e}")
 
     def summarize(self, text: str, max_length: int = 200) -> str:
         """Summarize a document."""
@@ -98,7 +98,7 @@ class AIHelper:
             elif self.provider == 'anthropic':
                 return self._anthropic_summarize(prompt, max_length)
         except Exception as e:
-            print(f"⚠ AI summarization failed: {e}")
+            print(f"[WARNING] AI summarization failed: {e}")
             return self._simple_summarize(text, max_length)
 
     def _openai_summarize(self, prompt: str, max_length: int) -> str:
@@ -208,7 +208,7 @@ class AIHelper:
                         points.append(point)
             return points
         except Exception as e:
-            print(f"⚠ Key point extraction failed: {e}")
+            print(f"[WARNING] Key point extraction failed: {e}")
             return []
 
     def _openai_extract(self, prompt: str) -> str:
@@ -264,7 +264,7 @@ class AIHelper:
             tags = [tag.strip() for tag in tags_str.split(',')]
             return tags[:max_tags]
         except Exception as e:
-            print(f"⚠ Tag suggestion failed: {e}")
+            print(f"[WARNING] Tag suggestion failed: {e}")
             return []
 
     def _openai_tags(self, prompt: str) -> str:
@@ -305,9 +305,9 @@ if __name__ == "__main__":
     ai = AIHelper()
 
     if ai.has_api:
-        print(f"✓ AI features enabled: {ai.get_provider_info()}")
+        print(f"[OK] AI features enabled: {ai.get_provider_info()}")
     else:
-        print("⚠ AI features disabled (no API key)")
+        print("[WARNING] AI features disabled (no API key)")
         print("Run: ./setup.sh")
 
     test_text = """

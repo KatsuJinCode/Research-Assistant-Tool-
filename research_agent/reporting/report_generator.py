@@ -125,7 +125,7 @@ class ReportGenerator:
 
         if confidence['needs_more_investigation']:
             report.append("")
-            report.append("⚠️  **Recommendation**: Low confidence - additional investigation recommended")
+            report.append("[WARNING]  **Recommendation**: Low confidence - additional investigation recommended")
 
         report.append("")
         report.append("---")

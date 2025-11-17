@@ -29,7 +29,7 @@ def test_arxiv():
     print("Searching arXiv for 'mental illness diagnosis'...")
     results = client.search("all:mental illness diagnosis", max_results=3)
 
-    print(f"✓ Found {len(results)} papers")
+    print(f"[OK] Found {len(results)} papers")
     print()
 
     for i, paper in enumerate(results, 1):
@@ -65,7 +65,7 @@ def test_core():
     try:
         results = client.search("mental illness diagnosis", limit=3)
 
-        print(f"✓ Found {len(results)} papers")
+        print(f"[OK] Found {len(results)} papers")
         print()
 
         for i, paper in enumerate(results, 1):
@@ -94,7 +94,7 @@ def test_core():
         return results
 
     except Exception as e:
-        print(f"⚠ CORE API error: {e}")
+        print(f"[WARNING] CORE API error: {e}")
         print("   Note: CORE has rate limits. Get a free API key for better access:")
         print("   https://core.ac.uk/services/api#form")
         print()
@@ -115,7 +115,7 @@ def test_openalex():
     print("Searching OpenAlex for 'mental illness diagnosis'...")
     results = client.search("mental illness diagnosis", max_results=3)
 
-    print(f"✓ Found {len(results)} papers")
+    print(f"[OK] Found {len(results)} papers")
     print()
 
     for i, paper in enumerate(results, 1):
@@ -158,21 +158,21 @@ def main():
     try:
         all_results['arxiv'] = test_arxiv()
     except Exception as e:
-        print(f"❌ arXiv test failed: {e}")
+        print(f"[FAIL] arXiv test failed: {e}")
         print()
 
     # Test CORE
     try:
         all_results['core'] = test_core()
     except Exception as e:
-        print(f"❌ CORE test failed: {e}")
+        print(f"[FAIL] CORE test failed: {e}")
         print()
 
     # Test OpenAlex
     try:
         all_results['openalex'] = test_openalex()
     except Exception as e:
-        print(f"❌ OpenAlex test failed: {e}")
+        print(f"[FAIL] OpenAlex test failed: {e}")
         print()
 
     # Summary
@@ -180,13 +180,13 @@ def main():
     print("SUMMARY")
     print("=" * 80)
     print()
-    print(f"✓ arXiv:    {len(all_results.get('arxiv', []))} papers found")
-    print(f"✓ CORE:     {len(all_results.get('core', []))} papers found")
-    print(f"✓ OpenAlex: {len(all_results.get('openalex', []))} papers found")
+    print(f"[OK] arXiv:    {len(all_results.get('arxiv', []))} papers found")
+    print(f"[OK] CORE:     {len(all_results.get('core', []))} papers found")
+    print(f"[OK] OpenAlex: {len(all_results.get('openalex', []))} papers found")
     print()
     print(f"Total papers discovered: {sum(len(v) for v in all_results.values())}")
     print()
-    print("All three free research APIs are working! 🎉")
+    print("All three free research APIs are working! [*]")
     print()
     print("Next steps:")
     print("  1. Use these APIs in investigation agents")

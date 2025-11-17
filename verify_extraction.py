@@ -35,11 +35,11 @@ def main():
     total_chars = len(full_text)
     words = len(full_text.split())
 
-    print(f"✓ File: {pdf_path.name}")
-    print(f"✓ Pages: {len(pdf.pages)}")
-    print(f"✓ Total characters: {total_chars:,}")
-    print(f"✓ Word count: {words:,}")
-    print(f"✓ Words per page (avg): {words/len(pdf.pages):.0f}")
+    print(f"[OK] File: {pdf_path.name}")
+    print(f"[OK] Pages: {len(pdf.pages)}")
+    print(f"[OK] Total characters: {total_chars:,}")
+    print(f"[OK] Word count: {words:,}")
+    print(f"[OK] Words per page (avg): {words/len(pdf.pages):.0f}")
     print()
     print("Note: This is a dense academic journal article (~2,882 words/page),")
     print("      not a typical document (which averages ~500 words/page)")
@@ -90,15 +90,15 @@ def main():
 
         # Verify it appears in the PDF
         if claim['text'].lower() in full_text.lower():
-            print("✓ Verified: Found in PDF text")
+            print("[OK] Verified: Found in PDF text")
         else:
             # Try to find partial match
             words_in_claim = claim['text'].split()[:5]
             partial = " ".join(words_in_claim)
             if partial.lower() in full_text.lower():
-                print("✓ Verified: Partial match found in PDF (minor paraphrasing)")
+                print("[OK] Verified: Partial match found in PDF (minor paraphrasing)")
             else:
-                print("⚠ Note: Paraphrased/synthesized from PDF content")
+                print("[WARNING] Note: Paraphrased/synthesized from PDF content")
         print()
 
         # Extract qualifiers
@@ -107,7 +107,7 @@ def main():
         if qualifiers:
             print(f"Qualifiers found: {len(qualifiers)}")
             for q in qualifiers:
-                print(f"  • {q['type'].upper()}: '{q['text']}' → {q['impact']}")
+                print(f"  • {q['type'].upper()}: '{q['text']}' -> {q['impact']}")
 
             # Analyze strength
             analysis = extractor.analyze_claim_strength(claim['text'])

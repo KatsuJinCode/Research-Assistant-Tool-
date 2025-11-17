@@ -82,7 +82,7 @@ class CoreClient:
                 return self._parse_core_response(data)
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                print("⚠ Rate limit exceeded. Consider getting a free API key from https://core.ac.uk/services/api")
+                print("[WARNING] Rate limit exceeded. Consider getting a free API key from https://core.ac.uk/services/api")
                 return []
             raise
 

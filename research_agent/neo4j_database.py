@@ -429,7 +429,7 @@ class Neo4jDatabase:
         }
 
     def clear_database(self):
-        """⚠️  Clear all data from database (use with caution!)."""
+        """[WARNING]  Clear all data from database (use with caution!)."""
         query = "MATCH (n) DETACH DELETE n"
 
         with self.driver.session(database=self.database) as session:

@@ -33,9 +33,9 @@ async def test_pipeline(pdf_path: str):
     extractor = PDFExtractor()
     pdf_result = extractor.extract(Path(pdf_path))
 
-    print(f"✓ Title: {pdf_result['metadata'].get('title', 'N/A')}")
-    print(f"✓ Pages: {pdf_result['page_count']}")
-    print(f"✓ Total characters: {pdf_result['total_chars']:,}")
+    print(f"[OK] Title: {pdf_result['metadata'].get('title', 'N/A')}")
+    print(f"[OK] Pages: {pdf_result['page_count']}")
+    print(f"[OK] Total characters: {pdf_result['total_chars']:,}")
     print()
 
     # Show first 500 characters
@@ -52,7 +52,7 @@ async def test_pipeline(pdf_path: str):
     api_key = os.getenv('ANTHROPIC_API_KEY') or os.getenv('OPENAI_API_KEY')
 
     if not api_key:
-        print("⚠️  No API key found in environment variables")
+        print("[WARNING]  No API key found in environment variables")
         print("   Set ANTHROPIC_API_KEY or OPENAI_API_KEY to test claim extraction")
         print()
         print("Skipping AI-dependent steps...")
@@ -72,7 +72,7 @@ async def test_pipeline(pdf_path: str):
     claim_extractor = ClaimExtractor(ai_client)
     claims = await claim_extractor.extract_claims(pdf_result['full_text'], max_length=4000)
 
-    print(f"✓ Extracted {len(claims)} claims")
+    print(f"[OK] Extracted {len(claims)} claims")
     print()
 
     # Display claims
@@ -118,7 +118,7 @@ async def test_pipeline(pdf_path: str):
         result = await normalizer.normalize(first_claim)
 
         print(f"Normalized: {result['normalized_text']}")
-        print(f"Qualifiers preserved: {'✓' if result['qualifiers_preserved'] else '✗ FAILED'}")
+        print(f"Qualifiers preserved: {'[OK]' if result['qualifiers_preserved'] else '[X] FAILED'}")
         print(f"Confidence: {result['confidence']:.2f}")
         print(f"Needs human review: {'Yes' if result['needs_human_review'] else 'No'}")
 
@@ -129,7 +129,7 @@ async def test_pipeline(pdf_path: str):
         print()
 
     print("=" * 80)
-    print("✓ PIPELINE TEST COMPLETE")
+    print("[OK] PIPELINE TEST COMPLETE")
     print("=" * 80)
 
 

@@ -71,21 +71,21 @@ class InvestigationAgent:
             arxiv_results = self.arxiv.search(query, max_results=max_results_per_db)
             all_papers.extend(arxiv_results)
         except Exception as e:
-            print(f"⚠ arXiv search failed: {e}")
+            print(f"[WARNING] arXiv search failed: {e}")
 
         # Search CORE
         try:
             core_results = self.core.search(query, limit=max_results_per_db)
             all_papers.extend(core_results)
         except Exception as e:
-            print(f"⚠ CORE search failed: {e}")
+            print(f"[WARNING] CORE search failed: {e}")
 
         # Search OpenAlex
         try:
             openalex_results = self.openalex.search(query, max_results=max_results_per_db)
             all_papers.extend(openalex_results)
         except Exception as e:
-            print(f"⚠ OpenAlex search failed: {e}")
+            print(f"[WARNING] OpenAlex search failed: {e}")
 
         return all_papers
 

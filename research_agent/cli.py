@@ -65,7 +65,7 @@ async def _ingest(config_path, pdf_path, title):
         extractor = PDFExtractor()
         result = extractor.extract(Path(pdf_path))
 
-        click.echo(f"✓ Extracted {result['page_count']} pages, {result['total_chars']} characters")
+        click.echo(f"[OK] Extracted {result['page_count']} pages, {result['total_chars']} characters")
 
         # Save document
         doc_id = await db.fetchval(
@@ -81,13 +81,13 @@ async def _ingest(config_path, pdf_path, title):
             result['metadata']
         )
 
-        click.echo(f"✓ Document saved: {doc_id}")
+        click.echo(f"[OK] Document saved: {doc_id}")
 
         # Extract claims
         claim_extractor = ClaimExtractor(ai_client)
         claims = await claim_extractor.extract_claims(result['full_text'])
 
-        click.echo(f"✓ Extracted {len(claims)} claims")
+        click.echo(f"[OK] Extracted {len(claims)} claims")
 
         # Save claims
         for claim in claims:
@@ -105,7 +105,7 @@ async def _ingest(config_path, pdf_path, title):
             scheduler = WorkScheduler(db)
             await scheduler.schedule_initial_investigations(claim_id)
 
-        click.echo(f"✓ Saved {len(claims)} claims and scheduled investigations")
+        click.echo(f"[OK] Saved {len(claims)} claims and scheduled investigations")
 
     finally:
         await close_database()
@@ -144,11 +144,11 @@ async def _normalize(config_path, claim_id):
 
         # Display result
         click.echo(f"\nNormalized: {result['normalized_text']}")
-        click.echo(f"Qualifiers preserved: {'✓' if result['qualifiers_preserved'] else '✗'}")
+        click.echo(f"Qualifiers preserved: {'[OK]' if result['qualifiers_preserved'] else '[X]'}")
         click.echo(f"Confidence: {result['confidence']:.2f}")
 
         if result['needs_human_review']:
-            click.echo("\n⚠️  Needs human review")
+            click.echo("\n[WARNING]  Needs human review")
 
         # Save to validation table
         await db.execute(
@@ -184,7 +184,7 @@ async def _start_agents(config_path):
         config.ai_providers[config.default_provider].model
     )
 
-    click.echo("🚀 Starting Research Verification Agent System")
+    click.echo("[->] Starting Research Verification Agent System")
     click.echo("Press Ctrl+C to stop")
 
     orchestrator = InvestigationOrchestrator(config, db, ai_client)
@@ -218,7 +218,7 @@ async def _report(config_path, claim_id, output):
 
         if output:
             Path(output).write_text(report_text)
-            click.echo(f"✓ Report saved to: {output}")
+            click.echo(f"[OK] Report saved to: {output}")
         else:
             click.echo(report_text)
 

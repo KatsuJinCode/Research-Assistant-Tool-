@@ -46,7 +46,7 @@ def main():
     pdf_path = Path("sample papers/SHORT-The-Myth-of-Mental-Illness.pdf")
     print(f"📄 Reading: {pdf_path.name}")
     full_text = read_pdf(pdf_path)
-    print(f"✓ Extracted {len(full_text)} characters")
+    print(f"[OK] Extracted {len(full_text)} characters")
     print()
 
     # Create document node
@@ -56,7 +56,7 @@ def main():
         'source': str(pdf_path),
         'char_count': len(full_text)
     })
-    print(f"✓ Created document node: {doc_id}")
+    print(f"[OK] Created document node: {doc_id}")
     print()
 
     print("=" * 80)
@@ -274,7 +274,7 @@ def main():
         print(f"{i:2d}. [{claim_data['type'].upper():12s}] {claim_data['text'][:70]}...{qual_str}")
 
     print()
-    print(f"✓ Extracted {len(claim_ids)} claims")
+    print(f"[OK] Extracted {len(claim_ids)} claims")
     print()
 
     # Show stats
@@ -326,10 +326,10 @@ def main():
 
         claim1 = db.get_node(claim_id_1)
         claim2 = db.get_node(claim_id_2)
-        print(f"✓ Similarity {score:.2f}: \"{claim1['text'][:50]}...\" ↔ \"{claim2['text'][:50]}...\"")
+        print(f"[OK] Similarity {score:.2f}: \"{claim1['text'][:50]}...\" <-> \"{claim2['text'][:50]}...\"")
 
     print()
-    print(f"✓ Identified {len(similarity_pairs)} similarity relationships")
+    print(f"[OK] Identified {len(similarity_pairs)} similarity relationships")
     print()
 
     print("=" * 80)
@@ -387,7 +387,7 @@ def main():
         print(f"  ➜ SUPER-CLAIM: \"{normalized}\"")
         print()
 
-    print(f"✓ Created {len(super_claim_ids)} super-claims")
+    print(f"[OK] Created {len(super_claim_ids)} super-claims")
     print()
 
     # Final stats
@@ -413,12 +413,12 @@ def main():
     print("=" * 80)
     cypher_file = 'szasz_claims_graph.cypher'
     num_statements = db.export_to_cypher(cypher_file)
-    print(f"✓ Exported {num_statements} Cypher statements to {cypher_file}")
+    print(f"[OK] Exported {num_statements} Cypher statements to {cypher_file}")
     print(f"  Ready to import into Neo4j when available")
     print()
 
     print("=" * 80)
-    print("✅ PIPELINE COMPLETE")
+    print("[SUCCESS] PIPELINE COMPLETE")
     print("=" * 80)
     print()
     print("Summary:")

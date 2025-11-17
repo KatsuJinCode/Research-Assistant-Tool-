@@ -201,14 +201,14 @@ class QualifierExtractor:
 
         if not preserved:
             logger.error(
-                f"❌ QUALIFIER LOSS DETECTED\n"
+                f"[FAIL] QUALIFIER LOSS DETECTED\n"
                 f"Original: {original}\n"
                 f"Normalized: {normalized}\n"
                 f"Missing qualifiers: {missing}"
             )
         else:
             logger.info(
-                f"✓ All qualifiers preserved in normalization"
+                f"[OK] All qualifiers preserved in normalization"
             )
 
         return {
