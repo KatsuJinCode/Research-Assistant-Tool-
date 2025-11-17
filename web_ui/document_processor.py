@@ -53,7 +53,10 @@ class LiveDocumentProcessor:
 
     def _default_callback(self, message: str, progress: float, data: Dict[str, Any]):
         """Default callback - just log."""
-        logger.info(f"[{progress:.0f}%] {message}")
+        if progress is not None:
+            logger.info(f"[{progress:.0f}%] {message}")
+        else:
+            logger.info(message)
 
     def _emit(self, message: str, progress: float, data: Dict[str, Any] = None):
         """Emit progress update."""
@@ -566,55 +569,244 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         logger.info(f"✓ AI agent extracted {len(claims)} claims via structured JSON")
         return claims
 
-    def _simplify_claim_with_agent(self, claim_text: str) -> str:
+    def _simplify_claim_with_agent(self, claim_text: str, claim_id: str = None, max_retries: int = 2) -> dict:
         """
-        Use AI agent to simplify claim while preserving qualifiers.
+        Three-stage claim simplification: Clarify → Simplify → Validate
 
-        Args:
-            claim_text: Full claim text to simplify
-
-        Returns:
-            Simplified claim string (5-12 words, qualifiers preserved)
-
-        Raises:
-            RuntimeError: If agent fails or returns invalid data
+        Returns dict with all processing stages for transparency.
         """
-        # Define expected JSON schema
-        expected_schema = {
-            "type": "object",
-            "properties": {
-                "summary": {"type": "string", "description": "Simplified claim (5-12 words) with qualifiers preserved"}
-            },
-            "required": ["summary"]
+        result = {
+            'text': claim_text,
+            'clarified': None,
+            'candidate_1': None,
+            'candidate_2': None,
+            'candidate_3': None,
+            'score_1': 0,
+            'score_2': 0,
+            'score_3': 0,
+            'selected_candidate': None,
+            'summary': None,
+            'processing_stage': 'created'
         }
 
-        agent_prompt = f"""Simplify this research claim while PRESERVING ALL QUALIFIERS.
+        try:
+            # STAGE 1: Clarify - make implicit meaning explicit
+            self._emit(f"Clarifying claim meaning...", None, {
+                'event': 'claim_stage_update',
+                'claim_id': claim_id,
+                'stage': 'clarifying'
+            })
 
-CLAIM: "{claim_text}"
+            result['clarified'] = self._clarify_claim(claim_text)
+            result['processing_stage'] = 'clarified'
 
-CRITICAL REQUIREMENTS:
-1. NEVER remove qualifiers (may, might, can, could, should, would, must, all, some, few, many, most)
-2. Simplify by removing redundancy and verbose constructions, NOT by removing meaning
-3. Keep the core assertion AND its uncertainty/scope markers
-4. Target length: 5-12 words (flexible, but keep it concise)
+            self._emit(f"✓ Clarified", None, {
+                'event': 'claim_clarified',
+                'claim_id': claim_id,
+                'clarified': result['clarified']
+            })
+
+            # STAGE 2 & 3: Simplify + Validate (with retries)
+            for attempt in range(max_retries + 1):
+                self._emit(f"Generating simplified candidates (attempt {attempt + 1})...", None, {
+                    'event': 'claim_stage_update',
+                    'claim_id': claim_id,
+                    'stage': 'simplifying'
+                })
+
+                # Generate 3 candidates
+                candidates = self._generate_candidate_summaries(result['clarified'])
+                result['candidate_1'] = candidates['candidate_1']
+                result['candidate_2'] = candidates['candidate_2']
+                result['candidate_3'] = candidates['candidate_3']
+                result['processing_stage'] = 'simplified'
+
+                self._emit(f"✓ Generated candidates", None, {
+                    'event': 'claim_simplified',
+                    'claim_id': claim_id,
+                    'candidates': candidates
+                })
+
+                # Validate candidates
+                self._emit(f"Validating candidates...", None, {
+                    'event': 'claim_stage_update',
+                    'claim_id': claim_id,
+                    'stage': 'validating'
+                })
+
+                validation = self._validate_candidates(claim_text, result['clarified'], candidates)
+                result['score_1'] = validation.get('score_1', 0)
+                result['score_2'] = validation.get('score_2', 0)
+                result['score_3'] = validation.get('score_3', 0)
+                result['selected_candidate'] = validation['best_candidate']
+
+                if validation['best_candidate'] != 'none':
+                    # Success!
+                    selected_num = int(validation['best_candidate'])
+                    result['summary'] = candidates[f'candidate_{selected_num}']
+                    result['processing_stage'] = 'validated'
+
+                    self._emit(f"✓ Claim validated", None, {
+                        'event': 'claim_validated',
+                        'claim_id': claim_id,
+                        'scores': {
+                            'score_1': result['score_1'],
+                            'score_2': result['score_2'],
+                            'score_3': result['score_3']
+                        },
+                        'selected': selected_num,
+                        'summary': result['summary']
+                    })
+
+                    score = result.get(f'score_{selected_num}', 0)
+                    logger.info(f"✓ Claim simplified successfully (candidate {selected_num}, score: {score:.2f})")
+                    return result
+
+                logger.warning(f"Retry {attempt + 1}/{max_retries}: {validation.get('specific_issues', 'No valid candidates')}")
+
+            # All retries failed - use truncated original
+            logger.error(f"Failed to simplify after {max_retries} retries, using original")
+            result['summary'] = claim_text[:50] + "..." if len(claim_text) > 50 else claim_text
+            result['processing_stage'] = 'failed'
+            result['selected_candidate'] = 'none'
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Simplification error: {e}", exc_info=True)
+            result['summary'] = claim_text[:50] + "..." if len(claim_text) > 50 else claim_text
+            result['processing_stage'] = 'error'
+            return result
+
+    def _clarify_claim(self, claim_text: str) -> str:
+        """
+        STAGE 1: Make implicit meaning explicit (may make text longer).
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "clarified": {"type": "string"}
+            },
+            "required": ["clarified"]
+        }
+
+        prompt = f"""Make the implicit meaning in this claim EXPLICIT. Output may be LONGER than input.
+
+ORIGINAL CLAIM:
+"{claim_text}"
+
+YOUR TASK:
+1. Identify any implicit assumptions or implications
+2. Make colloquialisms explicit
+3. Clarify what "this/that/it" refers to
+4. Make causation vs correlation explicit
+5. State if something is used as EVIDENCE vs stated as FACT
+6. Distinguish "supports theory" from "causes effect"
+7. Expand abbreviations or unclear references
+
+OUTPUT: A CLEARER version (don't worry about length - clarity over brevity here)
 
 EXAMPLES:
-- Original: "The study suggests that some users who regularly utilize the system might experience improved performance metrics"
-- summary: "Some users might experience improved performance"
 
-- Original: "A person's belief cannot be explained by a defect or disease of the nervous system"
-- summary: "Beliefs can't be explained by nervous system defects"
+Original: "Mental illness derives support from brain syphilis"
+Clarified: "The theory of mental illness as a disease gains support by using brain syphilis as an analogous example. Proponents argue that just as brain disease causes observable symptoms, mental symptoms must also come from brain disease."
 
-PRESERVE QUALIFIERS - they change the meaning!"""
+Original: "This suggests users might improve"
+Clarified: "The study's findings suggest that some users might experience performance improvements"
 
-        result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "claim-simplification")
+Original: "It cannot be explained by defects"
+Clarified: "A person's belief cannot be explained by nervous system defects or disease"
+"""
 
-        if 'summary' not in result:
-            logger.error(f"Response missing 'summary' field: {result.keys()}")
-            raise RuntimeError("Response missing 'summary' field")
+        result = self._invoke_agent_with_structured_output(prompt, schema, "clarify-claim")
+        return result['clarified']
 
-        logger.info(f"✓ AI agent simplified claim: '{result['summary']}'")
-        return result['summary']
+    def _generate_candidate_summaries(self, clarified_text: str) -> dict:
+        """
+        STAGE 2: Generate 3 simplified candidates with different strategies.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "candidate_1": {"type": "string", "description": "Maximum brevity (5-8 words)"},
+                "candidate_2": {"type": "string", "description": "Balanced (8-10 words)"},
+                "candidate_3": {"type": "string", "description": "More complete (10-12 words)"}
+            },
+            "required": ["candidate_1", "candidate_2", "candidate_3"]
+        }
+
+        prompt = f"""Generate 3 different simplified versions of this CLARIFIED claim.
+
+CLARIFIED TEXT:
+"{clarified_text}"
+
+Create 3 candidates with different brevity levels:
+- candidate_1: Maximum brevity (5-8 words) - absolute minimum
+- candidate_2: Balanced (8-10 words) - good middle ground
+- candidate_3: More complete (10-12 words) - preserve more nuance
+
+CRITICAL REQUIREMENTS FOR ALL CANDIDATES:
+1. Preserve ALL qualifiers (may/might/can/must/some/all/etc)
+2. Preserve core meaning - do NOT reverse it
+3. Keep causation vs correlation distinction
+4. Keep "supports theory" vs "causes effect" distinction
+5. Remove redundancy and verbose constructions
+
+GOOD EXAMPLES:
+Clarified: "The theory gains support by using brain disease as analogous example"
+- candidate_1: "Theory supported by brain disease analogy"  (6 words)
+- candidate_2: "Mental illness theory uses brain disease as evidence" (9 words)
+- candidate_3: "Mental illness concept derives support from brain disease examples" (10 words)
+"""
+
+        result = self._invoke_agent_with_structured_output(prompt, schema, "generate-candidates")
+        return result
+
+    def _validate_candidates(self, original: str, clarified: str, candidates: dict) -> dict:
+        """
+        STAGE 3: Validate candidates against BOTH original and clarified versions.
+        Returns scores and selected candidate.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "score_1": {"type": "number", "description": "Score 0-1 for candidate_1"},
+                "score_2": {"type": "number", "description": "Score 0-1 for candidate_2"},
+                "score_3": {"type": "number", "description": "Score 0-1 for candidate_3"},
+                "best_candidate": {"type": "string", "enum": ["1", "2", "3", "none"]},
+                "reason": {"type": "string"},
+                "specific_issues": {"type": "string"}
+            },
+            "required": ["score_1", "score_2", "score_3", "best_candidate", "reason"]
+        }
+
+        prompt = f"""Validate these simplified candidates and assign scores.
+
+ORIGINAL:
+"{original}"
+
+CLARIFIED (explicit meaning):
+"{clarified}"
+
+CANDIDATES:
+1. "{candidates['candidate_1']}"
+2. "{candidates['candidate_2']}"
+3. "{candidates['candidate_3']}"
+
+For EACH candidate, score 0-1 based on:
+- Preserves CLARIFIED meaning? (0.4 points)
+- Preserves qualifiers from ORIGINAL? (0.3 points)
+- No reversed meaning (evidence→cause)? (0.2 points)
+- Appropriate length (5-12 words)? (0.1 points)
+
+SELECT best_candidate (1/2/3) with highest score, OR "none" if ALL score < 0.6.
+If "none", explain specific_issues so we can retry.
+
+Provide scores (0.0 to 1.0) for each candidate and select the best.
+"""
+
+        result = self._invoke_agent_with_structured_output(prompt, schema, "validate-candidates")
+        return result
 
     def _extract_document_title(self, text: str) -> str:
         """
@@ -902,13 +1094,30 @@ Find the main title/heading at the top of the document. Return just the title te
                 # Create sub-claim node
                 claim_id = str(uuid4())
 
-                # Generate intelligent summary using Claude Code CLI
-                summary = self._simplify_claim_with_agent(claim_data['text'])
+                # Generate intelligent summary using Claude Code CLI (3-stage process)
+                simplification_result = self._simplify_claim_with_agent(claim_data['text'], claim_id=claim_id)
 
                 claim_node = {
                     'id': claim_id,
                     'text': claim_data['text'],
-                    'summary': summary,  # AI-simplified (5-12 words, qualifiers preserved)
+
+                    # Processing stages (for transparency)
+                    'clarified': simplification_result['clarified'],
+                    'candidate_1': simplification_result['candidate_1'],
+                    'candidate_2': simplification_result['candidate_2'],
+                    'candidate_3': simplification_result['candidate_3'],
+
+                    # Validation scores
+                    'score_1': simplification_result['score_1'],
+                    'score_2': simplification_result['score_2'],
+                    'score_3': simplification_result['score_3'],
+                    'selected_candidate': simplification_result['selected_candidate'],
+
+                    # Final output (displayed to user)
+                    'summary': simplification_result['summary'],
+                    'processing_stage': simplification_result['processing_stage'],
+
+                    # Metadata
                     'parent_super_claim': super_claim_id,
                     'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
                     'confidence': claim_data.get('confidence', 0.5),
