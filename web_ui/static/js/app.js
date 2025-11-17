@@ -84,17 +84,34 @@ const App = {
         // Upload button - triggers file input
         const uploadBtn = document.getElementById('upload-btn');
         const fileInput = document.getElementById('file-input');
+        const uploadZone = document.getElementById('upload-zone');
 
         console.log('Upload button found:', uploadBtn);
         console.log('File input found:', fileInput);
+        console.log('Upload zone found:', uploadZone);
 
         if (uploadBtn && fileInput) {
+            // Main upload button click handler
             uploadBtn.addEventListener('click', (e) => {
                 console.log('Upload button clicked!');
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
             });
+
+            // Also allow clicking the upload zone (except the button itself)
+            if (uploadZone) {
+                uploadZone.addEventListener('click', (e) => {
+                    console.log('Upload zone clicked!');
+                    // Don't trigger if clicking the button or URL input
+                    if (e.target === uploadBtn || e.target.id === 'url-input') {
+                        console.log('Ignoring click on button/input within zone');
+                        return;
+                    }
+                    e.preventDefault();
+                    fileInput.click();
+                });
+            }
 
             // File upload handler
             fileInput.addEventListener('change', (e) => {
@@ -107,6 +124,33 @@ const App = {
                     fileInput.value = '';
                 }
             });
+
+            // Drag and drop on upload zone
+            if (uploadZone) {
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadZone.style.opacity = '0.7';
+                });
+
+                uploadZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadZone.style.opacity = '1';
+                });
+
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadZone.style.opacity = '1';
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        console.log('File dropped:', files[0].name);
+                        UI.handleFileUpload(files[0]);
+                    }
+                });
+            }
         } else {
             console.error('CRITICAL: Upload elements not found!');
             console.error('uploadBtn:', uploadBtn);
@@ -121,7 +165,84 @@ const App = {
             });
         }
 
+        // Agent launcher search depth slider
+        const depthSlider = document.getElementById('search-depth');
+        const depthValue = document.getElementById('depth-value');
+        if (depthSlider && depthValue) {
+            depthSlider.addEventListener('input', (e) => {
+                depthValue.textContent = e.target.value;
+            });
+        }
+
         console.log('✓ Event listeners setup complete');
+    },
+
+    /**
+     * Toggle agent launcher panel
+     */
+    toggleAgentLauncher() {
+        const launcher = document.getElementById('agent-launcher');
+        const toggle = document.getElementById('launcher-toggle');
+
+        if (launcher && toggle) {
+            launcher.classList.toggle('collapsed');
+            toggle.textContent = launcher.classList.contains('collapsed') ? '▲' : '▼';
+        }
+    },
+
+    /**
+     * Quick investigate current selected claim
+     */
+    async quickInvestigate() {
+        if (!GraphRenderer.selectedNodeId) {
+            alert('Please select a claim node first');
+            return;
+        }
+
+        const agentType = document.getElementById('agent-type')?.value || 'arxiv_search';
+        console.log('Quick investigate:', GraphRenderer.selectedNodeId, 'with agent:', agentType);
+
+        try {
+            const result = await API.investigateClaim(GraphRenderer.selectedNodeId, 'support');
+            alert(`Investigation started: ${result.agent}`);
+            this.loadGraph();
+        } catch (error) {
+            console.error('Investigation failed:', error);
+            alert(`Failed to start investigation: ${error.message}`);
+        }
+    },
+
+    /**
+     * Custom investigate with full options
+     */
+    async customInvestigate() {
+        if (!GraphRenderer.selectedNodeId) {
+            alert('Please select a claim node first');
+            return;
+        }
+
+        const agentType = document.getElementById('agent-type')?.value || 'arxiv_search';
+        const searchDepth = document.getElementById('search-depth')?.value || 3;
+        const searchStrategy = document.getElementById('search-strategy')?.value || 'breadth-first';
+        const customPrompt = document.getElementById('custom-prompt')?.value || '';
+
+        console.log('Custom investigate:', {
+            claimId: GraphRenderer.selectedNodeId,
+            agentType,
+            searchDepth,
+            searchStrategy,
+            customPrompt
+        });
+
+        try {
+            // TODO: API doesn't support these parameters yet, using simple investigation
+            const result = await API.investigateClaim(GraphRenderer.selectedNodeId, 'support');
+            alert(`Investigation started with ${agentType}\nDepth: ${searchDepth}\nStrategy: ${searchStrategy}`);
+            this.loadGraph();
+        } catch (error) {
+            console.error('Investigation failed:', error);
+            alert(`Failed to start investigation: ${error.message}`);
+        }
     },
 
     /**
@@ -154,6 +275,11 @@ const App = {
         });
     }
 };
+
+// Make functions globally accessible for inline onclick handlers
+window.toggleLauncher = () => App.toggleAgentLauncher();
+window.quickInvestigate = () => App.quickInvestigate();
+window.customInvestigate = () => App.customInvestigate();
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
