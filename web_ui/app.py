@@ -327,26 +327,48 @@ def handle_disconnect():
 
 @app.route('/api/delete-document/<doc_id>', methods=['DELETE'])
 def delete_document(doc_id):
-    """Delete document and all its associated claims."""
+    """Delete document and only its owned claims (that would become orphaned)."""
     query = """
-    // Find document and all connected claims
+    // Find document
     MATCH (d:Document {id: $doc_id})
-    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(c:Claim)
 
-    // Delete all relationships and nodes
-    DETACH DELETE d, c
+    // Find all claims ONLY connected to this document
+    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(root:Claim)
+    OPTIONAL MATCH (root)-[:PARENT_OF*]->(child:Claim)
 
-    RETURN count(d) as deleted_docs, count(c) as deleted_claims
+    // Collect all claims to delete
+    WITH d, collect(DISTINCT root) + collect(DISTINCT child) as all_claims
+
+    // Delete only the claims and document (DETACH handles relationships)
+    FOREACH (claim IN all_claims | DETACH DELETE claim)
+    DETACH DELETE d
+
+    RETURN 1 as deleted
     """
 
     with db.driver.session(database=db.database) as session:
-        result = session.run(query, doc_id=doc_id)
-        record = result.single()
+        session.run(query, doc_id=doc_id)
 
     return jsonify({
         'status': 'deleted',
-        'deleted_documents': record['deleted_docs'],
-        'deleted_claims': record['deleted_claims']
+        'message': 'Document and owned claims deleted'
+    })
+
+
+@app.route('/api/clear-all', methods=['DELETE'])
+def clear_all():
+    """Clear all data from the database."""
+    query = """
+    MATCH (n)
+    DETACH DELETE n
+    """
+
+    with db.driver.session(database=db.database) as session:
+        session.run(query)
+
+    return jsonify({
+        'status': 'cleared',
+        'message': 'All data cleared from database'
     })
 
 
