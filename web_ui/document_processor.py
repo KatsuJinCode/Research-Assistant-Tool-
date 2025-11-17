@@ -280,9 +280,87 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 
         logger.info(f"✓ JSON schema validation passed for {task_type}")
 
+    def _extract_hierarchical_claims_with_agent(self, text: str) -> Dict[str, Any]:
+        """
+        Use AI agent to extract HIERARCHICAL claims (categories + specific claims).
+
+        Returns dict with 'categories', each containing 'super_claim' and 'sub_claims'.
+
+        Raises:
+            RuntimeError: If agent fails or returns invalid data
+        """
+        # Define expected JSON schema for hierarchical structure
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "super_claim": {
+                                "type": "string",
+                                "description": "Generalized category claim (e.g., 'Mental illness is not a medical condition')"
+                            },
+                            "category_description": {
+                                "type": "string",
+                                "description": "Brief explanation of this claim category"
+                            },
+                            "sub_claims": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {"type": "string", "description": "Specific claim text"},
+                                        "type": {"type": "string", "enum": ["factual", "methodological", "causal", "interpretive"]},
+                                        "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+                                    },
+                                    "required": ["text", "type", "confidence"]
+                                }
+                            }
+                        },
+                        "required": ["super_claim", "sub_claims"]
+                    }
+                }
+            },
+            "required": ["categories"]
+        }
+
+        # Prompt for hierarchical claim extraction
+        agent_prompt = f"""Extract research claims from this text in a HIERARCHICAL structure. Ignore copyright, metadata, headers/footers.
+
+TEXT:
+{text[:8000]}
+
+Group related claims into CATEGORIES. For each category:
+1. super_claim: A generalized claim that summarizes the category (10-15 words)
+2. category_description: Brief explanation of this theme
+3. sub_claims: 2-5 specific claims that fall under this super-claim
+
+Extract 3-6 categories total. Each sub-claim should have:
+- text: Exact claim from document
+- type: factual, methodological, causal, or interpretive
+- confidence: 0.0-1.0
+
+Preserve qualifiers (may, might, can, all, some). Structure spreads claims across TWO levels (categories → specifics)."""
+
+        result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "hierarchical-claim-extraction")
+
+        # Validate structure
+        categories = result.get('categories', [])
+        if not isinstance(categories, list):
+            logger.error(f"Response returned non-list for categories: {type(categories)}")
+            raise RuntimeError(f"Response returned invalid data type: {type(categories)}")
+
+        total_claims = sum(len(cat.get('sub_claims', [])) for cat in categories)
+        logger.info(f"✓ AI agent extracted {len(categories)} categories with {total_claims} specific claims")
+        return result
+
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
         Use AI agent to extract claims from text with structured JSON output.
+
+        DEPRECATED: Use _extract_hierarchical_claims_with_agent() for better organization.
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
 
