@@ -431,6 +431,11 @@
                         buildUnifiedGraph(graphData);
                         hideProcessingStatus();
                     });
+            } else if (data.data.event === 'claim_extraction_failed' ||
+                       data.data.event === 'claim_simplification_failed') {
+                // Display error prominently
+                hideProcessingStatus();
+                alert('❌ AGENT FAILURE\n\n' + data.data.error + '\n\nCheck that Claude Code CLI is installed and working properly.');
             }
         });
 

@@ -145,6 +145,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         Use Claude Code agent to simplify and normalize a claim.
 
         Returns dict with 'simplified', 'normalized' versions.
+
+        Raises:
+            RuntimeError: If agent fails or returns invalid data
         """
         agent_prompt = f"""Simplify this claim, preserving all qualifiers:
 
@@ -155,57 +158,31 @@ Return ONLY JSON:
 
 Preserve: may, might, can, all, some, etc."""
 
-        try:
-            result = self._invoke_agent(agent_prompt, "claim-simplification")
+        result = self._invoke_agent(agent_prompt, "claim-simplification")
 
-            # Extract JSON from response
-            import re
-            json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', result, re.DOTALL)
-            if json_match:
-                result = json_match.group(1)
-            elif result.strip().startswith('{'):
-                pass
-            else:
-                json_match = re.search(r'\{{.*\}}', result, re.DOTALL)
-                if json_match:
-                    result = json_match.group(0)
-
-            simplification = json.loads(result)
-
-            if 'simplified' not in simplification or 'normalized' not in simplification:
-                logger.warning(f"Agent returned incomplete response, using fallback")
-                return self._fallback_simplification(claim_text)
-
-            logger.info(f"✓ Claude Code agent simplified claim")
-            return simplification
-
-        except Exception as e:
-            logger.warning(f"Agent simplification failed, using fallback: {e}")
-            return self._fallback_simplification(claim_text)
-
-    def _fallback_simplification(self, claim_text: str) -> Dict[str, str]:
-        """Fallback simplification using rule-based agent."""
-        try:
-            from research_agent.claim_analysis.claim_simplifier_agent import ClaimSimplifierAgent
-            simplifier = ClaimSimplifierAgent()
-            return simplifier.simplify_claim(claim_text)
-        except Exception as e:
-            logger.error(f"Fallback simplification failed: {e}")
-            return {'simplified': claim_text[:50], 'normalized': claim_text[:100]}
-
-    def _fallback_claim_extraction(self, text: str) -> List[Dict[str, Any]]:
-        """Simple fallback: extract claims as sentences."""
+        # Extract JSON from response
         import re
-        sentences = re.split(r'[.!?]+\s+', text)
-        claims = []
-        for sent in sentences[:20]:  # Limit to 20 claims for now
-            if len(sent.strip()) > 20:
-                claims.append({
-                    'text': sent.strip(),
-                    'type': 'factual',
-                    'confidence': 0.7
-                })
-        return claims
+        json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', result, re.DOTALL)
+        if json_match:
+            result = json_match.group(1)
+        elif result.strip().startswith('{'):
+            pass
+        else:
+            json_match = re.search(r'\{{.*\}}', result, re.DOTALL)
+            if json_match:
+                result = json_match.group(0)
+            else:
+                logger.error(f"Agent response does not contain valid JSON object")
+                raise RuntimeError("Agent failed to return valid JSON object")
+
+        simplification = json.loads(result)
+
+        if 'simplified' not in simplification or 'normalized' not in simplification:
+            logger.error(f"Agent returned incomplete response: missing required fields")
+            raise RuntimeError("Agent response missing 'simplified' or 'normalized' fields")
+
+        logger.info(f"✓ Claude Code agent simplified claim")
+        return simplification
 
     def process_document(self, file_path: str, doc_id: str = None) -> str:
         """
@@ -258,7 +235,23 @@ Preserve: may, might, can, all, some, etc."""
             'doc_id': doc_id
         })
 
-        claims = self._extract_claims_with_agent(text)
+        try:
+            claims = self._extract_claims_with_agent(text)
+        except Exception as e:
+            error_msg = f"Claude Code agent failed to extract claims: {str(e)}"
+            logger.error(error_msg)
+            self._emit(f"ERROR: {error_msg}", 30, {
+                'event': 'claim_extraction_failed',
+                'doc_id': doc_id,
+                'error': str(e)
+            })
+            # Mark document as failed
+            self.db.driver.session(database=self.db.database).run(
+                "MATCH (d:Document {id: $doc_id}) SET d.status = 'failed', d.error = $error",
+                doc_id=doc_id,
+                error=error_msg
+            )
+            raise
 
         self._emit(f"Extracted {len(claims)} claims", 50, {
             'event': 'claims_extracted',
@@ -274,7 +267,24 @@ Preserve: may, might, can, all, some, etc."""
             claim_id = str(uuid4())
 
             # Simplify using agent
-            simplification = self._simplify_claim_with_agent(claim_data['text'])
+            try:
+                simplification = self._simplify_claim_with_agent(claim_data['text'])
+            except Exception as e:
+                error_msg = f"Claude Code agent failed to simplify claim {i+1}: {str(e)}"
+                logger.error(error_msg)
+                self._emit(f"ERROR: {error_msg}", progress, {
+                    'event': 'claim_simplification_failed',
+                    'doc_id': doc_id,
+                    'claim_index': i + 1,
+                    'error': str(e)
+                })
+                # Mark document as failed
+                self.db.driver.session(database=self.db.database).run(
+                    "MATCH (d:Document {id: $doc_id}) SET d.status = 'failed', d.error = $error",
+                    doc_id=doc_id,
+                    error=error_msg
+                )
+                raise
 
             claim_node = {
                 'id': claim_id,
