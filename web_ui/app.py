@@ -6,8 +6,12 @@ Shows top-level claims, click to expand, spawn agents, view confidence.
 """
 
 from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO, emit
 from pathlib import Path
 import sys
+import threading
+from werkzeug.utils import secure_filename
+import os
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -18,8 +22,14 @@ from research_agent.graph_enrichment import (
     AgentTracker,
     CitationNetwork
 )
+from web_ui.document_processor import LiveDocumentProcessor
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'research-assistant-secret-key'
+app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
+app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
+
+socketio = SocketIO(app, cors_allowed_origins="*")
 db = Neo4jDatabase()
 
 
@@ -196,7 +206,7 @@ def get_full_graph():
     MATCH (d:Document)
 
     // Get root claims (no parent)
-    OPTIONAL MATCH (d)<-[:CONTAINS_CLAIM]-(root:Claim)
+    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(root:Claim)
     WHERE root.is_optimal = true AND NOT ()-[:PARENT_OF]->(root)
 
     // Get child claims
@@ -246,13 +256,82 @@ def get_full_graph():
     return jsonify(records)
 
 
+@app.route('/api/upload-document', methods=['POST'])
+def upload_document():
+    """Handle file upload and start processing."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    if not file.filename.endswith('.pdf'):
+        return jsonify({'error': 'Only PDF files supported'}), 400
+
+    # Save file
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+
+    # Start processing in background thread
+    def process_with_updates(filepath):
+        def progress_callback(message, progress, data):
+            # Emit to all connected clients
+            socketio.emit('processing_update', {
+                'message': message,
+                'progress': progress,
+                'data': data
+            })
+
+        processor = LiveDocumentProcessor(progress_callback)
+        processor.process_document(filepath)
+
+    thread = threading.Thread(target=process_with_updates, args=(filepath,))
+    thread.start()
+
+    return jsonify({
+        'status': 'processing_started',
+        'filename': filename
+    })
+
+
+@app.route('/api/process-url', methods=['POST'])
+def process_url():
+    """Download and process document from URL."""
+    data = request.json
+    url = data.get('url')
+
+    if not url:
+        return jsonify({'error': 'No URL provided'}), 400
+
+    # TODO: Implement URL download
+    return jsonify({
+        'status': 'not_implemented',
+        'message': 'URL processing coming soon'
+    })
+
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle WebSocket connection."""
+    print('Client connected')
+    emit('connected', {'status': 'ready'})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle WebSocket disconnection."""
+    print('Client disconnected')
+
+
 if __name__ == '__main__':
     print("=" * 80)
-    print("RESEARCH GRAPH WEB INTERFACE".center(80))
+    print("RESEARCH GRAPH WEB INTERFACE - LIVE UPDATES ENABLED".center(80))
     print("=" * 80)
-    print("\nStarting web server...")
+    print("\nStarting web server with WebSocket support...")
     print("\nOpen your browser to: http://localhost:5000")
     print("\nPress Ctrl+C to stop")
     print("=" * 80)
 
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=5000)

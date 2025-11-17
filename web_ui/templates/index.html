@@ -3,6 +3,7 @@
 <head>
     <title>Research Graph Navigator</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -313,7 +314,28 @@
 
     <div id="container">
         <div id="sidebar">
-            <h2 style="margin-bottom: 15px;">Top-Level Claims</h2>
+            <h2 style="margin-bottom: 15px;">Documents</h2>
+
+            <!-- Upload area -->
+            <div id="upload-zone" style="background: #333; border: 2px dashed #666; border-radius: 8px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer;">
+                <div style="font-size: 48px; color: #666; margin-bottom: 10px;">📄</div>
+                <div style="color: #999; margin-bottom: 10px;">Drop PDF or paste URL</div>
+                <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                <input type="text" id="url-input" placeholder="https://arxiv.org/..." style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #555; color: #e0e0e0; border-radius: 4px; margin-top: 10px;">
+                <button id="upload-btn" class="btn btn-primary" style="margin-top: 10px; width: 100%;">Process Document</button>
+            </div>
+
+            <!-- Processing status -->
+            <div id="processing-status" style="display: none; background: #2a2a2a; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <div style="font-weight: bold; margin-bottom: 10px;">Processing...</div>
+                <div id="status-text" style="color: #999; font-size: 12px;"></div>
+                <div style="margin-top: 10px;">
+                    <div style="background: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="progress-bar" style="background: #2196F3; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
             <div id="root-claims"></div>
         </div>
 
@@ -377,6 +399,149 @@
     <script>
         let currentClaimId = null;
         let graphData = { nodes: [], links: [] };
+        let ws = null;
+
+        // Initialize WebSocket for live updates
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log('WebSocket connected');
+        });
+
+        socket.on('processing_update', (data) => {
+            console.log('Processing update:', data);
+
+            // Update progress UI
+            updateProcessingStatus(data.message, data.progress);
+
+            // Handle different events
+            if (data.data.event === 'claim_added') {
+                // Incrementally add node to graph
+                addClaimToGraph(data.data);
+            } else if (data.data.event === 'processing_complete') {
+                // Reload full graph
+                fetch('/api/full-graph')
+                    .then(r => r.json())
+                    .then(graphData => {
+                        buildUnifiedGraph(graphData);
+                        hideProcessingStatus();
+                    });
+            }
+        });
+
+        function addClaimToGraph(data) {
+            // TODO: Implement incremental node addition
+            console.log('New claim:', data.claim_summary);
+
+            // For now, just reload the graph periodically
+            if (Math.random() < 0.1) {  // Only reload 10% of the time to avoid too many reloads
+                fetch('/api/full-graph')
+                    .then(r => r.json())
+                    .then(graphData => buildUnifiedGraph(graphData));
+            }
+        }
+
+        // File upload handlers
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+        const uploadBtn = document.getElementById('upload-btn');
+
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target !== urlInput && e.target !== uploadBtn) {
+                fileInput.click();
+            }
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#2196F3';
+            uploadZone.style.background = '#2a2a2a';
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = '#666';
+            uploadZone.style.background = '#333';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#666';
+            uploadZone.style.background = '#333';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        });
+
+        uploadBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (url) {
+                processURL(url);
+            }
+        });
+
+        function processFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showProcessingStatus('Uploading file...');
+
+            fetch('/api/upload-document', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(result => {
+                console.log('Upload result:', result);
+                // Processing will send updates via WebSocket
+            })
+            .catch(err => {
+                hideProcessingStatus();
+                alert('Upload failed: ' + err.message);
+            });
+        }
+
+        function processURL(url) {
+            showProcessingStatus('Downloading from URL...');
+
+            fetch('/api/process-url', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url: url })
+            })
+            .then(r => r.json())
+            .then(result => {
+                console.log('URL processing started:', result);
+            })
+            .catch(err => {
+                hideProcessingStatus();
+                alert('Processing failed: ' + err.message);
+            });
+        }
+
+        function showProcessingStatus(message) {
+            document.getElementById('processing-status').style.display = 'block';
+            document.getElementById('status-text').textContent = message;
+            document.getElementById('progress-bar').style.width = '10%';
+        }
+
+        function hideProcessingStatus() {
+            document.getElementById('processing-status').style.display = 'none';
+            document.getElementById('progress-bar').style.width = '0%';
+        }
+
+        function updateProcessingStatus(message, progress) {
+            document.getElementById('status-text').textContent = message;
+            document.getElementById('progress-bar').style.width = progress + '%';
+        }
 
         // Load stats
         fetch('/api/graph-stats')
