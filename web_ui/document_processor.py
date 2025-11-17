@@ -89,10 +89,12 @@ class LiveDocumentProcessor:
         Use Claude Code agent to extract claims from text.
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
+
+        Raises:
+            RuntimeError: If agent fails or returns invalid data
         """
-        try:
-            # Spawn Claude Code agent to extract claims
-            agent_prompt = f"""Extract factual research claims from this text. Ignore copyright notices, publication info, and page headers/footers.
+        # Spawn Claude Code agent to extract claims
+        agent_prompt = f"""Extract factual research claims from this text. Ignore copyright notices, publication info, and page headers/footers.
 
 TEXT:
 {text[:8000]}
@@ -110,34 +112,33 @@ Return ONLY valid JSON array:
 
 Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata."""
 
-            result = self._invoke_agent(agent_prompt, "claim-extraction")
+        result = self._invoke_agent(agent_prompt, "claim-extraction")
 
-            # Try to extract JSON from response (handle markdown code blocks)
-            import re
-            json_match = re.search(r'```json\s*(\[.*?\])\s*```', result, re.DOTALL)
+        # Try to extract JSON from response (handle markdown code blocks)
+        import re
+        json_match = re.search(r'```json\s*(\[.*?\])\s*```', result, re.DOTALL)
+        if json_match:
+            result = json_match.group(1)
+        elif result.strip().startswith('['):
+            # Already pure JSON
+            pass
+        else:
+            # Try to find JSON array anywhere in response
+            json_match = re.search(r'\[.*\]', result, re.DOTALL)
             if json_match:
-                result = json_match.group(1)
-            elif result.strip().startswith('['):
-                # Already pure JSON
-                pass
+                result = json_match.group(0)
             else:
-                # Try to find JSON array anywhere in response
-                json_match = re.search(r'\[.*\]', result, re.DOTALL)
-                if json_match:
-                    result = json_match.group(0)
+                logger.error(f"Agent response does not contain valid JSON array")
+                raise RuntimeError("Agent failed to return valid JSON array")
 
-            claims = json.loads(result)
+        claims = json.loads(result)
 
-            if not isinstance(claims, list):
-                logger.error(f"Agent returned non-list: {type(claims)}")
-                return self._fallback_claim_extraction(text)
+        if not isinstance(claims, list):
+            logger.error(f"Agent returned non-list: {type(claims)}")
+            raise RuntimeError(f"Agent returned invalid data type: {type(claims)}")
 
-            logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
-            return claims
-
-        except Exception as e:
-            logger.warning(f"Agent extraction failed, using fallback: {e}")
-            return self._fallback_claim_extraction(text)
+        logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
+        return claims
 
     def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
         """
