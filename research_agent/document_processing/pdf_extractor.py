@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Any
 import pdfplumber
 from .column_detector import ColumnDetector
+from .text_postprocessor import TextPostProcessor
 
 
 logger = logging.getLogger(__name__)
@@ -15,15 +16,18 @@ logger = logging.getLogger(__name__)
 class PDFExtractor:
     """Extract text and metadata from PDF files with column-awareness."""
 
-    def __init__(self, column_aware: bool = True):
+    def __init__(self, column_aware: bool = True, postprocess: bool = True):
         """
         Initialize PDF extractor.
 
         Args:
             column_aware: If True, detects and handles multi-column layouts
+            postprocess: If True, applies text post-processing (fix drop caps, etc.)
         """
         self.column_aware = column_aware
+        self.postprocess = postprocess
         self.column_detector = ColumnDetector() if column_aware else None
+        self.text_processor = TextPostProcessor() if postprocess else None
 
     def extract(self, pdf_path: Path) -> Dict[str, Any]:
         """
@@ -86,6 +90,33 @@ class PDFExtractor:
                     'creation_date': pdf.metadata.get('CreationDate'),
                 }
 
+                # Post-process text if enabled
+                postprocess_result = None
+                quality_score = None
+                original_text = full_text.strip()
+
+                if self.postprocess and self.text_processor:
+                    postprocess_result = self.text_processor.process(full_text)
+                    full_text = postprocess_result['fixed_text']
+                    quality_score = postprocess_result['quality_analysis']['score']
+
+                    # Add post-processing warnings
+                    if postprocess_result['fixes_applied']:
+                        for fix in postprocess_result['fixes_applied']:
+                            warnings.append(f"[TEXT FIX] {fix}")
+
+                    if postprocess_result['needs_review']:
+                        warnings.append("[QUALITY] Text may need manual review")
+
+                    if postprocess_result['quality_analysis']['is_garbled']:
+                        warnings.append(
+                            f"[QUALITY] Possible garbled text detected "
+                            f"(score: {quality_score:.2f})"
+                        )
+
+                    for issue in postprocess_result['quality_analysis']['issues']:
+                        warnings.append(f"[QUALITY] {issue}")
+
                 result = {
                     'full_text': full_text.strip(),
                     'pages': pages,
@@ -94,13 +125,19 @@ class PDFExtractor:
                     'total_chars': len(full_text),
                     'avg_chars_per_page': len(full_text) // len(pages) if pages else 0,
                     'warnings': warnings,
-                    'column_layout': column_info
+                    'column_layout': column_info,
+                    'quality_score': quality_score,
+                    'postprocess_result': postprocess_result,
+                    'text_changed': postprocess_result['changed'] if postprocess_result else False
                 }
 
                 logger.info(
                     f"Extracted {result['page_count']} pages, "
                     f"{result['total_chars']} characters from {pdf_path.name}"
                 )
+
+                if quality_score is not None:
+                    logger.info(f"Text quality score: {quality_score:.2f}")
 
                 return result
 
