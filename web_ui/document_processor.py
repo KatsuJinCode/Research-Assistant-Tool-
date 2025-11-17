@@ -600,6 +600,40 @@ Create:
         logger.info(f"✓ AI agent simplified claim via structured JSON")
         return result
 
+    def _extract_document_title(self, text: str) -> str:
+        """
+        Extract the actual document title from the text.
+
+        Uses AI agent to find the title in the first ~1000 characters.
+        Falls back to "Untitled Document" if extraction fails.
+        """
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "The document title"}
+            },
+            "required": ["title"]
+        }
+
+        agent_prompt = f"""Extract the document title from this text.
+
+TEXT (first 1000 chars):
+{text[:1000]}
+
+Find the main title/heading at the top of the document. Return just the title text, no authors or metadata."""
+
+        try:
+            result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "title-extraction")
+            title = result.get('title', '').strip()
+
+            if not title or len(title) < 3:
+                raise RuntimeError("Title too short or empty")
+
+            return title
+        except Exception as e:
+            logger.warning(f"Title extraction failed: {e}")
+            return "Untitled Document"
+
     def _preprocess_text(self, text: str) -> str:
         """
         Clean and preprocess extracted text before sending to agent.
