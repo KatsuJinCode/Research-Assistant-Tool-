@@ -41,70 +41,105 @@ class LiveDocumentProcessor:
         """Emit progress update."""
         self.progress_callback(message, progress, data or {})
 
-    def _invoke_agent_with_tool(self, prompt: str, tool_schema: Dict, task_type: str) -> Dict[str, Any]:
+    def _invoke_agent_with_structured_output(self, prompt: str, expected_schema: Dict, task_type: str) -> Dict[str, Any]:
         """
-        Invoke AI agent CLI with a tool definition to get structured output.
-        Uses the configured agent adapter (Claude, OpenAI, Gemini, or custom).
+        Invoke AI agent CLI and request structured JSON output.
+
+        Since Claude Code CLI --tools flag doesn't force tool use, we use prompt-based
+        JSON extraction instead.
 
         Args:
-            prompt: The task prompt for the agent
-            tool_schema: Tool definition with input_schema
-            task_type: Type of task (for logging)
+            prompt: The task prompt
+            expected_schema: JSON schema describing expected output structure
+            task_type: Description of task (for logging)
 
         Returns:
-            Parsed tool input (the structured data)
+            Parsed JSON output as dict
+
+        Raises:
+            RuntimeError: If agent fails or doesn't return valid JSON
         """
         adapter = get_agent_adapter()
         logger.info(f"Spawning {adapter.__class__.__name__} for {task_type}")
 
+        # Add JSON formatting instructions to prompt
+        schema_str = json.dumps(expected_schema, indent=2)
+        enhanced_prompt = f"""{prompt}
+
+IMPORTANT: You MUST respond with ONLY valid JSON matching this exact schema:
+
+{schema_str}
+
+Do NOT include any explanatory text, markdown formatting, or code blocks.
+Output ONLY the raw JSON object."""
+
         try:
-            # Invoke agent through adapter
-            response = adapter.invoke(prompt, tools=[tool_schema], timeout=120)
+            # Invoke agent without tools (since --tools doesn't work as expected)
+            response = adapter.invoke(enhanced_prompt, tools=None, timeout=120)
             logger.info(f"Agent completed {task_type}: {len(response)} chars")
 
-            # Parse tool response through adapter
-            tool_input = adapter.parse_tool_response(response)
-            logger.info(f"✓ Extracted structured data from tool use")
-            return tool_input
+            # Parse response - handle both direct JSON and CLI wrapper format
+            response_data = json.loads(response)
 
+            # Extract actual result from CLI wrapper if present
+            if isinstance(response_data, dict) and 'result' in response_data:
+                result_text = response_data['result']
+            else:
+                result_text = response
+
+            # Try to parse as JSON
+            try:
+                parsed_json = json.loads(result_text)
+                logger.info(f"✓ Extracted structured JSON output")
+                return parsed_json
+            except json.JSONDecodeError:
+                # Try to extract JSON from markdown code blocks
+                import re
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', result_text, re.DOTALL)
+                if json_match:
+                    parsed_json = json.loads(json_match.group(1))
+                    logger.info(f"✓ Extracted JSON from code block")
+                    return parsed_json
+                else:
+                    raise RuntimeError(f"Agent did not return valid JSON. Response: {result_text[:200]}...")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed: {e}")
+            raise RuntimeError(f"Agent response is not valid JSON: {e}")
         except Exception as e:
             logger.error(f"Agent invocation failed: {e}")
             raise
 
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
-        Use Claude Code agent to extract claims from text using tool calling.
+        Use AI agent to extract claims from text with structured JSON output.
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
 
         Raises:
             RuntimeError: If agent fails or returns invalid data
         """
-        # Define tool schema for structured output
-        tool_schema = {
-            "name": "submit_extracted_claims",
-            "description": "Submit the list of extracted research claims",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "claims": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "text": {"type": "string", "description": "Exact claim text from document"},
-                                "type": {"type": "string", "enum": ["factual", "methodological", "causal", "interpretive"]},
-                                "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
-                            },
-                            "required": ["text", "type", "confidence"]
-                        }
+        # Define expected JSON schema
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string", "description": "Exact claim text from document"},
+                            "type": {"type": "string", "enum": ["factual", "methodological", "causal", "interpretive"]},
+                            "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+                        },
+                        "required": ["text", "type", "confidence"]
                     }
-                },
-                "required": ["claims"]
-            }
+                }
+            },
+            "required": ["claims"]
         }
 
-        # Spawn Claude Code agent with tool definition
+        # Prompt for claim extraction
         agent_prompt = f"""Extract factual research claims from this text. Ignore copyright notices, publication info, and page headers/footers.
 
 TEXT:
@@ -115,43 +150,37 @@ For each ACTUAL RESEARCH CLAIM (not metadata):
 2. Classify type (factual, methodological, causal, interpretive)
 3. Rate confidence (0.0-1.0)
 
-Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata.
+Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata."""
 
-IMPORTANT: You MUST call the submit_extracted_claims tool with your results."""
+        result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "claim-extraction")
 
-        result = self._invoke_agent_with_tool(agent_prompt, tool_schema, "claim-extraction")
-
-        # Extract claims from tool call
+        # Extract claims from response
         claims = result.get('claims', [])
 
         if not isinstance(claims, list):
-            logger.error(f"Tool returned non-list: {type(claims)}")
-            raise RuntimeError(f"Tool returned invalid data type: {type(claims)}")
+            logger.error(f"Response returned non-list: {type(claims)}")
+            raise RuntimeError(f"Response returned invalid data type: {type(claims)}")
 
-        logger.info(f"✓ Claude Code agent extracted {len(claims)} claims via tool use")
+        logger.info(f"✓ AI agent extracted {len(claims)} claims via structured JSON")
         return claims
 
     def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
         """
-        Use Claude Code agent to simplify and normalize a claim using tool calling.
+        Use AI agent to simplify and normalize a claim with structured JSON output.
 
         Returns dict with 'simplified', 'normalized' versions.
 
         Raises:
             RuntimeError: If agent fails or returns invalid data
         """
-        # Define tool schema for structured output
-        tool_schema = {
-            "name": "submit_simplified_claim",
-            "description": "Submit the simplified and normalized versions of the claim",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "simplified": {"type": "string", "description": "5-10 word core assertion"},
-                    "normalized": {"type": "string", "description": "15-20 word normalized version"}
-                },
-                "required": ["simplified", "normalized"]
-            }
+        # Define expected JSON schema
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "simplified": {"type": "string", "description": "5-10 word core assertion"},
+                "normalized": {"type": "string", "description": "15-20 word normalized version"}
+            },
+            "required": ["simplified", "normalized"]
         }
 
         agent_prompt = f"""Simplify this claim, preserving all qualifiers (may, might, can, all, some, etc.):
@@ -160,17 +189,15 @@ IMPORTANT: You MUST call the submit_extracted_claims tool with your results."""
 
 Create:
 1. simplified: 5-10 word core assertion
-2. normalized: 15-20 word version
+2. normalized: 15-20 word version"""
 
-IMPORTANT: You MUST call the submit_simplified_claim tool with your results."""
-
-        result = self._invoke_agent_with_tool(agent_prompt, tool_schema, "claim-simplification")
+        result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "claim-simplification")
 
         if 'simplified' not in result or 'normalized' not in result:
-            logger.error(f"Tool returned incomplete response: missing required fields")
-            raise RuntimeError("Tool response missing 'simplified' or 'normalized' fields")
+            logger.error(f"Response missing required fields: {result.keys()}")
+            raise RuntimeError("Response missing 'simplified' or 'normalized' fields")
 
-        logger.info(f"✓ Claude Code agent simplified claim via tool use")
+        logger.info(f"✓ AI agent simplified claim via structured JSON")
         return result
 
     def process_document(self, file_path: str, doc_id: str = None) -> str:

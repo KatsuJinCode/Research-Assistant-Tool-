@@ -109,6 +109,10 @@ class ClaudeCodeAdapter(AgentAdapter):
         response_data = json.loads(response)
 
         if isinstance(response_data, dict):
+            # Claude Code CLI returns wrapper format: {"type": "result", "result": "..."}
+            # The tool calling doesn't seem to work as expected with --tools flag
+            # Claude just returns text instead of calling tools
+
             # Look for tool_uses or content blocks
             tool_uses = response_data.get('tool_uses', [])
             if not tool_uses and 'content' in response_data:
@@ -120,8 +124,24 @@ class ClaudeCodeAdapter(AgentAdapter):
             if tool_uses:
                 tool_use = tool_uses[0]
                 return tool_use.get('input', {})
-            else:
-                raise RuntimeError("Agent did not call the required tool")
+
+            # If no tool use found, try to parse JSON from the text result
+            # This is a workaround since Claude Code CLI --tools flag doesn't force tool use
+            if 'result' in response_data:
+                result_text = response_data['result']
+                # Try to extract JSON from the result text
+                try:
+                    # Look for JSON in code blocks or raw JSON
+                    import re
+                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', result_text, re.DOTALL)
+                    if json_match:
+                        return json.loads(json_match.group(1))
+                    # Try parsing the entire result as JSON
+                    return json.loads(result_text)
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+
+            raise RuntimeError(f"Agent did not call the required tool. Response format: {list(response_data.keys())}")
         else:
             raise RuntimeError("Agent returned unexpected format")
 
