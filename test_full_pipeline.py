@@ -24,10 +24,10 @@ def test_imports():
         import click
         from research_agent.graph_database import GraphDatabase
         from research_agent.normalization.qualifier_extractor import QualifierExtractor
-        print("  ✓ All dependencies imported successfully")
+        print("  [PASS] All dependencies imported successfully")
         return True
     except ImportError as e:
-        print(f"  ✗ Import failed: {e}")
+        print(f"  [FAIL] Import failed: {e}")
         return False
 
 
@@ -51,10 +51,10 @@ def test_graph_database():
         assert stats['total_nodes'] >= 2
         assert stats['total_relationships'] >= 1
 
-        print(f"  ✓ Graph database working ({stats['total_nodes']} nodes, {stats['total_relationships']} relationships)")
+        print(f"  [PASS] Graph database working ({stats['total_nodes']} nodes, {stats['total_relationships']} relationships)")
         return True
     except Exception as e:
-        print(f"  ✗ Graph database failed: {e}")
+        print(f"  [FAIL] Graph database failed: {e}")
         return False
 
 
@@ -74,13 +74,13 @@ def test_qualifier_extraction():
         assert any(q['type'] == 'modal' and q['text'] == 'can' for q in qualifiers)
 
         # Test preservation
-        preserved = extractor.verify_preservation(claim, claim)
-        assert preserved is True
+        preservation_result = extractor.verify_preservation(claim, claim)
+        assert preservation_result['preserved'] is True
 
-        print(f"  ✓ Qualifier extraction working (found {len(qualifiers)} qualifiers)")
+        print(f"  [PASS] Qualifier extraction working (found {len(qualifiers)} qualifiers)")
         return True
     except Exception as e:
-        print(f"  ✗ Qualifier extraction failed: {e}")
+        print(f"  [FAIL] Qualifier extraction failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -97,8 +97,8 @@ def test_pdf_extraction():
         pdf_path = Path("sample papers/SHORT-The-Myth-of-Mental-Illness.pdf")
 
         if not pdf_path.exists():
-            print(f"  ⚠ Sample PDF not found at: {pdf_path}")
-            print("  ⚠ Skipping PDF test (not critical for setup)")
+            print(f"  [WARN] Sample PDF not found at: {pdf_path}")
+            print("  [WARN] Skipping PDF test (not critical for setup)")
             return True  # Don't fail if sample PDF missing
 
         # Try to extract text
@@ -110,10 +110,10 @@ def test_pdf_extraction():
 
         assert len(text) > 1000  # Should have substantial text
 
-        print(f"  ✓ PDF extraction working ({len(text)} characters extracted)")
+        print(f"  [PASS] PDF extraction working ({len(text)} characters extracted)")
         return True
     except Exception as e:
-        print(f"  ✗ PDF extraction failed: {e}")
+        print(f"  [FAIL] PDF extraction failed: {e}")
         return False
 
 
@@ -129,11 +129,11 @@ def test_research_apis():
 
         assert len(results) > 0
 
-        print("  ✓ Research APIs accessible (arXiv working)")
+        print("  [PASS] Research APIs accessible (arXiv working)")
         return True
     except Exception as e:
-        print(f"  ⚠ Research API test failed: {e}")
-        print("  ⚠ This may be a network issue - continuing anyway")
+        print(f"  [WARN] Research API test failed: {e}")
+        print("  [WARN] This may be a network issue - continuing anyway")
         return True  # Don't fail on network issues
 
 
@@ -146,11 +146,11 @@ def test_neo4j_connection():
         db = Neo4jDatabase()
         db.close()
 
-        print("  ✓ Neo4j connection working")
+        print("  [PASS] Neo4j connection working")
         return True
     except Exception as e:
-        print("  ⚠ Neo4j not installed (optional)")
-        print("  ℹ System will use NetworkX graph database")
+        print("  [WARN] Neo4j not installed (optional)")
+        print("  [INFO] System will use NetworkX graph database")
         return True  # Neo4j is optional
 
 
@@ -196,11 +196,11 @@ def test_end_to_end_pipeline():
         # Verify export created
         assert Path(export_file).exists()
 
-        print("  ✓ End-to-end pipeline working")
-        print(f"  ✓ Exported graph to: {export_file}")
+        print("  [PASS] End-to-end pipeline working")
+        print(f"  [PASS] Exported graph to: {export_file}")
         return True
     except Exception as e:
-        print(f"  ✗ Pipeline test failed: {e}")
+        print(f"  [FAIL] Pipeline test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -229,7 +229,7 @@ def main():
             result = test_func()
             results.append((name, result))
         except Exception as e:
-            print(f"\n  ✗ {name} crashed: {e}")
+            print(f"\n  [FAIL] {name} crashed: {e}")
             results.append((name, False))
 
     # Summary
@@ -241,14 +241,14 @@ def main():
     total = len(results)
 
     for name, result in results:
-        status = "✓ PASS" if result else "✗ FAIL"
+        status = "[PASS]" if result else "[FAIL]"
         print(f"{status:10} {name}")
 
     print("="*80)
     print(f"Results: {passed}/{total} tests passed")
 
     if passed == total:
-        print("\n✅ SUCCESS: All tests passed! System is fully operational.")
+        print("\n[SUCCESS] All tests passed! System is fully operational.")
         print("\nThe system is ready to:")
         print("  - Extract claims from research papers")
         print("  - Preserve critical qualifiers")
@@ -258,7 +258,7 @@ def main():
         return 0
     else:
         failed_tests = [name for name, result in results if not result]
-        print(f"\n⚠ ISSUES: {len(failed_tests)} test(s) failed:")
+        print(f"\n[WARN] ISSUES: {len(failed_tests)} test(s) failed:")
         for name in failed_tests:
             print(f"  - {name}")
         print("\nPlease troubleshoot the failed tests.")
