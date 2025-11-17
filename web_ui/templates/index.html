@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Research Graph Navigator</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        #header {
+            background: #2196F3;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #stats {
+            background: #2a2a2a;
+            padding: 15px;
+            display: flex;
+            justify-content: space-around;
+            border-bottom: 2px solid #333;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        #container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+
+        #sidebar {
+            width: 350px;
+            background: #2a2a2a;
+            border-right: 2px solid #333;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #graph-area {
+            flex: 1;
+            background: #1a1a1a;
+            position: relative;
+        }
+
+        .claim-card {
+            background: #333;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .claim-card:hover {
+            background: #3a3a3a;
+            border-left-color: #64B5F6;
+        }
+
+        .claim-card.selected {
+            background: #2196F3;
+            color: white;
+        }
+
+        .claim-text {
+            font-size: 14px;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .claim-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .claim-card.selected .claim-meta {
+            color: #E3F2FD;
+        }
+
+        #detail-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 400px;
+            background: #2a2a2a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            display: none;
+        }
+
+        #detail-panel.visible {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2196F3;
+        }
+
+        .detail-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #64B5F6;
+        }
+
+        .detail-item {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .badge-support {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .badge-contradict {
+            background: #F44336;
+            color: white;
+        }
+
+        .badge-pending {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #388E3C;
+        }
+
+        .btn-danger {
+            background: #F44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        .actions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #444;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node circle {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .node:hover circle {
+            stroke: #64B5F6;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font-size: 12px;
+            fill: #e0e0e0;
+            pointer-events: none;
+        }
+
+        .link {
+            stroke: #555;
+            stroke-width: 2px;
+            fill: none;
+        }
+
+        .link-support {
+            stroke: #4CAF50;
+        }
+
+        .link-parent {
+            stroke: #2196F3;
+        }
+
+        .link-evidence {
+            stroke: #FF9800;
+        }
+
+        .node-document circle {
+            fill: #9C27B0;
+        }
+
+        .node-root circle {
+            fill: #2196F3;
+        }
+
+        .node-child circle {
+            fill: #64B5F6;
+        }
+
+        .node-evidence circle {
+            fill: #FF9800;
+        }
+
+        .link-contains {
+            stroke: #9C27B0;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #F44336, #FF9800, #4CAF50);
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🔍 Research Graph Navigator</h1>
+        <p>Interactive Claim Exploration & Investigation</p>
+    </div>
+
+    <div id="stats">
+        <div class="stat">
+            <div class="stat-value" id="stat-nodes">-</div>
+            <div class="stat-label">Total Nodes</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-claims">-</div>
+            <div class="stat-label">Claims</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-evidence">-</div>
+            <div class="stat-label">Evidence</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-research">-</div>
+            <div class="stat-label">Research Results</div>
+        </div>
+    </div>
+
+    <div id="container">
+        <div id="sidebar">
+            <h2 style="margin-bottom: 15px;">Top-Level Claims</h2>
+            <div id="root-claims"></div>
+        </div>
+
+        <div id="graph-area">
+            <svg id="graph-svg"></svg>
+
+            <div id="detail-panel">
+                <div class="detail-section">
+                    <div class="detail-title" id="detail-claim-text"></div>
+                    <div class="claim-meta">
+                        <span>Specificity: <span id="detail-specificity">-</span></span> |
+                        <span>Strength: <span id="detail-strength">-</span></span>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="summary-section" style="display:none;">
+                    <div class="detail-subtitle">📝 Summarization Details</div>
+                    <div class="detail-item">
+                        <strong>Original Text:</strong><br>
+                        <span id="summary-original" style="font-size: 12px; color: #999;"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Compression:</strong> <span id="summary-compression">-</span> of original length<br>
+                        <strong>Qualifiers Preserved:</strong> <span id="summary-qualifiers">-</span>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="children-section" style="display:none;">
+                    <div class="detail-subtitle">📊 Sub-Claims (<span id="children-count">0</span>)</div>
+                    <div id="children-list"></div>
+                </div>
+
+                <div class="detail-section" id="evidence-section" style="display:none;">
+                    <div class="detail-subtitle">📚 Evidence (<span id="evidence-count">0</span>)</div>
+                    <div id="evidence-list"></div>
+                </div>
+
+                <div class="detail-section" id="sources-section" style="display:none;">
+                    <div class="detail-subtitle">📄 Source Locations (<span id="sources-count">0</span>)</div>
+                    <div id="sources-list"></div>
+                </div>
+
+                <div class="detail-section" id="research-section" style="display:none;">
+                    <div class="detail-subtitle">🤖 Research History (<span id="research-count">0</span>)</div>
+                    <div id="research-list"></div>
+                </div>
+
+                <div class="actions">
+                    <div class="detail-subtitle">🔬 Investigate This Claim</div>
+                    <button class="btn btn-success" onclick="investigateClaim('support')">
+                        ✓ Find Supporting Evidence
+                    </button>
+                    <button class="btn btn-danger" onclick="investigateClaim('contradict')">
+                        ✗ Find Contradicting Evidence
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentClaimId = null;
+        let graphData = { nodes: [], links: [] };
+
+        // Load stats
+        fetch('/api/graph-stats')
+            .then(r => r.json())
+            .then(stats => {
+                document.getElementById('stat-nodes').textContent = stats.nodes;
+                document.getElementById('stat-claims').textContent = stats.node_types.Claim || 0;
+                document.getElementById('stat-evidence').textContent = stats.node_types.Evidence || 0;
+                document.getElementById('stat-research').textContent = stats.node_types.ResearchResult || 0;
+            });
+
+        // Load full unified graph
+        fetch('/api/full-graph')
+            .then(r => r.json())
+            .then(data => {
+                console.log('Full graph data:', data);
+                buildUnifiedGraph(data);
+            });
+
+        function selectClaim(claimId, cardElement) {
+            // Update UI
+            document.querySelectorAll('.claim-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+
+            currentClaimId = claimId;
+
+            // Load claim details
+            fetch(`/api/claim/${claimId}`)
+                .then(r => r.json())
+                .then(claim => {
+                    showClaimDetails(claim);
+                    buildGraph(claim);
+                });
+        }
+
+        function showClaimDetails(claim) {
+            const panel = document.getElementById('detail-panel');
+            panel.classList.add('visible');
+
+            // Show summary if available, otherwise full text
+            const displayText = claim.summary || claim.text;
+            document.getElementById('detail-claim-text').textContent = displayText;
+            document.getElementById('detail-specificity').textContent = (claim.specificity || 0).toFixed(2);
+            document.getElementById('detail-strength').textContent = claim.strength || 'NEUTRAL';
+
+            // Show summarization info if claim has summary
+            const summarySection = document.getElementById('summary-section');
+            if (claim.summary && claim.summary !== claim.text) {
+                summarySection.style.display = 'block';
+                document.getElementById('summary-original').textContent = claim.text;
+                document.getElementById('summary-compression').textContent =
+                    claim.compression_ratio ? (claim.compression_ratio * 100).toFixed(0) + '%' : 'N/A';
+                document.getElementById('summary-qualifiers').textContent =
+                    claim.qualifiers_preserved || 'N/A';
+            } else {
+                summarySection.style.display = 'none';
+            }
+
+            // Children
+            if (claim.children.length > 0) {
+                document.getElementById('children-section').style.display = 'block';
+                document.getElementById('children-count').textContent = claim.children.length;
+                const list = document.getElementById('children-list');
+                list.innerHTML = '';
+                claim.children.forEach(child => {
+                    const childText = child.summary || child.text.substring(0, 100);
+                    list.innerHTML += `
+                        <div class="detail-item">
+                            ${childText}${!child.summary && child.text.length > 100 ? '...' : ''}
+                            <br><small>Specificity: ${(child.specificity || 0).toFixed(2)}</small>
+                        </div>
+                    `;
+                });
+            } else {
+                document.getElementById('children-section').style.display = 'none';
+            }
+
+            // Evidence
+            if (claim.evidence.length > 0) {
+                document.getElementById('evidence-section').style.display = 'block';
+                document.getElementById('evidence-count').textContent = claim.evidence.length;
+                const list = document.getElementById('evidence-list');
+                list.innerHTML = '';
+                claim.evidence.forEach(ev => {
+                    const badge = ev.type === 'SUPPORTS' ? 'badge-support' : 'badge-contradict';
+                    list.innerHTML += `
+                        <div class="detail-item">
+                            <span class="badge ${badge}">${ev.type}</span>
+                            <strong>${ev.title}</strong>
+                            ${ev.url ? `<br><a href="${ev.url}" target="_blank" style="color: #64B5F6;">View Paper</a>` : ''}
+                            ${ev.strength ? `<br>Strength: ${(ev.strength * 100).toFixed(0)}%` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                document.getElementById('evidence-section').style.display = 'none';
+            }
+
+            // Sources
+            if (claim.sources.length > 0) {
+                document.getElementById('sources-section').style.display = 'block';
+                document.getElementById('sources-count').textContent = claim.sources.length;
+                const list = document.getElementById('sources-list');
+                list.innerHTML = '';
+                claim.sources.forEach(src => {
+                    list.innerHTML += `
+                        <div class="detail-item">
+                            <strong>Page ${src.page}, Line ${src.line}</strong>
+                            <br>${src.sentence.substring(0, 150)}...
+                        </div>
+                    `;
+                });
+            } else {
+                document.getElementById('sources-section').style.display = 'none';
+            }
+
+            // Research
+            if (claim.research.length > 0) {
+                document.getElementById('research-section').style.display = 'block';
+                document.getElementById('research-count').textContent = claim.research.length;
+                const list = document.getElementById('research-list');
+                list.innerHTML = '';
+                claim.research.forEach(res => {
+                    list.innerHTML += `
+                        <div class="detail-item">
+                            <strong>${res.agent}</strong>
+                            <span class="badge badge-pending">${res.status}</span>
+                            <br>${res.findings}
+                            ${res.confidence ? `
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${res.confidence * 100}%"></div>
+                                </div>
+                                <small>Confidence: ${(res.confidence * 100).toFixed(0)}%</small>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                document.getElementById('research-section').style.display = 'none';
+            }
+        }
+
+        function buildUnifiedGraph(graphData) {
+            const nodes = [];
+            const links = [];
+            const sidebar = document.getElementById('root-claims');
+            sidebar.innerHTML = '<h2 style="margin-bottom: 15px;">Document Hierarchy</h2>';
+
+            graphData.forEach(doc => {
+                // Add document node
+                nodes.push({
+                    id: doc.doc_id,
+                    label: doc.doc_title || 'Document',
+                    type: 'document',
+                    fullData: doc
+                });
+
+                // Add sidebar entry for document
+                const docCard = document.createElement('div');
+                docCard.className = 'claim-card';
+                docCard.style.borderLeftColor = '#9C27B0';
+                docCard.innerHTML = `
+                    <div class="claim-text" style="font-weight: bold;">${doc.doc_title || 'Document'}</div>
+                    <div class="claim-meta">${doc.root_claims.length} root claims</div>
+                `;
+                sidebar.appendChild(docCard);
+
+                // Add root claims
+                doc.root_claims.forEach(root => {
+                    if (!root.id) return;
+
+                    const rootLabel = root.summary || root.text.substring(0, 40);
+                    nodes.push({
+                        id: root.id,
+                        label: rootLabel,
+                        type: 'root',
+                        fullData: root
+                    });
+                    links.push({
+                        source: doc.doc_id,
+                        target: root.id,
+                        type: 'contains'
+                    });
+
+                    // Add child claims
+                    doc.child_claims.forEach(child => {
+                        if (!child.id || child.parent_id !== root.id) return;
+
+                        const childLabel = child.summary || child.text.substring(0, 40);
+                        nodes.push({
+                            id: child.id,
+                            label: childLabel,
+                            type: 'child',
+                            fullData: child
+                        });
+                        links.push({
+                            source: root.id,
+                            target: child.id,
+                            type: 'parent'
+                        });
+                    });
+                });
+
+                // Add evidence
+                doc.evidence.forEach(ev => {
+                    if (!ev.id || !ev.claim_id) return;
+
+                    nodes.push({
+                        id: ev.id,
+                        label: ev.title.substring(0, 30),
+                        type: 'evidence',
+                        fullData: ev
+                    });
+                    links.push({
+                        source: ev.id,
+                        target: ev.claim_id,
+                        type: ev.type === 'SUPPORTS' ? 'support' : 'contradict'
+                    });
+                });
+            });
+
+            console.log('Building graph with', nodes.length, 'nodes and', links.length, 'links');
+            renderGraph(nodes, links);
+        }
+
+        function buildGraph(claim) {
+            // Legacy function - now handled by buildUnifiedGraph
+            const nodes = [];
+            const links = [];
+
+            // Center node (the claim) - use summary if available
+            const rootLabel = claim.summary || claim.text.substring(0, 30) + '...';
+            nodes.push({
+                id: claim.id,
+                label: rootLabel.substring(0, 40),
+                type: 'root'
+            });
+
+            // Add children
+            claim.children.forEach((child, i) => {
+                const childLabel = child.summary || child.text.substring(0, 30) + '...';
+                nodes.push({
+                    id: child.id,
+                    label: childLabel.substring(0, 40),
+                    type: 'child'
+                });
+                links.push({
+                    source: claim.id,
+                    target: child.id,
+                    type: 'parent'
+                });
+            });
+
+            // Add evidence
+            claim.evidence.forEach((ev, i) => {
+                const evId = 'ev_' + i;
+                nodes.push({
+                    id: evId,
+                    label: ev.title.substring(0, 20) + '...',
+                    type: 'evidence'
+                });
+                links.push({
+                    source: evId,
+                    target: claim.id,
+                    type: ev.type === 'SUPPORTS' ? 'support' : 'contradict'
+                });
+            });
+
+            renderGraph(nodes, links);
+        }
+
+        function renderGraph(nodes, links) {
+            const svg = d3.select('#graph-svg');
+            svg.selectAll('*').remove();
+
+            const width = document.getElementById('graph-area').clientWidth;
+            const height = document.getElementById('graph-area').clientHeight;
+
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(150))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2));
+
+            const link = svg.append('g')
+                .selectAll('path')
+                .data(links)
+                .join('path')
+                .attr('class', d => `link link-${d.type}`)
+                .attr('marker-end', 'url(#arrow)');
+
+            const node = svg.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('class', d => `node node-${d.type}`)
+                .call(d3.drag()
+                    .on('start', dragStarted)
+                    .on('drag', dragged)
+                    .on('end', dragEnded));
+
+            node.append('circle')
+                .attr('r', 20)
+                .on('click', (event, d) => {
+                    event.stopPropagation();
+                    // If it's a claim node (not evidence), load its details
+                    if (d.type === 'root' || d.type === 'child') {
+                        // Remove previous selection
+                        d3.selectAll('.node circle').style('stroke', null).style('stroke-width', null);
+                        // Highlight selected
+                        d3.select(event.currentTarget).style('stroke', '#FFD700').style('stroke-width', '4px');
+
+                        // Load claim details
+                        fetch(`/api/claim/${d.id}`)
+                            .then(r => r.json())
+                            .then(claim => {
+                                showClaimDetails(claim);
+                            });
+                    }
+                });
+
+            node.append('text')
+                .text(d => d.label)
+                .attr('x', 25)
+                .attr('y', 5);
+
+            simulation.on('tick', () => {
+                link.attr('d', d => `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`);
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            function dragStarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragEnded(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+        }
+
+        function investigateClaim(type) {
+            if (!currentClaimId) return;
+
+            fetch('/api/investigate-claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    claim_id: currentClaimId,
+                    type: type
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                alert(`Investigation started!\nAgent: ${result.agent}\nType: ${result.type}\n\nRefresh the page in a moment to see results.`);
+            });
+        }
+    </script>
+</body>
+</html>
