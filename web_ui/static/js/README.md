@@ -265,9 +265,42 @@ document.getElementById('new-btn').addEventListener('click', () => {
 - **Progress bar**: Never goes backwards (see ui.js:82-88)
 - **Real-time updates**: WebSocket provides instant feedback during processing
 
+## Testing Workflow
+
+**CRITICAL**: Always run end-to-end tests BEFORE manual testing to catch errors early!
+
+### Before Making Changes
+```bash
+# Run the upload flow test
+cd web_ui
+python test_upload_flow.py
+```
+
+This test catches:
+- Database connection issues
+- Missing methods (like `_extract_document_title`)
+- PDF extraction errors (null bytes, encoding issues)
+- AI agent failures
+- JSON parsing errors
+- Database storage problems
+- WebSocket progress update failures
+
+### After Making Changes
+1. Run `python test_upload_flow.py` to verify nothing broke
+2. Check server logs for errors
+3. Test manually in browser
+4. Check browser console for JavaScript errors
+
+### Adding New Features
+1. Update `test_upload_flow.py` with new test cases FIRST
+2. Implement the feature
+3. Run tests until they pass
+4. Then test manually
+
 ## Related Files
 
 - `../templates/index.html` - HTML structure and CSS styles
 - `../../app.py` - Flask backend API endpoints
 - `../../document_processor.py` - Backend document processing logic
+- `../../test_upload_flow.py` - End-to-end upload tests (RUN THIS FIRST!)
 - `../../../research_agent/graph_database.py` - Neo4j database operations

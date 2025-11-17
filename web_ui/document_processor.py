@@ -699,6 +699,11 @@ Find the main title/heading at the top of the document. Return just the title te
         # Rejoin into paragraphs (join lines until we hit a break)
         cleaned_text = ' '.join(cleaned_lines)
 
+        # Remove null bytes (can break JSON parsing)
+        if '\x00' in cleaned_text:
+            logger.warning("Text contains null bytes - removing them")
+            cleaned_text = cleaned_text.replace('\x00', '')
+
         # Normalize whitespace
         cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
 
