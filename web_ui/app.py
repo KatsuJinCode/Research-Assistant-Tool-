@@ -200,66 +200,106 @@ def get_graph_stats():
 
 @app.route('/api/full-graph')
 def get_full_graph():
-    """Get complete hierarchical graph: Documents -> Super-Claims -> Sub-claims -> Evidence."""
-    query = """
-    // Get Documents
+    """Get complete hierarchical graph with arbitrary depth support."""
+
+    # Get all documents
+    doc_query = """
     MATCH (d:Document)
+    RETURN d.id as id, d.title as title, d.status as status
+    """
 
-    // Get ONLY super-claims (categories) - these are marked as is_super_claim = true
-    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(super:Claim)
-    WHERE super.is_super_claim = true
-
-    // Get sub-claims under each super-claim
-    OPTIONAL MATCH (super)-[:HAS_SUB_CLAIM]->(sub:Claim)
-
-    // Get evidence
-    OPTIONAL MATCH (super)<-[r_ev:SUPPORTS|CONTRADICTS]-(e:Evidence)
-    OPTIONAL MATCH (sub)<-[r_ev_sub:SUPPORTS|CONTRADICTS]-(e_sub:Evidence)
-
+    # Get all claims with their relationships (supports arbitrary depth)
+    claims_query = """
+    MATCH (c:Claim)
+    OPTIONAL MATCH (c)-[r:HAS_SUB_CLAIM]->(child:Claim)
     RETURN
-        d.id as doc_id,
-        d.title as doc_title,
-        d.status as doc_status,
-        collect(DISTINCT {
-            id: super.id,
-            text: super.text,
-            summary: super.summary,
-            normalized: super.normalized,
-            specificity: super.specificity_score,
-            is_super_claim: super.is_super_claim,
-            category_description: super.category_description,
-            quality_score: super.quality_score
-        }) as super_claims,
-        collect(DISTINCT {
-            id: sub.id,
-            parent_id: super.id,
-            text: sub.text,
-            summary: sub.summary,
-            normalized: sub.normalized,
-            specificity: sub.specificity_score,
-            claim_type: sub.claim_type,
-            confidence: sub.confidence
-        }) as sub_claims,
-        collect(DISTINCT {
+        c.id as id,
+        c.text as text,
+        c.summary as summary,
+        c.normalized as normalized,
+        c.specificity_score as specificity,
+        c.is_super_claim as is_super_claim,
+        c.category_description as category_description,
+        c.quality_score as quality_score,
+        c.claim_type as claim_type,
+        c.confidence as confidence,
+        collect(child.id) as child_ids
+    """
+
+    # Get document-claim relationships
+    doc_claim_query = """
+    MATCH (d:Document)-[:CONTAINS_CLAIM]->(c:Claim)
+    RETURN d.id as doc_id, collect(c.id) as claim_ids
+    """
+
+    # Get evidence relationships
+    evidence_query = """
+    MATCH (c:Claim)<-[r:SUPPORTS|CONTRADICTS]-(e:Evidence)
+    RETURN
+        c.id as claim_id,
+        collect({
             id: e.id,
-            claim_id: super.id,
             title: e.title,
-            type: type(r_ev),
+            type: type(r),
             url: e.url
-        }) as evidence
+        }) as evidence_list
     """
 
     with db.driver.session(database=db.database) as session:
-        result = session.run(query)
-        records = [dict(record) for record in result]
+        # Fetch all data
+        documents = [dict(r) for r in session.run(doc_query)]
+        claims = [dict(r) for r in session.run(claims_query)]
+        doc_claims = [dict(r) for r in session.run(doc_claim_query)]
+        evidence_data = [dict(r) for r in session.run(evidence_query)]
 
-    # Clean up None values
-    for record in records:
-        record['super_claims'] = [c for c in record['super_claims'] if c.get('id')]
-        record['sub_claims'] = [c for c in record['sub_claims'] if c.get('id')]
-        record['evidence'] = [e for e in record['evidence'] if e.get('id')]
+    # Build document-claim mapping
+    doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
 
-    return jsonify(records)
+    # Build evidence mapping
+    evidence_map = {ev['claim_id']: ev['evidence_list'] for ev in evidence_data}
+
+    # Structure response
+    response = []
+    for doc in documents:
+        doc_id = doc['id']
+
+        # Get claims for this document
+        doc_claim_ids = doc_claim_map.get(doc_id, [])
+
+        # Separate super-claims and regular claims
+        super_claims = []
+        all_claims = []
+
+        for claim in claims:
+            if claim['id'] in doc_claim_ids:
+                claim_data = {
+                    'id': claim['id'],
+                    'text': claim['text'],
+                    'summary': claim['summary'],
+                    'normalized': claim['normalized'],
+                    'specificity': claim['specificity'],
+                    'is_super_claim': claim['is_super_claim'],
+                    'category_description': claim['category_description'],
+                    'quality_score': claim['quality_score'],
+                    'claim_type': claim['claim_type'],
+                    'confidence': claim['confidence'],
+                    'child_ids': [cid for cid in claim['child_ids'] if cid]  # Filter None
+                }
+
+                if claim['is_super_claim']:
+                    super_claims.append(claim_data)
+                all_claims.append(claim_data)
+
+        response.append({
+            'doc_id': doc_id,
+            'doc_title': doc['title'],
+            'doc_status': doc['status'],
+            'super_claims': super_claims,
+            'all_claims': all_claims,  # New: all claims regardless of depth
+            'evidence': evidence_map
+        })
+
+    return jsonify(response)
 
 
 @app.route('/api/upload-document', methods=['POST'])
