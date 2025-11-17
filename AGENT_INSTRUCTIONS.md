@@ -6,6 +6,34 @@
 
 ---
 
+## 🚨 CRITICAL: Web UI Diagnostic Workflow
+
+**MANDATORY BEFORE USER TESTS**: Whenever user is about to test document upload or web UI:
+
+```bash
+cd web_ui
+python auto_diagnostic_repair.py
+```
+
+**YOU run this proactively. User should NEVER know this script exists.**
+
+This auto-diagnostic system:
+- Tests all 7 pipeline stages
+- Auto-fixes dependencies (eventlet, etc.)
+- Cleans failed/stuck documents
+- Reports [OK]/[FAIL]/[FIX] status
+- Takes ~10 seconds
+
+**Run this:**
+- Before user tests upload for first time
+- After any upload failures
+- After code changes to upload pipeline
+- Before starting web server
+
+If diagnostics fail, fix the issues BEFORE telling user to test.
+
+---
+
 ## 🚨 AUTOMATIC SETUP ON FIRST RUN
 
 When user starts you in this directory, you MUST automatically:
