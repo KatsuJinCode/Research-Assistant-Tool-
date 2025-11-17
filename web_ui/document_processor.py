@@ -87,22 +87,108 @@ Output ONLY the raw JSON object."""
             else:
                 result_text = response
 
-            # Parse as JSON - NO FALLBACKS
-            parsed_json = json.loads(result_text)
+            # Robust JSON extraction - try multiple strategies
+            parsed_json = self._extract_json_from_response(result_text, task_type)
             logger.info(f"✓ Agent returned valid JSON")
 
-            # Validate against schema - check required fields
+            # Validate against schema - check required fields STRICTLY
             self._validate_json_schema(parsed_json, expected_schema, task_type)
 
             return parsed_json
 
         except json.JSONDecodeError as e:
-            error_msg = f"Agent did not return valid JSON for {task_type}. Parse error: {e}. Response preview: {result_text[:300]}..."
+            error_msg = (
+                f"❌ AGENT ERROR ({task_type}): Could not extract valid JSON from response.\n\n"
+                f"Parse error: {e}\n\n"
+                f"Agent returned:\n{result_text[:300]}...\n\n"
+                f"Tried multiple extraction strategies but found no valid JSON."
+            )
             logger.error(error_msg)
             raise RuntimeError(error_msg)
         except Exception as e:
             logger.error(f"Agent invocation failed for {task_type}: {e}")
             raise
+
+    def _extract_json_from_response(self, text: str, task_type: str) -> Dict[str, Any]:
+        """
+        Robust JSON extraction - tries multiple strategies to find JSON in response.
+
+        Strategy order:
+        1. Try parsing as raw JSON (Claude followed instructions)
+        2. Extract from markdown code blocks (```json or ```)
+        3. Find first { ... } or [ ... ] structure in text
+        4. Fail with clear error
+
+        Args:
+            text: Raw response text from agent
+            task_type: Description for logging
+
+        Returns:
+            Parsed JSON dict
+
+        Raises:
+            json.JSONDecodeError: If no valid JSON found
+        """
+        import re
+
+        # Strategy 1: Try raw JSON (best case)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: Extract from code blocks
+        # Match ```json\n{...}\n``` or ```\n{...}\n```
+        code_block_pattern = r'```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```'
+        match = re.search(code_block_pattern, text, re.DOTALL)
+        if match:
+            logger.info(f"{task_type}: Extracted JSON from markdown code block")
+            try:
+                return json.loads(match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: Find first JSON object or array in text
+        # Look for standalone { ... } or [ ... ]
+        json_obj_pattern = r'\{(?:[^{}]|(?R))*\}'  # Matches balanced braces
+        # Simpler approach: find first { and matching }
+        brace_start = text.find('{')
+        bracket_start = text.find('[')
+
+        # Try object first if it appears before array
+        if brace_start != -1 and (bracket_start == -1 or brace_start < bracket_start):
+            depth = 0
+            for i in range(brace_start, len(text)):
+                if text[i] == '{':
+                    depth += 1
+                elif text[i] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[brace_start:i+1]
+                        try:
+                            logger.info(f"{task_type}: Extracted JSON object from embedded text")
+                            return json.loads(candidate)
+                        except json.JSONDecodeError:
+                            break
+
+        # Try array
+        if bracket_start != -1:
+            depth = 0
+            for i in range(bracket_start, len(text)):
+                if text[i] == '[':
+                    depth += 1
+                elif text[i] == ']':
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[bracket_start:i+1]
+                        try:
+                            logger.info(f"{task_type}: Extracted JSON array from embedded text")
+                            return json.loads(candidate)
+                        except json.JSONDecodeError:
+                            break
+
+        # Strategy 4: All failed
+        raise json.JSONDecodeError("No valid JSON found in response", text, 0)
 
     def _validate_json_schema(self, data: Dict, schema: Dict, task_type: str):
         """

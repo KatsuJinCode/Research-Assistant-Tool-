@@ -162,12 +162,45 @@ class TestStructuredOutputNoFallbacks(unittest.TestCase):
                 "test-task"
             )
 
-        error_msg = str(context.exception).lower()
-        self.assertIn("not return valid json", error_msg)
+        error_msg = str(context.exception)
+        # Check for clear error message
+        self.assertIn("Could not extract valid JSON", error_msg)
+        self.assertIn("Parse error", error_msg)
+        self.assertIn("Agent returned", error_msg)
 
     @patch('web_ui.document_processor.get_agent_adapter')
-    def test_agent_returns_json_in_code_block_should_fail(self, mock_get_adapter):
-        """Test that JSON in code blocks causes failure (NO FALLBACK EXTRACTION)"""
+    def test_agent_returns_json_embedded_in_text(self, mock_get_adapter):
+        """Test extraction of JSON embedded in explanatory text"""
+        # Mock adapter returns JSON embedded in conversational response
+        mock_adapter = Mock()
+        mock_adapter.invoke.return_value = json.dumps({
+            "type": "result",
+            "result": "Sure! Here's the answer you requested: {\"answer\": \"42\", \"confidence\": 0.95} Hope that helps!"
+        })
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "answer": {"type": "string"},
+                "confidence": {"type": "number"}
+            },
+            "required": ["answer", "confidence"]
+        }
+
+        # Should SUCCEED - robust extraction finds embedded JSON
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "test-task"
+        )
+
+        self.assertEqual(result["answer"], "42")
+        self.assertEqual(result["confidence"], 0.95)
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_agent_returns_json_in_code_block_extracted_successfully(self, mock_get_adapter):
+        """Test that JSON in code blocks is extracted (robust extraction)"""
         # Mock adapter returns JSON wrapped in markdown code block
         mock_adapter = Mock()
         mock_adapter.invoke.return_value = json.dumps({
@@ -182,16 +215,45 @@ class TestStructuredOutputNoFallbacks(unittest.TestCase):
             "required": ["answer"]
         }
 
-        # Should FAIL because we removed fallback extraction
-        with self.assertRaises(RuntimeError) as context:
-            self.processor._invoke_agent_with_structured_output(
-                "Test prompt",
-                schema,
-                "test-task"
-            )
+        # Should SUCCEED - robust extraction finds JSON in code block
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "test-task"
+        )
 
-        error_msg = str(context.exception).lower()
-        self.assertIn("not return valid json", error_msg)
+        self.assertEqual(result["answer"], "42")
+
+    @patch('web_ui.document_processor.get_agent_adapter')
+    def test_agent_returns_triple_backticks_extracted_successfully(self, mock_get_adapter):
+        """Test the EXACT scenario from user screenshot - now FIXED with robust extraction"""
+        # Mock adapter returns JSON with triple backticks at start (like user saw)
+        mock_adapter = Mock()
+        mock_adapter.invoke.return_value = json.dumps({
+            "type": "result",
+            "result": '```json\n{\n  "claims": [\n    {\n      "text": "During certain historical periods...",\n      "type": "factual",\n      "confidence": 0.9\n    }\n  ]\n}\n```'
+        })
+        mock_get_adapter.return_value = mock_adapter
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "claims": {"type": "array"}
+            },
+            "required": ["claims"]
+        }
+
+        # Should SUCCEED - robust extraction handles code blocks
+        result = self.processor._invoke_agent_with_structured_output(
+            "Test prompt",
+            schema,
+            "claim-extraction"
+        )
+
+        # Verify we got the data
+        self.assertIn("claims", result)
+        self.assertEqual(len(result["claims"]), 1)
+        self.assertEqual(result["claims"][0]["text"], "During certain historical periods...")
 
     @patch('web_ui.document_processor.get_agent_adapter')
     def test_agent_returns_valid_json(self, mock_get_adapter):
