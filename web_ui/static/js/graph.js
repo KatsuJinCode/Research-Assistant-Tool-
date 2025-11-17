@@ -624,12 +624,13 @@ const GraphRenderer = {
 
         // Add circle with growth animation (start tiny)
         const finalRadius = this.getNodeRadius(nodeData.type, nodeData);
-        newNodeGroup.append('circle')
+        const circle = newNodeGroup.append('circle')
             .attr('r', 0.1)  // Start nearly invisible
             .attr('fill', this.getNodeColor(nodeData.type, nodeData))
             .attr('stroke', '#fff')
             .attr('stroke-width', this.getNodeBorderWidth(nodeData))
             .attr('class', 'graph-node')
+            .attr('data-node-id', nodeData.id)  // For finding later
             .style('cursor', 'pointer')
             .style('opacity', 0)
             .transition()
@@ -637,6 +638,46 @@ const GraphRenderer = {
             .ease(d3.easeBackOut)  // Gentle bounce
             .attr('r', finalRadius)
             .style('opacity', 1);
+
+        // Add circular progress indicator for processing documents
+        if (nodeData.processing && nodeData.type === 'document') {
+            const progressArc = d3.arc()
+                .innerRadius(finalRadius + 2)
+                .outerRadius(finalRadius + 5)
+                .startAngle(0);
+
+            newNodeGroup.append('path')
+                .attr('class', 'progress-arc')
+                .attr('fill', '#4CAF50')
+                .attr('opacity', 0.8)
+                .datum({endAngle: 0})
+                .attr('d', progressArc);
+        }
+
+        // Add pulsing animation for fresh nodes
+        if (nodeData.fresh) {
+            circle.style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
+                .transition()
+                .duration(1500)
+                .ease(d3.easeSinInOut)
+                .style('filter', 'drop-shadow(0 0 3px rgba(76, 175, 80, 0.4))')
+                .transition()
+                .duration(1500)
+                .ease(d3.easeSinInOut)
+                .style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
+                .on('end', function repeat() {
+                    d3.select(this)
+                        .transition()
+                        .duration(1500)
+                        .ease(d3.easeSinInOut)
+                        .style('filter', 'drop-shadow(0 0 3px rgba(76, 175, 80, 0.4))')
+                        .transition()
+                        .duration(1500)
+                        .ease(d3.easeSinInOut)
+                        .style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
+                        .on('end', repeat);
+                });
+        }
 
         // Add label with fade-in
         const label = nodeData.fullData?.summary || nodeData.label || '';
@@ -687,6 +728,80 @@ const GraphRenderer = {
         }
 
         console.log('Added node incrementally:', nodeData.id, nodeData.type);
+    },
+
+    /**
+     * Update document processing progress with circular indicator
+     * @param {String} docId - Document node ID
+     * @param {Number} progress - Progress percentage (0-100)
+     */
+    updateDocumentProgress(docId, progress) {
+        const svg = d3.select('#graph-svg');
+        const progressArc = svg.selectAll(`g`).filter(d => d && d.id === docId)
+            .select('.progress-arc');
+
+        if (progressArc.empty()) return;
+
+        const node = this.currentGraphData.nodes.find(n => n.id === docId);
+        if (!node) return;
+
+        const radius = this.getNodeRadius('document', node);
+        const arc = d3.arc()
+            .innerRadius(radius + 2)
+            .outerRadius(radius + 5)
+            .startAngle(0)
+            .endAngle((progress / 100) * 2 * Math.PI);
+
+        progressArc.transition()
+            .duration(300)
+            .attrTween('d', function() {
+                const interpolate = d3.interpolate(this._current || 0, (progress / 100) * 2 * Math.PI);
+                this._current = (progress / 100) * 2 * Math.PI;
+                return (t) => arc({endAngle: interpolate(t)});
+            });
+    },
+
+    /**
+     * Mark document as complete and remove processing indicator
+     * @param {String} docId - Document node ID
+     */
+    markDocumentComplete(docId) {
+        const svg = d3.select('#graph-svg');
+        const progressArc = svg.selectAll(`g`).filter(d => d && d.id === docId)
+            .select('.progress-arc');
+
+        if (!progressArc.empty()) {
+            progressArc.transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+        }
+
+        // Update node data
+        const node = this.currentGraphData.nodes.find(n => n.id === docId);
+        if (node) {
+            node.processing = false;
+        }
+    },
+
+    /**
+     * Clear fresh flags from all nodes and stop pulsing animation
+     */
+    clearFreshFlags() {
+        const svg = d3.select('#graph-svg');
+
+        svg.selectAll('circle.graph-node').each(function(d) {
+            if (d && d.fresh) {
+                // Stop all transitions on this element
+                d3.select(this).interrupt();
+                // Remove the glow
+                d3.select(this).transition()
+                    .duration(1000)
+                    .style('filter', 'none');
+                // Clear fresh flag
+                d.fresh = false;
+            }
+        });
     },
 
     /**

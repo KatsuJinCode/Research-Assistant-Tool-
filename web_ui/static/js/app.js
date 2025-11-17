@@ -4,6 +4,7 @@
 
 const App = {
     socket: null,
+    processingInProgress: false,  // Track if document processing is ongoing
 
     /**
      * Initialize the application
@@ -14,7 +15,7 @@ const App = {
         // Setup Socket.IO for real-time updates
         this.initializeSocket();
 
-        // Load initial data
+        // Load initial data (safe to call even during processing)
         await this.loadGraph();
         await this.loadStats();
 
@@ -42,14 +43,17 @@ const App = {
 
             // Handle different events from the nested data.data.event field
             if (data.data && data.data.event === 'document_created') {
-                // Document node created - add incrementally
+                // Document node created - add incrementally with processing indicator
                 console.log('Document created:', data.data.doc_id);
+                this.processingInProgress = true;
                 if (data.data.node_data) {
                     const nodeData = {
                         id: data.data.node_data.id,
                         label: data.data.node_data.title || 'Untitled Document',
                         type: 'document',
-                        fullData: data.data.node_data
+                        fullData: data.data.node_data,
+                        processing: true,  // Mark as processing
+                        progress: data.progress || 0
                     };
                     GraphRenderer.addNodeIncremental(nodeData, null);
                 }
@@ -61,9 +65,14 @@ const App = {
                         id: data.data.node_data.id,
                         label: data.data.node_data.summary || data.data.node_data.text?.substring(0, 40) || 'Claim',
                         type: 'super',
-                        fullData: data.data.node_data
+                        fullData: data.data.node_data,
+                        fresh: true  // Mark as fresh/newly added
                     };
                     GraphRenderer.addNodeIncremental(nodeData, data.data.doc_id);
+                }
+                // Update document progress
+                if (data.data.doc_id && data.progress) {
+                    GraphRenderer.updateDocumentProgress(data.data.doc_id, data.progress);
                 }
             } else if (data.data && data.data.event === 'claim_added') {
                 // Sub-claim added - add incrementally with link to parent
@@ -73,21 +82,34 @@ const App = {
                         id: data.data.node_data.id,
                         label: data.data.node_data.summary || data.data.node_data.text?.substring(0, 40) || 'Claim',
                         type: 'sub',
-                        fullData: data.data.node_data
+                        fullData: data.data.node_data,
+                        fresh: true  // Mark as fresh/newly added
                     };
                     const parentId = data.data.node_data.parent_super_claim || data.data.doc_id;
                     GraphRenderer.addNodeIncremental(nodeData, parentId);
                 }
+                // Update document progress
+                if (data.data.doc_id && data.progress) {
+                    GraphRenderer.updateDocumentProgress(data.data.doc_id, data.progress);
+                }
             } else if (data.data && data.data.event === 'processing_complete') {
-                // Reload full graph to ensure consistency
+                // Mark document as complete
                 console.log('Document processing complete');
+                this.processingInProgress = false;
                 UI.updateProcessingStatus('Processing complete!', 100);
-                this.loadGraph();
+                if (data.data.doc_id) {
+                    GraphRenderer.markDocumentComplete(data.data.doc_id);
+                }
+                // Mark all fresh nodes as processed after a delay
+                setTimeout(() => {
+                    GraphRenderer.clearFreshFlags();
+                }, 2000);
                 this.loadStats();
             } else if (data.data && (data.data.event === 'claim_extraction_failed' ||
                        data.data.event === 'claim_simplification_failed')) {
                 // Display error prominently
                 console.error('AI Agent failure:', data.data.error);
+                this.processingInProgress = false;
                 alert('AI AGENT FAILURE\n\n' + data.data.error + '\n\nCheck that your AI agent CLI is installed and configured properly.\nSee AGENT_CONFIGURATION.md for setup instructions.');
             }
         });
