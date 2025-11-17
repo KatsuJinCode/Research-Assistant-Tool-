@@ -665,33 +665,33 @@
                 });
 
                 doc.super_claims.forEach(super_claim => {
-                    if (!root.id) return;
-                    const rootLabel = root.summary || root.text.substring(0, 40);
+                    if (!super_claim.id) return;
+                    const superLabel = super_claim.summary || super_claim.text.substring(0, 40);
                     newNodes.push({
-                        id: root.id,
-                        label: rootLabel,
-                        type: 'root',
-                        fullData: root
+                        id: super_claim.id,
+                        label: superLabel,
+                        type: 'super',
+                        fullData: super_claim
                     });
                     newLinks.push({
                         source: doc.doc_id,
-                        target: root.id,
+                        target: super_claim.id,
                         type: 'contains'
                     });
 
                     doc.sub_claims.forEach(sub => {
-                        if (!child.id || child.parent_id !== root.id) return;
-                        const childLabel = child.summary || child.text.substring(0, 40);
+                        if (!sub.id || sub.parent_id !== super_claim.id) return;
+                        const subLabel = sub.summary || sub.text.substring(0, 40);
                         newNodes.push({
-                            id: child.id,
-                            label: childLabel,
-                            type: 'child',
-                            fullData: child
+                            id: sub.id,
+                            label: subLabel,
+                            type: 'sub',
+                            fullData: sub
                         });
                         newLinks.push({
-                            source: root.id,
-                            target: child.id,
-                            type: 'parent'
+                            source: super_claim.id,
+                            target: sub.id,
+                            type: 'has_sub'
                         });
                     });
                 });
@@ -788,7 +788,7 @@
                             .attr('r', 20)
                             .on('click', (event, d) => {
                                 event.stopPropagation();
-                                if (d.type === 'root' || d.type === 'child') {
+                                if (d.type === 'super' || d.type === 'sub') {
                                     d3.selectAll('.node circle').style('stroke', null).style('stroke-width', null);
                                     d3.select(event.currentTarget).style('stroke', '#FFD700').style('stroke-width', '4px');
                                     fetch(`/api/claim/${d.id}`)
@@ -1309,38 +1309,38 @@
 
                 sidebar.appendChild(docCard);
 
-                // Add root claims
+                // Add super-claims (categories)
                 doc.super_claims.forEach(super_claim => {
-                    if (!root.id) return;
+                    if (!super_claim.id) return;
 
-                    const rootLabel = root.summary || root.text.substring(0, 40);
+                    const superLabel = super_claim.summary || super_claim.text.substring(0, 40);
                     nodes.push({
-                        id: root.id,
-                        label: rootLabel,
-                        type: 'root',
-                        fullData: root
+                        id: super_claim.id,
+                        label: superLabel,
+                        type: 'super',
+                        fullData: super_claim
                     });
                     links.push({
                         source: doc.doc_id,
-                        target: root.id,
+                        target: super_claim.id,
                         type: 'contains'
                     });
 
-                    // Add child claims
+                    // Add sub-claims under this super-claim
                     doc.sub_claims.forEach(sub => {
-                        if (!child.id || child.parent_id !== root.id) return;
+                        if (!sub.id || sub.parent_id !== super_claim.id) return;
 
-                        const childLabel = child.summary || child.text.substring(0, 40);
+                        const subLabel = sub.summary || sub.text.substring(0, 40);
                         nodes.push({
-                            id: child.id,
-                            label: childLabel,
-                            type: 'child',
-                            fullData: child
+                            id: sub.id,
+                            label: subLabel,
+                            type: 'sub',
+                            fullData: sub
                         });
                         links.push({
-                            source: root.id,
-                            target: child.id,
-                            type: 'parent'
+                            source: super_claim.id,
+                            target: sub.id,
+                            type: 'has_sub'
                         });
                     });
                 });
