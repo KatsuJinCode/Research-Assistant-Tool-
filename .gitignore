@@ -121,3 +121,6 @@ models/
 
 # Research Assistant Config (contains API keys)
 .research_config
+
+# Windows null device file (created by error redirects)
+nul
