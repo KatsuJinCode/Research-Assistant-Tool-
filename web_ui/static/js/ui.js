@@ -251,23 +251,40 @@ const UI = {
      * Update statistics display
      */
     updateStats(stats) {
-        document.getElementById('doc-count').textContent = stats.documents || 0;
-        document.getElementById('claim-count').textContent = stats.claims || 0;
-        document.getElementById('evidence-count').textContent = stats.evidence || 0;
+        const docCount = document.getElementById('doc-count');
+        const claimCount = document.getElementById('claim-count');
+        const evidenceCount = document.getElementById('evidence-count');
+
+        if (docCount) docCount.textContent = stats.documents || 0;
+        if (claimCount) claimCount.textContent = stats.claims || 0;
+        if (evidenceCount) evidenceCount.textContent = stats.evidence || 0;
+
+        if (!docCount || !claimCount || !evidenceCount) {
+            console.warn('Stats elements not found in DOM:', {docCount, claimCount, evidenceCount});
+        }
     },
 
     /**
      * Update processing status
      */
     updateProcessingStatus(message, progress) {
-        document.getElementById('status-text').textContent = message;
-
-        // NEVER GO BACKWARDS - only update if new progress is higher
+        const statusText = document.getElementById('status-text');
         const progressBar = document.getElementById('progress-bar');
-        const currentWidth = parseFloat(progressBar.style.width) || 0;
 
-        if (progress > currentWidth) {
-            progressBar.style.width = progress + '%';
+        if (statusText) {
+            statusText.textContent = message;
+        }
+
+        if (progressBar) {
+            // NEVER GO BACKWARDS - only update if new progress is higher
+            const currentWidth = parseFloat(progressBar.style.width) || 0;
+            if (progress > currentWidth) {
+                progressBar.style.width = progress + '%';
+            }
+        }
+
+        if (!statusText || !progressBar) {
+            console.warn('Processing status elements not found:', {statusText, progressBar});
         }
     },
 
@@ -275,21 +292,33 @@ const UI = {
      * Handle file upload
      */
     async handleFileUpload(file) {
+        console.log('handleFileUpload called with:', file);
 
-        document.getElementById('processing-panel').style.display = 'block';
+        const processingPanel = document.getElementById('processing-panel');
+        if (processingPanel) {
+            processingPanel.style.display = 'block';
+        } else {
+            console.warn('processing-panel element not found');
+        }
+
         this.updateProcessingStatus('Uploading document...', 0);
 
         try {
+            console.log('Calling API.uploadDocument...');
             await API.uploadDocument(file);
+            console.log('Upload successful!');
             this.updateProcessingStatus('Processing complete!', 100);
 
             // Hide processing panel after 2 seconds
             setTimeout(() => {
-                document.getElementById('processing-panel').style.display = 'none';
+                if (processingPanel) {
+                    processingPanel.style.display = 'none';
+                }
             }, 2000);
         } catch (error) {
             console.error('Upload failed:', error);
             this.updateProcessingStatus(`Error: ${error.message}`, 0);
+            alert(`Upload failed: ${error.message}`);
         }
     },
 
