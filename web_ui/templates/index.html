@@ -664,7 +664,7 @@
                     fullData: doc
                 });
 
-                doc.root_claims.forEach(root => {
+                doc.super_claims.forEach(super_claim => {
                     if (!root.id) return;
                     const rootLabel = root.summary || root.text.substring(0, 40);
                     newNodes.push({
@@ -679,7 +679,7 @@
                         type: 'contains'
                     });
 
-                    doc.child_claims.forEach(child => {
+                    doc.sub_claims.forEach(sub => {
                         if (!child.id || child.parent_id !== root.id) return;
                         const childLabel = child.summary || child.text.substring(0, 40);
                         newNodes.push({
@@ -857,7 +857,7 @@
                 docCard.setAttribute('data-doc-id', doc.doc_id);
                 docCard.innerHTML = `
                     <div class="claim-text" style="font-weight: bold;">${doc.doc_title || 'Document'}</div>
-                    <div class="claim-meta">${doc.root_claims.length} root claims</div>
+                    <div class="claim-meta">${doc.super_claims.length} categories</div>
                     <button class="delete-doc-btn" data-doc-id="${doc.doc_id}" style="position: absolute; top: 10px; right: 10px; background: #F44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
                 `;
 
@@ -1294,7 +1294,7 @@
                 docCard.style.position = 'relative';
                 docCard.innerHTML = `
                     <div class="claim-text" style="font-weight: bold;">${doc.doc_title || 'Document'}</div>
-                    <div class="claim-meta">${doc.root_claims.length} root claims</div>
+                    <div class="claim-meta">${doc.super_claims.length} categories</div>
                     <button class="delete-doc-btn" data-doc-id="${doc.doc_id}" style="position: absolute; top: 10px; right: 10px; background: #F44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️ Delete</button>
                 `;
 
@@ -1310,7 +1310,7 @@
                 sidebar.appendChild(docCard);
 
                 // Add root claims
-                doc.root_claims.forEach(root => {
+                doc.super_claims.forEach(super_claim => {
                     if (!root.id) return;
 
                     const rootLabel = root.summary || root.text.substring(0, 40);
@@ -1327,7 +1327,7 @@
                     });
 
                     // Add child claims
-                    doc.child_claims.forEach(child => {
+                    doc.sub_claims.forEach(sub => {
                         if (!child.id || child.parent_id !== root.id) return;
 
                         const childLabel = child.summary || child.text.substring(0, 40);

@@ -200,43 +200,49 @@ def get_graph_stats():
 
 @app.route('/api/full-graph')
 def get_full_graph():
-    """Get complete hierarchical graph: Documents -> Root Claims -> Sub-claims -> Evidence."""
+    """Get complete hierarchical graph: Documents -> Super-Claims -> Sub-claims -> Evidence."""
     query = """
     // Get Documents
     MATCH (d:Document)
 
-    // Get root claims (no parent)
-    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(root:Claim)
-    WHERE root.is_optimal = true AND NOT ()-[:PARENT_OF]->(root)
+    // Get ONLY super-claims (categories) - these are marked as is_super_claim = true
+    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(super:Claim)
+    WHERE super.is_super_claim = true
 
-    // Get child claims
-    OPTIONAL MATCH (root)-[:PARENT_OF]->(child:Claim)
+    // Get sub-claims under each super-claim
+    OPTIONAL MATCH (super)-[:HAS_SUB_CLAIM]->(sub:Claim)
 
     // Get evidence
-    OPTIONAL MATCH (root)<-[r_ev:SUPPORTS|CONTRADICTS]-(e:Evidence)
-    OPTIONAL MATCH (child)<-[r_ev_child:SUPPORTS|CONTRADICTS]-(e_child:Evidence)
+    OPTIONAL MATCH (super)<-[r_ev:SUPPORTS|CONTRADICTS]-(e:Evidence)
+    OPTIONAL MATCH (sub)<-[r_ev_sub:SUPPORTS|CONTRADICTS]-(e_sub:Evidence)
 
     RETURN
         d.id as doc_id,
         d.title as doc_title,
+        d.status as doc_status,
         collect(DISTINCT {
-            id: root.id,
-            text: root.text,
-            summary: root.summary,
-            normalized: root.normalized,
-            specificity: root.specificity_score
-        }) as root_claims,
+            id: super.id,
+            text: super.text,
+            summary: super.summary,
+            normalized: super.normalized,
+            specificity: super.specificity_score,
+            is_super_claim: super.is_super_claim,
+            category_description: super.category_description,
+            quality_score: super.quality_score
+        }) as super_claims,
         collect(DISTINCT {
-            id: child.id,
-            parent_id: root.id,
-            text: child.text,
-            summary: child.summary,
-            normalized: child.normalized,
-            specificity: child.specificity_score
-        }) as child_claims,
+            id: sub.id,
+            parent_id: super.id,
+            text: sub.text,
+            summary: sub.summary,
+            normalized: sub.normalized,
+            specificity: sub.specificity_score,
+            claim_type: sub.claim_type,
+            confidence: sub.confidence
+        }) as sub_claims,
         collect(DISTINCT {
             id: e.id,
-            claim_id: root.id,
+            claim_id: super.id,
             title: e.title,
             type: type(r_ev),
             url: e.url
@@ -249,8 +255,8 @@ def get_full_graph():
 
     # Clean up None values
     for record in records:
-        record['root_claims'] = [c for c in record['root_claims'] if c.get('id')]
-        record['child_claims'] = [c for c in record['child_claims'] if c.get('id')]
+        record['super_claims'] = [c for c in record['super_claims'] if c.get('id')]
+        record['sub_claims'] = [c for c in record['sub_claims'] if c.get('id')]
         record['evidence'] = [e for e in record['evidence'] if e.get('id')]
 
     return jsonify(records)

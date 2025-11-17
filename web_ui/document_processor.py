@@ -817,7 +817,8 @@ Create:
                 'normalized': super_claim_text,
                 'category_description': category_desc,
                 'is_super_claim': True,
-                'is_optimal': True
+                'is_optimal': True,
+                'quality_score': category.get('quality_score', 0.0)  # Cluster quality (silhouette score)
             }
             self.db.create_node('Claim', super_claim_node)
 
@@ -850,6 +851,8 @@ Create:
                     'simplified': claim_data['text'][:100],
                     'normalized': claim_data['text'],
                     'parent_super_claim': super_claim_id,
+                    'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
+                    'confidence': claim_data.get('confidence', 0.5),
                     'is_optimal': True  # Will be updated by optimizer
                 }
 
