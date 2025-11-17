@@ -17,7 +17,7 @@ from uuid import uuid4
 
 from research_agent.document_processing.pdf_extractor import PDFExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
-from research_agent.claim_analysis.intelligent_summarizer import IntelligentSummarizer
+# Intelligent summarization handled by _simplify_claim_with_agent() using Claude Code CLI
 from research_agent.neo4j_database import Neo4jDatabase
 from web_ui.agent_config import get_agent_adapter
 
@@ -49,7 +49,7 @@ class LiveDocumentProcessor:
         """
         self.progress_callback = progress_callback or self._default_callback
         self.db = Neo4jDatabase()
-        self.summarizer = IntelligentSummarizer()
+        # Summarization uses _simplify_claim_with_agent() - AI-powered via Claude Code CLI
 
     def _default_callback(self, message: str, progress: float, data: Dict[str, Any]):
         """Default callback - just log."""
@@ -585,13 +585,25 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
             "required": ["simplified", "normalized"]
         }
 
-        agent_prompt = f"""Simplify this claim, preserving all qualifiers (may, might, can, all, some, etc.):
+        agent_prompt = f"""Summarize this research claim using intelligent simplification while PRESERVING ALL QUALIFIERS.
 
-"{claim_text}"
+CLAIM: "{claim_text}"
 
-Create:
-1. simplified: 5-10 word core assertion
-2. normalized: 15-20 word version"""
+CRITICAL REQUIREMENTS:
+1. NEVER remove qualifiers (may, might, can, could, should, would, must, all, some, few, many, most)
+2. Simplify by removing redundancy and verbose constructions, NOT by removing meaning
+3. Keep the core assertion AND its uncertainty/scope markers
+
+Create TWO versions:
+1. simplified: Ultra-concise (5-12 words) - core assertion with key qualifiers
+2. normalized: Medium-length (15-25 words) - more complete but still simplified
+
+EXAMPLES:
+- Original: "The study suggests that some users who regularly utilize the system might experience improved performance metrics"
+- simplified: "Some users might experience improved performance"
+- normalized: "Study suggests some regular users might experience improved performance metrics"
+
+PRESERVE QUALIFIERS - they change the meaning!"""
 
         result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "claim-simplification")
 
@@ -886,17 +898,15 @@ Find the main title/heading at the top of the document. Return just the title te
                 # Create sub-claim node
                 claim_id = str(uuid4())
 
-                # Generate intelligent summary that preserves qualifiers
-                summary_result = self.summarizer.summarize_claim(claim_data['text'], target_length=5)
+                # Generate intelligent summary using Claude Code CLI
+                summary_result = self._simplify_claim_with_agent(claim_data['text'])
 
                 claim_node = {
                     'id': claim_id,
                     'text': claim_data['text'],
-                    'summary': summary_result['summary'],  # Intelligent summary preserving qualifiers
-                    'simplified': summary_result['normalized'],  # Medium-length version
-                    'normalized': summary_result['normalized'],
-                    'qualifiers_preserved': summary_result['preserved_qualifiers'],
-                    'compression_ratio': summary_result['compression_ratio'],
+                    'summary': summary_result['simplified'],  # Short AI summary preserving qualifiers
+                    'simplified': summary_result['simplified'],
+                    'normalized': summary_result['normalized'],  # Medium-length version
                     'parent_super_claim': super_claim_id,
                     'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
                     'confidence': claim_data.get('confidence', 0.5),
