@@ -41,19 +41,41 @@ pip install -q -r requirements-neo4j.txt
 
 Tell user: *"Setting up the Research Verification Agent System (2-3 minutes)..."*
 
-### Step 3: Install Neo4j (Optional but Recommended)
+### Step 3: Install and Start Neo4j (REQUIRED - Not Optional!)
+
+**Check if Neo4j is running:**
 ```bash
-# Check if Neo4j already working
-python -c "from research_agent.neo4j_database import Neo4jDatabase; db = Neo4jDatabase(); db.close()" 2>&1
+python -c "from research_agent.neo4j_database import Neo4jDatabase; db = Neo4jDatabase(); db.close(); print('RUNNING')" 2>&1
 ```
 
-If fails (not installed):
+**If Neo4j not running or not installed:**
+
+1. **Stop any existing processes:**
 ```powershell
-# On Windows
-powershell -ExecutionPolicy Bypass -File install_neo4j_windows.ps1
+powershell -ExecutionPolicy Bypass -File stop_neo4j.ps1
 ```
 
-Note: Requires admin privileges. If user declines, system works with NetworkX instead.
+2. **Install Neo4j (if not already installed):**
+```powershell
+# On Windows (user-space, no admin required)
+powershell -ExecutionPolicy Bypass -File install_neo4j_user.ps1
+```
+
+3. **Start Neo4j (single instance only):**
+```powershell
+powershell -ExecutionPolicy Bypass -File start_neo4j.ps1
+```
+
+**Neo4j Credentials:**
+- URL: http://localhost:7474
+- Bolt: bolt://localhost:7687
+- Username: neo4j
+- Password: research123
+
+**IMPORTANT:**
+- Only ONE Neo4j instance should run at a time
+- If multiple terminal windows appear, something is wrong - stop all and restart
+- Check connection before proceeding to tests
 
 ### Step 4: Run Full Pipeline Test
 ```bash
