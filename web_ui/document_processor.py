@@ -11,6 +11,7 @@ FALLBACK METHOD: LLM-based categorization (logged transparently when used)
 
 import logging
 import json
+import time
 from pathlib import Path
 from typing import Callable, Dict, Any, List, Tuple
 from uuid import uuid4
@@ -569,14 +570,16 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         logger.info(f"✓ AI agent extracted {len(claims)} claims via structured JSON")
         return claims
 
-    def _simplify_claim_with_agent(self, claim_text: str, claim_id: str = None, max_retries: int = 2) -> dict:
+    def _simplify_claim_with_agent(self, claim_text: str, claim_id: str = None, doc_id: str = None, max_retries: int = 2) -> dict:
         """
-        Three-stage claim simplification: Clarify → Simplify → Validate
+        Full 4-stage claim processing pipeline: Analysis → Clarification → Simplification → Validation
 
-        Returns dict with all processing stages for transparency.
+        Emits real-time SocketIO events for live frontend updates.
+        Returns dict with all processing stages for complete transparency.
         """
         result = {
             'text': claim_text,
+            'analysis': None,
             'clarified': None,
             'candidate_1': None,
             'candidate_2': None,
@@ -584,98 +587,193 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
             'score_1': 0,
             'score_2': 0,
             'score_3': 0,
+            'fidelity_reason': None,
+            'quality_score': 0,
+            'quality_reason': None,
+            'disposition': None,
+            'recommendation': None,
             'selected_candidate': None,
             'summary': None,
-            'processing_stage': 'created'
+            'processing_stage': 'created',
+            'duration_analysis_ms': 0,
+            'duration_clarification_ms': 0,
+            'duration_simplification_ms': 0,
+            'duration_validation_ms': 0,
+            'duration_total_ms': 0
         }
 
+        pipeline_start_time = time.time()
+
         try:
-            # STAGE 1: Clarify - make implicit meaning explicit
+            # STAGE 1: ANALYSIS - Deep understanding
+            start_time = time.time()
+            self._emit(f"Analyzing claim for deep understanding...", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'stage': 'analysis',
+                'status': 'in_progress',
+                'message': 'Analyzing claim for deep understanding...',
+                'data': {
+                    'original_text': claim_text,
+                    'word_count': len(claim_text.split())
+                }
+            })
+
+            result['analysis'] = self._analyze_claim(claim_text)
+            result['duration_analysis_ms'] = (time.time() - start_time) * 1000
+            result['processing_stage'] = 'analyzed'
+
+            self._emit(f"✓ Analysis complete", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'stage': 'analysis',
+                'status': 'complete',
+                'data': {
+                    'analysis': result['analysis'],
+                    'word_count': len(result['analysis'].split()),
+                    'duration_ms': result['duration_analysis_ms']
+                }
+            })
+
+            # STAGE 2: CLARIFICATION - Make implicit meaning explicit
+            start_time = time.time()
             self._emit(f"Clarifying claim meaning...", None, {
                 'event': 'claim_stage_update',
+                'doc_id': doc_id,
                 'claim_id': claim_id,
-                'stage': 'clarifying'
+                'stage': 'clarification',
+                'status': 'in_progress',
+                'message': 'Making implicit meaning explicit...'
             })
 
-            result['clarified'] = self._clarify_claim(claim_text)
+            result['clarified'] = self._clarify_claim(claim_text, result['analysis'])
+            result['duration_clarification_ms'] = (time.time() - start_time) * 1000
             result['processing_stage'] = 'clarified'
 
-            self._emit(f"✓ Clarified", None, {
-                'event': 'claim_clarified',
+            self._emit(f"✓ Clarification complete", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
                 'claim_id': claim_id,
-                'clarified': result['clarified']
+                'stage': 'clarification',
+                'status': 'complete',
+                'data': {
+                    'clarified': result['clarified'],
+                    'word_count': len(result['clarified'].split()),
+                    'duration_ms': result['duration_clarification_ms']
+                }
             })
 
-            # STAGE 2 & 3: Simplify + Validate (with retries)
-            for attempt in range(max_retries + 1):
-                self._emit(f"Generating simplified candidates (attempt {attempt + 1})...", None, {
+            # STAGE 3: SIMPLIFICATION - Generate 3 optimal candidates
+            start_time = time.time()
+            self._emit(f"Generating simplified candidates...", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'stage': 'simplification',
+                'status': 'in_progress',
+                'message': 'Generating 3 simplified candidates...'
+            })
+
+            candidates = self._simplify_claim_candidates(result['clarified'])
+            result['candidate_1'] = candidates['candidate_1']
+            result['candidate_2'] = candidates['candidate_2']
+            result['candidate_3'] = candidates['candidate_3']
+            result['duration_simplification_ms'] = (time.time() - start_time) * 1000
+            result['processing_stage'] = 'simplified'
+
+            self._emit(f"✓ Simplification complete", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'stage': 'simplification',
+                'status': 'complete',
+                'data': {
+                    'candidate_1': result['candidate_1'],
+                    'candidate_2': result['candidate_2'],
+                    'candidate_3': result['candidate_3'],
+                    'duration_ms': result['duration_simplification_ms']
+                }
+            })
+
+            # STAGE 4: VALIDATION - Fidelity + Quality scoring
+            start_time = time.time()
+            self._emit(f"Validating candidates and assessing quality...", None, {
+                'event': 'claim_stage_update',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'stage': 'validation',
+                'status': 'in_progress',
+                'message': 'Validating fidelity and assessing quality...'
+            })
+
+            validation = self._validate_final(claim_text, result['analysis'], result['clarified'], candidates)
+            result['score_1'] = validation.get('score_1', 0)
+            result['score_2'] = validation.get('score_2', 0)
+            result['score_3'] = validation.get('score_3', 0)
+            result['fidelity_reason'] = validation.get('fidelity_reason', '')
+            result['quality_score'] = validation.get('quality_score', 0)
+            result['quality_reason'] = validation.get('quality_reason', '')
+            result['disposition'] = validation.get('disposition', 'review')
+            result['recommendation'] = validation.get('recommendation', '')
+            result['selected_candidate'] = validation['best_candidate']
+            result['duration_validation_ms'] = (time.time() - start_time) * 1000
+            result['duration_total_ms'] = (time.time() - pipeline_start_time) * 1000
+
+            if validation['best_candidate'] != 'none':
+                # Success!
+                selected_num = int(validation['best_candidate'])
+                result['summary'] = candidates[f'candidate_{selected_num}']
+                result['processing_stage'] = 'validated'
+
+                self._emit(f"✓ Validation complete", None, {
                     'event': 'claim_stage_update',
+                    'doc_id': doc_id,
                     'claim_id': claim_id,
-                    'stage': 'simplifying'
-                })
-
-                # Generate 3 candidates
-                candidates = self._generate_candidate_summaries(result['clarified'])
-                result['candidate_1'] = candidates['candidate_1']
-                result['candidate_2'] = candidates['candidate_2']
-                result['candidate_3'] = candidates['candidate_3']
-                result['processing_stage'] = 'simplified'
-
-                self._emit(f"✓ Generated candidates", None, {
-                    'event': 'claim_simplified',
-                    'claim_id': claim_id,
-                    'candidates': candidates
-                })
-
-                # Validate candidates
-                self._emit(f"Validating candidates...", None, {
-                    'event': 'claim_stage_update',
-                    'claim_id': claim_id,
-                    'stage': 'validating'
-                })
-
-                validation = self._validate_candidates(claim_text, result['clarified'], candidates)
-                result['score_1'] = validation.get('score_1', 0)
-                result['score_2'] = validation.get('score_2', 0)
-                result['score_3'] = validation.get('score_3', 0)
-                result['selected_candidate'] = validation['best_candidate']
-
-                if validation['best_candidate'] != 'none':
-                    # Success!
-                    selected_num = int(validation['best_candidate'])
-                    result['summary'] = candidates[f'candidate_{selected_num}']
-                    result['processing_stage'] = 'validated'
-
-                    self._emit(f"✓ Claim validated", None, {
-                        'event': 'claim_validated',
-                        'claim_id': claim_id,
-                        'scores': {
+                    'stage': 'validation',
+                    'status': 'complete',
+                    'data': {
+                        'fidelity_scores': {
                             'score_1': result['score_1'],
                             'score_2': result['score_2'],
                             'score_3': result['score_3']
                         },
-                        'selected': selected_num,
-                        'summary': result['summary']
-                    })
+                        'best_candidate': selected_num,
+                        'fidelity_reason': result['fidelity_reason'],
+                        'quality_score': result['quality_score'],
+                        'quality_reason': result['quality_reason'],
+                        'disposition': result['disposition'],
+                        'recommendation': result['recommendation'],
+                        'duration_ms': result['duration_validation_ms']
+                    }
+                })
 
-                    score = result.get(f'score_{selected_num}', 0)
-                    logger.info(f"✓ Claim simplified successfully (candidate {selected_num}, score: {score:.2f})")
-                    return result
+                # FINAL: Emit completion event
+                self._emit(f"✓ Claim processing complete", None, {
+                    'event': 'claim_complete',
+                    'doc_id': doc_id,
+                    'claim_id': claim_id,
+                    'final_text': result['summary'],
+                    'quality_score': result['quality_score'],
+                    'disposition': result['disposition'],
+                    'total_duration_ms': result['duration_total_ms']
+                })
 
-                logger.warning(f"Retry {attempt + 1}/{max_retries}: {validation.get('specific_issues', 'No valid candidates')}")
+                logger.info(f"✓ Claim processed successfully (candidate {selected_num}, quality: {result['quality_score']:.2f}, disposition: {result['disposition']})")
+                return result
 
-            # All retries failed - use truncated original
-            logger.error(f"Failed to simplify after {max_retries} retries, using original")
+            # No valid candidate found
+            logger.error(f"No valid candidates found, using original")
             result['summary'] = claim_text[:50] + "..." if len(claim_text) > 50 else claim_text
             result['processing_stage'] = 'failed'
-            result['selected_candidate'] = 'none'
-
             return result
 
         except Exception as e:
-            logger.error(f"Simplification error: {e}", exc_info=True)
+            logger.error(f"Claim processing error: {e}", exc_info=True)
             result['summary'] = claim_text[:50] + "..." if len(claim_text) > 50 else claim_text
             result['processing_stage'] = 'error'
+            result['duration_total_ms'] = (time.time() - pipeline_start_time) * 1000
             return result
 
     def _analyze_claim(self, claim_text: str) -> str:
@@ -1166,28 +1264,55 @@ Find the main title/heading at the top of the document. Return just the title te
                 # Create sub-claim node
                 claim_id = str(uuid4())
 
-                # Generate intelligent summary using Claude Code CLI (3-stage process)
-                simplification_result = self._simplify_claim_with_agent(claim_data['text'], claim_id=claim_id)
+                # Generate intelligent summary using Claude Code CLI (4-stage process)
+                simplification_result = self._simplify_claim_with_agent(
+                    claim_data['text'],
+                    claim_id=claim_id,
+                    doc_id=doc_id
+                )
 
                 claim_node = {
                     'id': claim_id,
-                    'text': claim_data['text'],
 
-                    # Processing stages (for transparency)
+                    # Display text (what user sees in graph)
+                    'text': simplification_result['summary'],
+
+                    # Complete processing chain (for details view)
+                    'original_text': claim_data['text'],
+                    'analysis': simplification_result['analysis'],
                     'clarified': simplification_result['clarified'],
+
+                    # All 3 candidates
                     'candidate_1': simplification_result['candidate_1'],
                     'candidate_2': simplification_result['candidate_2'],
                     'candidate_3': simplification_result['candidate_3'],
 
-                    # Validation scores
+                    # Fidelity scores (how well candidates preserve meaning)
                     'score_1': simplification_result['score_1'],
                     'score_2': simplification_result['score_2'],
                     'score_3': simplification_result['score_3'],
+                    'fidelity_reason': simplification_result['fidelity_reason'],
                     'selected_candidate': simplification_result['selected_candidate'],
 
-                    # Final output (displayed to user)
-                    'summary': simplification_result['summary'],
+                    # Quality assessment (overall claim value)
+                    'quality_score': simplification_result['quality_score'],
+                    'quality_reason': simplification_result['quality_reason'],
+                    'disposition': simplification_result['disposition'],  # central/child/review/discard
+                    'recommendation': simplification_result['recommendation'],
+
+                    # Timing data (milliseconds)
+                    'duration_analysis_ms': simplification_result['duration_analysis_ms'],
+                    'duration_clarification_ms': simplification_result['duration_clarification_ms'],
+                    'duration_simplification_ms': simplification_result['duration_simplification_ms'],
+                    'duration_validation_ms': simplification_result['duration_validation_ms'],
+                    'duration_total_ms': simplification_result['duration_total_ms'],
+
+                    # Processing status
                     'processing_stage': simplification_result['processing_stage'],
+
+                    # Word counts (for analytics)
+                    'word_count_original': len(claim_data['text'].split()),
+                    'word_count_final': len(simplification_result['summary'].split()),
 
                     # Metadata
                     'parent_super_claim': super_claim_id,
