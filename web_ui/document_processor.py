@@ -17,6 +17,7 @@ from uuid import uuid4
 
 from research_agent.document_processing.pdf_extractor import PDFExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
+from research_agent.claim_analysis.intelligent_summarizer import IntelligentSummarizer
 from research_agent.neo4j_database import Neo4jDatabase
 from web_ui.agent_config import get_agent_adapter
 
@@ -48,6 +49,7 @@ class LiveDocumentProcessor:
         """
         self.progress_callback = progress_callback or self._default_callback
         self.db = Neo4jDatabase()
+        self.summarizer = IntelligentSummarizer()
 
     def _default_callback(self, message: str, progress: float, data: Dict[str, Any]):
         """Default callback - just log."""
@@ -884,12 +886,17 @@ Find the main title/heading at the top of the document. Return just the title te
                 # Create sub-claim node
                 claim_id = str(uuid4())
 
+                # Generate intelligent summary that preserves qualifiers
+                summary_result = self.summarizer.summarize_claim(claim_data['text'], target_length=5)
+
                 claim_node = {
                     'id': claim_id,
                     'text': claim_data['text'],
-                    'summary': claim_data['text'][:100],  # Use first 100 chars as summary
-                    'simplified': claim_data['text'][:100],
-                    'normalized': claim_data['text'],
+                    'summary': summary_result['summary'],  # Intelligent summary preserving qualifiers
+                    'simplified': summary_result['normalized'],  # Medium-length version
+                    'normalized': summary_result['normalized'],
+                    'qualifiers_preserved': summary_result['preserved_qualifiers'],
+                    'compression_ratio': summary_result['compression_ratio'],
                     'parent_super_claim': super_claim_id,
                     'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
                     'confidence': claim_data.get('confidence', 0.5),
