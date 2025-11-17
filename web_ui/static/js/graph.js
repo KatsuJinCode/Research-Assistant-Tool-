@@ -5,6 +5,8 @@
 const GraphRenderer = {
     simulation: null,
     currentGraphData: { nodes: [], links: [] },
+    selectedNodeId: null,  // Track selected node
+    hoveredLinkIndices: new Set(),  // Track hovered links
 
     /**
      * Build unified graph from full graph data with arbitrary depth support
@@ -189,7 +191,10 @@ const GraphRenderer = {
             .attr('r', d => this.getNodeRadius(d.type, d))
             .attr('fill', d => this.getNodeColor(d.type, d))
             .attr('stroke', '#fff')
-            .attr('stroke-width', d => this.getNodeBorderWidth(d));
+            .attr('stroke-width', d => this.getNodeBorderWidth(d))
+            .attr('class', 'graph-node')
+            .style('cursor', 'pointer')
+            .style('transition', 'all 0.3s ease');
 
         // Initialize label positions (offset from nodes to reduce overlap)
         nodes.forEach((d, i) => {
@@ -199,17 +204,22 @@ const GraphRenderer = {
             d.labelVy = 0;
         });
 
-        // Add text labels as separate elements
+        // Add text labels as separate elements with better contrast
         const labels = g.append('g')
             .selectAll('text')
             .data(nodes)
             .enter().append('text')
             .attr('text-anchor', 'middle')
-            .attr('font-size', '11px')
-            .attr('fill', '#333')
-            .attr('font-weight', '500')
+            .attr('font-size', '12px')
+            .attr('fill', '#ffffff')  // White text for high contrast
+            .attr('font-weight', '600')
             .attr('pointer-events', 'none')
-            .text(d => d.label.length > 35 ? d.label.substring(0, 35) + '...' : d.label);
+            .style('text-shadow', '0 0 3px rgba(0,0,0,0.8), 0 0 5px rgba(0,0,0,0.6)')  // Black glow for readability
+            .text(d => {
+                // Prefer summary over raw text, and truncate appropriately
+                const displayText = d.fullData?.summary || d.label;
+                return displayText.length > 35 ? displayText.substring(0, 35) + '...' : displayText;
+            });
 
         // Calculate label bounding boxes
         labels.each(function(d) {
@@ -218,9 +228,78 @@ const GraphRenderer = {
             d.labelHeight = bbox.height;
         });
 
+        // Add hover effects to nodes
+        node.on('mouseover', (event, d) => {
+            // Highlight connected links
+            link
+                .style('stroke-opacity', l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return (sourceId === d.id || targetId === d.id) ? 1.0 : 0.2;
+                })
+                .style('stroke-width', l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    const baseWidth = this.getLinkWidth(l.type);
+                    return (sourceId === d.id || targetId === d.id) ? baseWidth * 1.5 : baseWidth;
+                });
+
+            // Brighten hovered node
+            d3.select(event.currentTarget).select('circle')
+                .attr('stroke-width', 4)
+                .style('filter', 'brightness(1.3)');
+        });
+
+        node.on('mouseout', (event, d) => {
+            // Reset link opacity (unless a node is selected)
+            if (!this.selectedNodeId) {
+                link
+                    .style('stroke-opacity', 0.6)
+                    .style('stroke-width', l => this.getLinkWidth(l.type));
+            }
+
+            // Reset node appearance (unless it's selected)
+            if (this.selectedNodeId !== d.id) {
+                d3.select(event.currentTarget).select('circle')
+                    .attr('stroke-width', this.getNodeBorderWidth(d))
+                    .style('filter', 'none');
+            }
+        });
+
         node.on('click', (event, d) => {
             event.stopPropagation();
-            // Only show details for claim nodes (super and sub), not documents or evidence
+
+            // Update selected node
+            const previouslySelected = this.selectedNodeId;
+            this.selectedNodeId = d.id;
+
+            // Remove selection from all nodes
+            node.selectAll('circle')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', n => this.getNodeBorderWidth(n))
+                .style('filter', 'none');
+
+            // Highlight selected node with gold glow
+            d3.select(event.currentTarget).select('circle')
+                .attr('stroke', '#FFD700')  // Gold
+                .attr('stroke-width', 5)
+                .style('filter', 'drop-shadow(0 0 8px #FFD700)');
+
+            // Highlight connected links
+            link
+                .style('stroke-opacity', l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return (sourceId === d.id || targetId === d.id) ? 1.0 : 0.3;
+                })
+                .style('stroke-width', l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    const baseWidth = this.getLinkWidth(l.type);
+                    return (sourceId === d.id || targetId === d.id) ? baseWidth * 1.5 : baseWidth;
+                });
+
+            // Show details for claim nodes
             if (d.type === 'super' || d.type === 'sub') {
                 window.showClaimDetails(d.id);
             } else if (d.type === 'document') {
@@ -228,6 +307,18 @@ const GraphRenderer = {
             } else if (d.type === 'evidence') {
                 console.log('Clicked evidence:', d.label);
             }
+        });
+
+        // Click on background to deselect
+        svg.on('click', () => {
+            this.selectedNodeId = null;
+            node.selectAll('circle')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', d => this.getNodeBorderWidth(d))
+                .style('filter', 'none');
+            link
+                .style('stroke-opacity', 0.6)
+                .style('stroke-width', l => this.getLinkWidth(l.type));
         });
 
         // Enhanced tick function with label collision avoidance
