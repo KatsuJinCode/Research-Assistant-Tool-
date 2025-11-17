@@ -285,6 +285,105 @@
             background: linear-gradient(90deg, #F44336, #FF9800, #4CAF50);
             transition: width 0.5s;
         }
+
+        /* Agent Launcher Toolbar */
+        #agent-launcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            background: #2a2a2a;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        #agent-launcher.collapsed {
+            width: 200px;
+            height: 50px;
+        }
+
+        #agent-launcher.collapsed .launcher-body {
+            display: none;
+        }
+
+        .launcher-header {
+            background: #2196F3;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .launcher-body {
+            padding: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        textarea.form-control {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            color: #2196F3;
+            font-weight: bold;
+            min-width: 30px;
+        }
+
+        .progress-bar-smooth {
+            transition: width 0.3s ease-out;
+        }
+
+        .progress-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body>
@@ -356,6 +455,54 @@
                     </div>
                 </div>
 
+                <div class="detail-section" id="page-info-section" style="display:none;">
+                    <div class="detail-subtitle">Page Number</div>
+                    <div class="detail-item">
+                        Page <span id="detail-page" style="font-weight: bold; color: #2196F3;">-</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Full Original Text</div>
+                    <div class="detail-item" id="detail-full-text" style="white-space: pre-wrap; line-height: 1.5;">-</div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Confidence Score</div>
+                    <div class="detail-item">
+                        <span id="detail-confidence" style="font-weight: bold;">-</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidence-bar-fill" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Investigation Value</div>
+                    <div class="detail-item">
+                        <span id="detail-investigation-value" style="font-weight: bold;">-</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="investigation-bar-fill" style="width: 50%;"></div>
+                        </div>
+                        <small style="color: #999;">How worthwhile it is to investigate further</small>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Timestamp</div>
+                    <div class="detail-item" id="detail-timestamp">-</div>
+                </div>
+
+                <div class="detail-section" id="parent-claims-section" style="display:none;">
+                    <div class="detail-subtitle">What This Claim Supports</div>
+                    <div id="parent-claims-list"></div>
+                </div>
+
+                <div class="detail-section" id="supporting-info-section" style="display:none;">
+                    <div class="detail-subtitle">What Supports This Claim</div>
+                    <div id="supporting-info-list"></div>
+                </div>
+
                 <div class="detail-section" id="summary-section" style="display:none;">
                     <div class="detail-subtitle">📝 Summarization Details</div>
                     <div class="detail-item">
@@ -401,6 +548,49 @@
         </div>
     </div>
 
+    <!-- Agent Launcher Toolbar -->
+    <div id="agent-launcher" class="collapsed">
+        <div class="launcher-header" onclick="toggleLauncher()">
+            <span>Agent Launcher</span>
+            <span id="launcher-toggle">▲</span>
+        </div>
+        <div class="launcher-body">
+            <div class="form-group">
+                <label class="form-label">Agent Type</label>
+                <select id="agent-type" class="form-control">
+                    <option value="arxiv_search">ArXiv Search</option>
+                    <option value="web_search">Web Search</option>
+                    <option value="fact_check">Fact Check</option>
+                    <option value="citation_finder">Citation Finder</option>
+                    <option value="contradiction_hunter">Contradiction Hunter</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search Depth</label>
+                <div class="slider-container">
+                    <input type="range" id="search-depth" min="1" max="5" value="3" class="form-control">
+                    <span class="slider-value" id="depth-value">3</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search Strategy</label>
+                <select id="search-strategy" class="form-control">
+                    <option value="breadth-first">Breadth-First (Wide exploration)</option>
+                    <option value="depth-first">Depth-First (Deep dive)</option>
+                    <option value="targeted">Targeted (Focused search)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Custom Prompt (Optional)</label>
+                <textarea id="custom-prompt" class="form-control" placeholder="Add specific instructions for the agent..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" onclick="quickInvestigate()" style="flex: 1;">Quick Investigate</button>
+                <button class="btn btn-primary" onclick="customInvestigate()" style="flex: 1;">Custom Investigate</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentClaimId = null;
         let graphData = { nodes: [], links: [] };
@@ -439,15 +629,249 @@
             }
         });
 
+        // Store current simulation for smooth updates
+        let currentSimulation = null;
+        let currentGraphData = { nodes: [], links: [] };
+
         function addClaimToGraph(data) {
             // Real-time node-by-node updates
             console.log('New claim:', data.claim_summary);
 
-            // Reload graph on EVERY claim for true real-time updates
+            // Reload graph but update smoothly
             fetch('/api/full-graph')
                 .then(r => r.json())
-                .then(graphData => buildUnifiedGraph(graphData))
+                .then(graphData => updateGraphSmooth(graphData))
                 .catch(err => console.error('Graph reload failed:', err));
+        }
+
+        function updateGraphSmooth(graphData) {
+            // If no existing graph, build from scratch
+            if (!currentSimulation || currentGraphData.nodes.length === 0) {
+                buildUnifiedGraph(graphData);
+                return;
+            }
+
+            // Otherwise, update existing graph with new data
+            const newNodes = [];
+            const newLinks = [];
+
+            // Process graph data same as buildUnifiedGraph
+            graphData.forEach(doc => {
+                newNodes.push({
+                    id: doc.doc_id,
+                    label: doc.doc_title || 'Document',
+                    type: 'document',
+                    fullData: doc
+                });
+
+                doc.root_claims.forEach(root => {
+                    if (!root.id) return;
+                    const rootLabel = root.summary || root.text.substring(0, 40);
+                    newNodes.push({
+                        id: root.id,
+                        label: rootLabel,
+                        type: 'root',
+                        fullData: root
+                    });
+                    newLinks.push({
+                        source: doc.doc_id,
+                        target: root.id,
+                        type: 'contains'
+                    });
+
+                    doc.child_claims.forEach(child => {
+                        if (!child.id || child.parent_id !== root.id) return;
+                        const childLabel = child.summary || child.text.substring(0, 40);
+                        newNodes.push({
+                            id: child.id,
+                            label: childLabel,
+                            type: 'child',
+                            fullData: child
+                        });
+                        newLinks.push({
+                            source: root.id,
+                            target: child.id,
+                            type: 'parent'
+                        });
+                    });
+                });
+
+                doc.evidence.forEach(ev => {
+                    if (!ev.id || !ev.claim_id) return;
+                    newNodes.push({
+                        id: ev.id,
+                        label: ev.title.substring(0, 30),
+                        type: 'evidence',
+                        fullData: ev
+                    });
+                    newLinks.push({
+                        source: ev.id,
+                        target: ev.claim_id,
+                        type: ev.type === 'SUPPORTS' ? 'support' : 'contradict'
+                    });
+                });
+            });
+
+            // Find new nodes
+            const existingIds = new Set(currentGraphData.nodes.map(n => n.id));
+            const reallyNewNodes = newNodes.filter(n => !existingIds.has(n.id));
+
+            if (reallyNewNodes.length > 0) {
+                console.log('Adding', reallyNewNodes.length, 'new nodes smoothly');
+
+                // Position new nodes near their parents
+                reallyNewNodes.forEach(newNode => {
+                    // Find parent link
+                    const parentLink = newLinks.find(l => l.target === newNode.id);
+                    if (parentLink) {
+                        const parentNode = currentGraphData.nodes.find(n => n.id === parentLink.source);
+                        if (parentNode) {
+                            // Start near parent position with slight random offset
+                            newNode.x = parentNode.x + (Math.random() - 0.5) * 50;
+                            newNode.y = parentNode.y + (Math.random() - 0.5) * 50;
+                        }
+                    }
+                });
+
+                // Merge new nodes into current graph data
+                currentGraphData.nodes.push(...reallyNewNodes);
+                currentGraphData.links = newLinks;
+
+                // Update simulation with new nodes (smooth transition)
+                currentSimulation.nodes(currentGraphData.nodes);
+                currentSimulation.force('link').links(currentGraphData.links);
+                currentSimulation.alpha(0.3).restart(); // Gentle restart
+
+                // Update visual elements
+                updateGraphVisuals();
+            }
+
+            // Update sidebar
+            updateSidebar(graphData);
+        }
+
+        /**
+         * Update D3 visual elements without full rebuild
+         * Adds new nodes/links to existing graph smoothly
+         */
+        function updateGraphVisuals() {
+            const svg = d3.select('#graph-svg');
+            const g = svg.select('g');
+
+            // Update links
+            const link = g.select('g').selectAll('path')
+                .data(currentGraphData.links, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
+                .join(
+                    enter => enter.append('path')
+                        .attr('class', d => `link link-${d.type}`)
+                        .attr('marker-end', 'url(#arrow)')
+                        .style('opacity', 0)
+                        .call(enter => enter.transition().duration(500).style('opacity', 1)),
+                    update => update,
+                    exit => exit.transition().duration(300).style('opacity', 0).remove()
+                );
+
+            // Update nodes
+            const node = g.selectAll('.node')
+                .data(currentGraphData.nodes, d => d.id)
+                .join(
+                    enter => {
+                        const nodeEnter = enter.append('g')
+                            .attr('class', d => `node node-${d.type}`)
+                            .style('opacity', 0)
+                            .call(d3.drag()
+                                .on('start', dragStarted)
+                                .on('drag', dragged)
+                                .on('end', dragEnded));
+
+                        nodeEnter.append('circle')
+                            .attr('r', 20)
+                            .on('click', (event, d) => {
+                                event.stopPropagation();
+                                if (d.type === 'root' || d.type === 'child') {
+                                    d3.selectAll('.node circle').style('stroke', null).style('stroke-width', null);
+                                    d3.select(event.currentTarget).style('stroke', '#FFD700').style('stroke-width', '4px');
+                                    fetch(`/api/claim/${d.id}`)
+                                        .then(r => r.json())
+                                        .then(claim => showClaimDetails(claim));
+                                }
+                            });
+
+                        nodeEnter.append('text')
+                            .text(d => d.label)
+                            .attr('x', 25)
+                            .attr('y', 5);
+
+                        return nodeEnter.transition().duration(500).style('opacity', 1);
+                    },
+                    update => update,
+                    exit => exit.transition().duration(300).style('opacity', 0).remove()
+                );
+
+            // Update simulation tick handler
+            currentSimulation.on('tick', () => {
+                link.attr('d', d => `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`);
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            // Drag handlers for new nodes
+            function dragStarted(event) {
+                if (!event.active) currentSimulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragEnded(event) {
+                if (!event.active) currentSimulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+        }
+
+        /**
+         * Update sidebar without clearing - merge new documents
+         */
+        function updateSidebar(graphData) {
+            const sidebar = document.getElementById('root-claims');
+
+            // Only rebuild if sidebar is empty
+            if (sidebar.children.length === 0) {
+                sidebar.innerHTML = '<h2 style="margin-bottom: 15px;">Document Hierarchy</h2>';
+            }
+
+            graphData.forEach(doc => {
+                // Check if document card already exists
+                const existingCard = sidebar.querySelector(`[data-doc-id="${doc.doc_id}"]`);
+                if (existingCard) return; // Skip if already rendered
+
+                // Add sidebar entry for document
+                const docCard = document.createElement('div');
+                docCard.className = 'claim-card';
+                docCard.style.borderLeftColor = '#9C27B0';
+                docCard.style.position = 'relative';
+                docCard.setAttribute('data-doc-id', doc.doc_id);
+                docCard.innerHTML = `
+                    <div class="claim-text" style="font-weight: bold;">${doc.doc_title || 'Document'}</div>
+                    <div class="claim-meta">${doc.root_claims.length} root claims</div>
+                    <button class="delete-doc-btn" data-doc-id="${doc.doc_id}" style="position: absolute; top: 10px; right: 10px; background: #F44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>
+                `;
+
+                // Add delete handler
+                const deleteBtn = docCard.querySelector('.delete-doc-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete "${doc.doc_title}" and all its claims?`)) {
+                        deleteDocument(doc.doc_id);
+                    }
+                });
+
+                sidebar.appendChild(docCard);
+            });
         }
 
         // File upload handlers
@@ -536,20 +960,66 @@
             });
         }
 
+        // Smooth progress bar with interpolation
+        let currentProgress = 0;
+        let targetProgress = 0;
+        let progressInterval = null;
+
         function showProcessingStatus(message) {
             document.getElementById('processing-status').style.display = 'block';
             document.getElementById('status-text').textContent = message;
-            document.getElementById('progress-bar').style.width = '10%';
+            currentProgress = 0;
+            targetProgress = 10;
+            startProgressAnimation();
         }
 
         function hideProcessingStatus() {
+            if (progressInterval) clearInterval(progressInterval);
             document.getElementById('processing-status').style.display = 'none';
             document.getElementById('progress-bar').style.width = '0%';
+            currentProgress = 0;
+            targetProgress = 0;
         }
 
         function updateProcessingStatus(message, progress) {
             document.getElementById('status-text').textContent = message;
-            document.getElementById('progress-bar').style.width = progress + '%';
+            targetProgress = progress;
+
+            // If no animation running, start it
+            if (!progressInterval) {
+                startProgressAnimation();
+            }
+        }
+
+        function startProgressAnimation() {
+            if (progressInterval) clearInterval(progressInterval);
+
+            progressInterval = setInterval(() => {
+                // Smoothly interpolate toward target
+                const diff = targetProgress - currentProgress;
+
+                if (Math.abs(diff) < 0.5) {
+                    currentProgress = targetProgress;
+                } else {
+                    // Move 20% of the remaining distance each frame
+                    currentProgress += diff * 0.2;
+                }
+
+                // Add small idle animation when waiting (subtle pulse)
+                let displayProgress = currentProgress;
+                if (Math.abs(diff) < 1 && currentProgress < 100) {
+                    // Idle pulse: slowly drift forward
+                    displayProgress += Math.sin(Date.now() / 1000) * 0.5;
+                }
+
+                document.getElementById('progress-bar').style.width = displayProgress + '%';
+
+                // Stop if we've reached 100%
+                if (currentProgress >= 100) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+            }, 50); // 20 FPS animation
         }
 
         // Load stats
@@ -596,6 +1066,32 @@
             document.getElementById('detail-specificity').textContent = (claim.specificity || 0).toFixed(2);
             document.getElementById('detail-strength').textContent = claim.strength || 'NEUTRAL';
 
+            // Show full original quote
+            document.getElementById('detail-full-text').textContent = claim.text || 'N/A';
+
+            // Show confidence score with visual bar
+            const confidence = claim.confidence || 0.5;
+            document.getElementById('detail-confidence').textContent = (confidence * 100).toFixed(0) + '%';
+            document.getElementById('confidence-bar-fill').style.width = (confidence * 100) + '%';
+
+            // Calculate and show investigation value score
+            const investigationValue = calculateInvestigationValue(claim);
+            document.getElementById('detail-investigation-value').textContent = (investigationValue * 100).toFixed(0) + '%';
+            document.getElementById('investigation-bar-fill').style.width = (investigationValue * 100) + '%';
+
+            // Show timestamp
+            const timestamp = claim.created_at || claim.timestamp || 'Unknown';
+            document.getElementById('detail-timestamp').textContent = formatTimestamp(timestamp);
+
+            // Show page number if available
+            const pageInfo = document.getElementById('page-info-section');
+            if (claim.sources && claim.sources.length > 0 && claim.sources[0].page) {
+                pageInfo.style.display = 'block';
+                document.getElementById('detail-page').textContent = claim.sources[0].page;
+            } else {
+                pageInfo.style.display = 'none';
+            }
+
             // Show summarization info if claim has summary
             const summarySection = document.getElementById('summary-section');
             if (claim.summary && claim.summary !== claim.text) {
@@ -607,6 +1103,62 @@
                     claim.qualifiers_preserved || 'N/A';
             } else {
                 summarySection.style.display = 'none';
+            }
+
+            // Show parent claims (what this claim supports)
+            if (claim.parent_id) {
+                document.getElementById('parent-claims-section').style.display = 'block';
+                const list = document.getElementById('parent-claims-list');
+                list.innerHTML = `
+                    <div class="detail-item">
+                        <strong>Parent Claim ID:</strong> ${claim.parent_id}
+                        <br><small style="color: #999;">This claim provides evidence or detail for a parent claim</small>
+                    </div>
+                `;
+            } else {
+                document.getElementById('parent-claims-section').style.display = 'none';
+            }
+
+            // Show what supports this claim (children + evidence combined)
+            const hasChildren = claim.children && claim.children.length > 0;
+            const hasEvidence = claim.evidence && claim.evidence.length > 0;
+            if (hasChildren || hasEvidence) {
+                document.getElementById('supporting-info-section').style.display = 'block';
+                const list = document.getElementById('supporting-info-list');
+                list.innerHTML = '';
+
+                // Add child claims
+                if (hasChildren) {
+                    list.innerHTML += '<div style="font-weight: bold; margin-bottom: 8px; color: #64B5F6;">Child Claims:</div>';
+                    claim.children.forEach(child => {
+                        const childText = child.summary || child.text.substring(0, 100);
+                        list.innerHTML += `
+                            <div class="detail-item" style="margin-left: 10px;">
+                                <span class="badge badge-support">CHILD</span>
+                                ${childText}${!child.summary && child.text.length > 100 ? '...' : ''}
+                                <br><small>Specificity: ${(child.specificity || 0).toFixed(2)}</small>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Add evidence
+                if (hasEvidence) {
+                    list.innerHTML += '<div style="font-weight: bold; margin-top: 15px; margin-bottom: 8px; color: #FF9800;">Evidence:</div>';
+                    claim.evidence.forEach(ev => {
+                        const badge = ev.type === 'SUPPORTS' ? 'badge-support' : 'badge-contradict';
+                        list.innerHTML += `
+                            <div class="detail-item" style="margin-left: 10px;">
+                                <span class="badge ${badge}">${ev.type}</span>
+                                <strong>${ev.title}</strong>
+                                ${ev.url ? `<br><a href="${ev.url}" target="_blank" style="color: #64B5F6;">View Paper</a>` : ''}
+                                ${ev.strength ? `<br>Strength: ${(ev.strength * 100).toFixed(0)}%` : ''}
+                            </div>
+                        `;
+                    });
+                }
+            } else {
+                document.getElementById('supporting-info-section').style.display = 'none';
             }
 
             // Children
@@ -841,6 +1393,9 @@
             const width = document.getElementById('graph-area').clientWidth;
             const height = document.getElementById('graph-area').clientHeight;
 
+            // Store graph data globally for smooth updates
+            currentGraphData = { nodes: nodes, links: links };
+
             // Create zoom/pan container
             const g = svg.append('g');
 
@@ -858,6 +1413,9 @@
                 .force('link', d3.forceLink(links).id(d => d.id).distance(150))
                 .force('charge', d3.forceManyBody().strength(-300))
                 .force('center', d3.forceCenter(width / 2, height / 2));
+
+            // Store simulation globally for smooth updates
+            currentSimulation = simulation;
 
             const link = g.append('g')
                 .selectAll('path')
@@ -976,6 +1534,161 @@
                 alert('Clear failed: ' + err.message);
             });
         });
+
+        /**
+         * Calculate investigation value score
+         * Based on: confidence, existing evidence, specificity, and research history
+         */
+        function calculateInvestigationValue(claim) {
+            let score = 0.5; // Base score
+
+            // Lower confidence = higher investigation value
+            const confidence = claim.confidence || 0.5;
+            score += (1 - confidence) * 0.3;
+
+            // Less evidence = higher investigation value
+            const evidenceCount = (claim.evidence || []).length;
+            if (evidenceCount === 0) {
+                score += 0.3;
+            } else if (evidenceCount < 3) {
+                score += 0.15;
+            }
+
+            // Higher specificity = higher investigation value (more concrete claims)
+            const specificity = claim.specificity || 0;
+            score += specificity * 0.2;
+
+            // No prior research = higher investigation value
+            const researchCount = (claim.research || []).length;
+            if (researchCount === 0) {
+                score += 0.2;
+            } else {
+                score -= researchCount * 0.05; // Diminishing returns
+            }
+
+            // Clamp between 0 and 1
+            return Math.max(0, Math.min(1, score));
+        }
+
+        /**
+         * Format timestamp into human-readable format
+         */
+        function formatTimestamp(timestamp) {
+            if (!timestamp || timestamp === 'Unknown') {
+                return 'Unknown';
+            }
+
+            try {
+                const date = new Date(timestamp);
+                if (isNaN(date.getTime())) {
+                    return timestamp; // Return raw if can't parse
+                }
+
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffMins < 1) {
+                    return 'Just now';
+                } else if (diffMins < 60) {
+                    return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                } else if (diffHours < 24) {
+                    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                } else if (diffDays < 7) {
+                    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                } else {
+                    return date.toLocaleDateString();
+                }
+            } catch (e) {
+                return timestamp;
+            }
+        }
+
+        /**
+         * Toggle agent launcher panel
+         */
+        function toggleLauncher() {
+            const launcher = document.getElementById('agent-launcher');
+            const toggle = document.getElementById('launcher-toggle');
+            launcher.classList.toggle('collapsed');
+            toggle.textContent = launcher.classList.contains('collapsed') ? '▲' : '▼';
+        }
+
+        /**
+         * Quick investigate with default settings
+         */
+        function quickInvestigate() {
+            if (!currentClaimId) {
+                alert('Please select a claim first by clicking on a node in the graph.');
+                return;
+            }
+
+            const agentType = document.getElementById('agent-type').value;
+
+            fetch('/api/investigate-claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    claim_id: currentClaimId,
+                    type: 'support', // Default to finding support
+                    agent: agentType,
+                    depth: 3,
+                    strategy: 'breadth-first'
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                alert(`Quick investigation started!\nAgent: ${agentType}\n\nRefresh in a moment to see results.`);
+            })
+            .catch(err => {
+                alert('Investigation failed: ' + err.message);
+            });
+        }
+
+        /**
+         * Custom investigate with user-defined settings
+         */
+        function customInvestigate() {
+            if (!currentClaimId) {
+                alert('Please select a claim first by clicking on a node in the graph.');
+                return;
+            }
+
+            const agentType = document.getElementById('agent-type').value;
+            const depth = parseInt(document.getElementById('search-depth').value);
+            const strategy = document.getElementById('search-strategy').value;
+            const customPrompt = document.getElementById('custom-prompt').value.trim();
+
+            fetch('/api/investigate-claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    claim_id: currentClaimId,
+                    type: 'support',
+                    agent: agentType,
+                    depth: depth,
+                    strategy: strategy,
+                    custom_prompt: customPrompt || undefined
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                alert(`Custom investigation started!\nAgent: ${agentType}\nDepth: ${depth}\nStrategy: ${strategy}\n\nRefresh in a moment to see results.`);
+            })
+            .catch(err => {
+                alert('Investigation failed: ' + err.message);
+            });
+        }
+
+        // Update depth slider display
+        document.getElementById('search-depth').addEventListener('input', (e) => {
+            document.getElementById('depth-value').textContent = e.target.value;
+        });
+
+        // Add smooth transition class to progress bar
+        document.getElementById('progress-bar').classList.add('progress-bar-smooth');
     </script>
 </body>
 </html>
