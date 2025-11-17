@@ -62,16 +62,18 @@ class LiveDocumentProcessor:
         adapter = get_agent_adapter()
         logger.info(f"Spawning {adapter.__class__.__name__} for {task_type}")
 
-        # Add JSON formatting instructions to prompt
+        # Add JSON formatting instructions to prompt (emphasize backend system requirement)
         schema_str = json.dumps(expected_schema, indent=2)
         enhanced_prompt = f"""{prompt}
 
-IMPORTANT: You MUST respond with ONLY valid JSON matching this exact schema:
+CRITICAL: This is for a backend system that directly parses your response.
+You MUST respond with ONLY raw JSON. No explanations, no markdown, no code blocks.
 
+Required JSON schema:
 {schema_str}
 
-Do NOT include any explanatory text, markdown formatting, or code blocks.
-Output ONLY the raw JSON object."""
+Output ONLY the JSON object. Nothing before it, nothing after it.
+Your response will be parsed by json.loads() - it must be valid JSON."""
 
         try:
             # Invoke agent without tools (since --tools doesn't work as expected)
