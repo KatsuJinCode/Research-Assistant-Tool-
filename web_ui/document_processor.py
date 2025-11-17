@@ -84,16 +84,113 @@ class LiveDocumentProcessor:
             logger.error(f"Agent invocation failed: {e}")
             raise
 
+    def _invoke_agent_with_tool(self, prompt: str, tool_schema: Dict, task_type: str) -> Dict[str, Any]:
+        """
+        Invoke Claude Code CLI with a tool definition to get structured output.
+
+        Args:
+            prompt: The task prompt for the agent
+            tool_schema: Tool definition with input_schema
+            task_type: Type of task (for logging)
+
+        Returns:
+            Parsed tool input (the structured data)
+        """
+        logger.info(f"Spawning Claude Code agent with tool for {task_type}")
+
+        # Create a temporary file with the tool definition
+        import tempfile
+        tool_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8')
+        try:
+            json.dump([tool_schema], tool_file)
+            tool_file.close()
+
+            # Invoke Claude Code CLI with tools
+            result = subprocess.run(
+                ['claude', '-p', prompt, '--tools', tool_file.name, '--output-format', 'json'],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                encoding='utf-8',
+                cwd=str(Path(__file__).parent.parent)
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Agent failed with code {result.returncode}: {result.stderr}")
+                raise RuntimeError(f"Agent process failed: {result.stderr}")
+
+            response = result.stdout.strip()
+            logger.info(f"Agent completed {task_type}: {len(response)} chars")
+
+            # Parse the JSON response
+            response_data = json.loads(response)
+
+            # Extract tool use from response
+            # Claude Code JSON format includes tool_uses in the response
+            if isinstance(response_data, dict):
+                # Look for tool_uses or content blocks
+                tool_uses = response_data.get('tool_uses', [])
+                if not tool_uses and 'content' in response_data:
+                    # Try to find tool use in content blocks
+                    for block in response_data.get('content', []):
+                        if isinstance(block, dict) and block.get('type') == 'tool_use':
+                            tool_uses.append(block)
+
+                if tool_uses:
+                    # Get the first tool use (there should only be one)
+                    tool_use = tool_uses[0]
+                    tool_input = tool_use.get('input', {})
+                    logger.info(f"✓ Extracted structured data from tool use")
+                    return tool_input
+                else:
+                    logger.error(f"No tool use found in response")
+                    raise RuntimeError("Agent did not call the required tool")
+            else:
+                logger.error(f"Unexpected response format: {type(response_data)}")
+                raise RuntimeError("Agent returned unexpected format")
+
+        finally:
+            # Clean up temp file
+            import os
+            try:
+                os.unlink(tool_file.name)
+            except:
+                pass
+
     def _extract_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
         """
-        Use Claude Code agent to extract claims from text.
+        Use Claude Code agent to extract claims from text using tool calling.
 
         Returns list of claims with 'text', 'type', 'confidence' fields.
 
         Raises:
             RuntimeError: If agent fails or returns invalid data
         """
-        # Spawn Claude Code agent to extract claims
+        # Define tool schema for structured output
+        tool_schema = {
+            "name": "submit_extracted_claims",
+            "description": "Submit the list of extracted research claims",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "claims": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string", "description": "Exact claim text from document"},
+                                "type": {"type": "string", "enum": ["factual", "methodological", "causal", "interpretive"]},
+                                "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+                            },
+                            "required": ["text", "type", "confidence"]
+                        }
+                    }
+                },
+                "required": ["claims"]
+            }
+        }
+
+        # Spawn Claude Code agent with tool definition
         agent_prompt = f"""Extract factual research claims from this text. Ignore copyright notices, publication info, and page headers/footers.
 
 TEXT:
@@ -104,115 +201,63 @@ For each ACTUAL RESEARCH CLAIM (not metadata):
 2. Classify type (factual, methodological, causal, interpretive)
 3. Rate confidence (0.0-1.0)
 
-Return ONLY valid JSON array:
-[
-  {{"text": "exact claim", "type": "factual", "confidence": 0.95}},
-  ...
-]
+Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata.
 
-Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims, not metadata."""
+IMPORTANT: You MUST call the submit_extracted_claims tool with your results."""
 
-        result = self._invoke_agent(agent_prompt, "claim-extraction")
+        result = self._invoke_agent_with_tool(agent_prompt, tool_schema, "claim-extraction")
 
-        # Parse JSON output from --output-format json
-        # The result is a JSON object like: {"result": "...", "output": "..."}
-        try:
-            wrapper = json.loads(result)
-            # Extract the actual content from the wrapper
-            content = wrapper.get('result', wrapper.get('output', result))
-        except json.JSONDecodeError:
-            content = result
-
-        # Now parse the actual claims JSON
-        import re
-        json_match = re.search(r'```json\s*(\[.*?\])\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-        elif isinstance(content, list):
-            # Already parsed as list
-            claims = content
-            logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
-            return claims
-        elif content.strip().startswith('['):
-            # Pure JSON array
-            pass
-        else:
-            # Try to find JSON array anywhere in response
-            json_match = re.search(r'\[.*\]', content, re.DOTALL)
-            if json_match:
-                content = json_match.group(0)
-            else:
-                logger.error(f"Agent response does not contain valid JSON array")
-                raise RuntimeError("Agent failed to return valid JSON array")
-
-        claims = json.loads(content)
+        # Extract claims from tool call
+        claims = result.get('claims', [])
 
         if not isinstance(claims, list):
-            logger.error(f"Agent returned non-list: {type(claims)}")
-            raise RuntimeError(f"Agent returned invalid data type: {type(claims)}")
+            logger.error(f"Tool returned non-list: {type(claims)}")
+            raise RuntimeError(f"Tool returned invalid data type: {type(claims)}")
 
-        logger.info(f"✓ Claude Code agent extracted {len(claims)} claims")
+        logger.info(f"✓ Claude Code agent extracted {len(claims)} claims via tool use")
         return claims
 
     def _simplify_claim_with_agent(self, claim_text: str) -> Dict[str, str]:
         """
-        Use Claude Code agent to simplify and normalize a claim.
+        Use Claude Code agent to simplify and normalize a claim using tool calling.
 
         Returns dict with 'simplified', 'normalized' versions.
 
         Raises:
             RuntimeError: If agent fails or returns invalid data
         """
-        agent_prompt = f"""Simplify this claim, preserving all qualifiers:
+        # Define tool schema for structured output
+        tool_schema = {
+            "name": "submit_simplified_claim",
+            "description": "Submit the simplified and normalized versions of the claim",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "simplified": {"type": "string", "description": "5-10 word core assertion"},
+                    "normalized": {"type": "string", "description": "15-20 word normalized version"}
+                },
+                "required": ["simplified", "normalized"]
+            }
+        }
+
+        agent_prompt = f"""Simplify this claim, preserving all qualifiers (may, might, can, all, some, etc.):
 
 "{claim_text}"
 
-Return ONLY JSON:
-{{"simplified": "5-10 word core assertion", "normalized": "15-20 word version"}}
+Create:
+1. simplified: 5-10 word core assertion
+2. normalized: 15-20 word version
 
-Preserve: may, might, can, all, some, etc."""
+IMPORTANT: You MUST call the submit_simplified_claim tool with your results."""
 
-        result = self._invoke_agent(agent_prompt, "claim-simplification")
+        result = self._invoke_agent_with_tool(agent_prompt, tool_schema, "claim-simplification")
 
-        # Parse JSON output from --output-format json
-        try:
-            wrapper = json.loads(result)
-            content = wrapper.get('result', wrapper.get('output', result))
-        except json.JSONDecodeError:
-            content = result
+        if 'simplified' not in result or 'normalized' not in result:
+            logger.error(f"Tool returned incomplete response: missing required fields")
+            raise RuntimeError("Tool response missing 'simplified' or 'normalized' fields")
 
-        # Extract JSON from response
-        import re
-        json_match = re.search(r'```json\s*(\{{.*?\}})\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-        elif isinstance(content, dict):
-            # Already parsed as dict
-            simplification = content
-            if 'simplified' in simplification and 'normalized' in simplification:
-                logger.info(f"✓ Claude Code agent simplified claim")
-                return simplification
-            else:
-                logger.error(f"Agent returned incomplete response: missing required fields")
-                raise RuntimeError("Agent response missing 'simplified' or 'normalized' fields")
-        elif content.strip().startswith('{'):
-            pass
-        else:
-            json_match = re.search(r'\{{.*\}}', content, re.DOTALL)
-            if json_match:
-                content = json_match.group(0)
-            else:
-                logger.error(f"Agent response does not contain valid JSON object")
-                raise RuntimeError("Agent failed to return valid JSON object")
-
-        simplification = json.loads(content)
-
-        if 'simplified' not in simplification or 'normalized' not in simplification:
-            logger.error(f"Agent returned incomplete response: missing required fields")
-            raise RuntimeError("Agent response missing 'simplified' or 'normalized' fields")
-
-        logger.info(f"✓ Claude Code agent simplified claim")
-        return simplification
+        logger.info(f"✓ Claude Code agent simplified claim via tool use")
+        return result
 
     def process_document(self, file_path: str, doc_id: str = None) -> str:
         """
