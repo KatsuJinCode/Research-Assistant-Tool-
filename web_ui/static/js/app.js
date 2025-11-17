@@ -41,12 +41,45 @@ const App = {
             UI.updateProcessingStatus(data.message, data.progress);
 
             // Handle different events from the nested data.data.event field
-            if (data.data && data.data.event === 'claim_added') {
-                // Incrementally add node to graph
-                console.log('New claim added:', data.data.claim_summary);
-                this.loadGraph();
+            if (data.data && data.data.event === 'document_created') {
+                // Document node created - add incrementally
+                console.log('Document created:', data.data.doc_id);
+                if (data.data.node_data) {
+                    const nodeData = {
+                        id: data.data.node_data.id,
+                        label: data.data.node_data.title || 'Untitled Document',
+                        type: 'document',
+                        fullData: data.data.node_data
+                    };
+                    GraphRenderer.addNodeIncremental(nodeData, null);
+                }
+            } else if (data.data && data.data.event === 'super_claim_added') {
+                // Super-claim added - add incrementally with link to document
+                console.log('Super-claim added:', data.data.super_claim_id);
+                if (data.data.node_data) {
+                    const nodeData = {
+                        id: data.data.node_data.id,
+                        label: data.data.node_data.summary || data.data.node_data.text?.substring(0, 40) || 'Claim',
+                        type: 'super',
+                        fullData: data.data.node_data
+                    };
+                    GraphRenderer.addNodeIncremental(nodeData, data.data.doc_id);
+                }
+            } else if (data.data && data.data.event === 'claim_added') {
+                // Sub-claim added - add incrementally with link to parent
+                console.log('Claim added:', data.data.claim_id);
+                if (data.data.node_data) {
+                    const nodeData = {
+                        id: data.data.node_data.id,
+                        label: data.data.node_data.summary || data.data.node_data.text?.substring(0, 40) || 'Claim',
+                        type: 'sub',
+                        fullData: data.data.node_data
+                    };
+                    const parentId = data.data.node_data.parent_super_claim || data.data.doc_id;
+                    GraphRenderer.addNodeIncremental(nodeData, parentId);
+                }
             } else if (data.data && data.data.event === 'processing_complete') {
-                // Reload full graph
+                // Reload full graph to ensure consistency
                 console.log('Document processing complete');
                 UI.updateProcessingStatus('Processing complete!', 100);
                 this.loadGraph();
@@ -60,9 +93,8 @@ const App = {
         });
 
         this.socket.on('claim_added', (data) => {
-            console.log('New claim added:', data.claim_summary);
-            // Reload graph to show new claim
-            this.loadGraph();
+            console.log('Deprecated claim_added event:', data.claim_summary);
+            // This event is deprecated - processing_update handles incremental adds
         });
 
         this.socket.on('document_processed', (data) => {

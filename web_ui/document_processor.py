@@ -744,18 +744,20 @@ Find the main title/heading at the top of the document. Return just the title te
             doc_id = str(uuid4())
 
         # 1. Create document node
-        self._emit("Creating document node...", 5, {
-            'event': 'document_created',
-            'doc_id': doc_id,
-            'file_path': file_path
-        })
-
         doc_node = {
             'id': doc_id,
             'title': Path(file_path).name,
             'source_file': file_path,
             'status': 'processing'
         }
+
+        self._emit("Creating document node...", 5, {
+            'event': 'document_created',
+            'doc_id': doc_id,
+            'file_path': file_path,
+            'node_data': doc_node  # Full node data for immediate rendering
+        })
+
         self.db.create_node('Document', doc_node)
 
         # 2. Extract text
