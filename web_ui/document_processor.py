@@ -4,18 +4,34 @@ Real-time Document Processor with Live Updates
 Processes documents incrementally, sending updates to clients via callback.
 Uses configurable AI agent CLIs for intelligent extraction and analysis.
 Supports: Claude Code, OpenAI Codex, Gemini Code, and custom adapters.
+
+PRIMARY METHOD: Semantic embedding-based clustering (optimal, non-overlapping)
+FALLBACK METHOD: LLM-based categorization (logged transparently when used)
 """
 
 import logging
 import json
 from pathlib import Path
-from typing import Callable, Dict, Any, List
+from typing import Callable, Dict, Any, List, Tuple
 from uuid import uuid4
 
 from research_agent.document_processing.pdf_extractor import PDFExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
 from research_agent.neo4j_database import Neo4jDatabase
 from web_ui.agent_config import get_agent_adapter
+
+# Import semantic clustering (PRIMARY method)
+try:
+    from web_ui.semantic_clustering import (
+        SemanticClaimClusterer,
+        check_embedding_availability,
+        get_clustering_method_status,
+        ClusteringMetrics
+    )
+    SEMANTIC_CLUSTERING_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Semantic clustering not available: {e}")
+    SEMANTIC_CLUSTERING_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +296,143 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 
         logger.info(f"✓ JSON schema validation passed for {task_type}")
 
-    def _extract_hierarchical_claims_with_agent(self, text: str) -> Dict[str, Any]:
+    def _extract_and_cluster_claims(self, text: str) -> Tuple[Dict[str, Any], ClusteringMetrics]:
+        """
+        Extract claims and organize hierarchically.
+
+        PRIMARY: Use semantic embedding clustering (optimal, non-overlapping)
+        FALLBACK: Use LLM-based categorization (with transparent logging)
+
+        Returns:
+            (hierarchical_structure, metrics)
+        """
+        # Step 1: Extract flat list of claims using agent
+        self._emit("Extracting flat claims...", 30, {'event': 'flat_extraction_started'})
+
+        try:
+            flat_claims = self._extract_flat_claims_with_agent(text)
+        except Exception as e:
+            logger.error(f"Flat claim extraction failed: {e}")
+            raise
+
+        self._emit(f"Extracted {len(flat_claims)} claims", 40, {
+            'event': 'flat_claims_extracted',
+            'claim_count': len(flat_claims)
+        })
+
+        # Step 2: Cluster claims using PRIMARY or FALLBACK method
+        if SEMANTIC_CLUSTERING_AVAILABLE and check_embedding_availability():
+            # PRIMARY METHOD: Semantic embedding clustering
+            logger.info("=" * 80)
+            logger.info("Using PRIMARY method: Semantic embedding-based clustering")
+            logger.info("=" * 80)
+
+            self._emit("Clustering claims using semantic embeddings (PRIMARY method)...", 50, {
+                'event': 'semantic_clustering_started',
+                'method': 'PRIMARY'
+            })
+
+            try:
+                clusterer = SemanticClaimClusterer()
+                cluster_results, metrics = clusterer.cluster_claims(flat_claims)
+
+                # Convert to hierarchical structure
+                categories = []
+                for cluster in cluster_results:
+                    categories.append({
+                        'super_claim': cluster.super_claim_text,
+                        'category_description': cluster.super_claim_description,
+                        'sub_claims': cluster.sub_claims,
+                        'quality_score': cluster.quality_score
+                    })
+
+                hierarchical_structure = {'categories': categories}
+
+                logger.info(f"✓ Semantic clustering succeeded - {metrics.n_clusters} optimal clusters")
+                logger.info(f"  Silhouette score: {metrics.silhouette_score:.3f} (>0.5 is good)")
+                logger.info(f"  Davies-Bouldin score: {metrics.davies_bouldin_score:.3f} (lower is better)")
+
+                return hierarchical_structure, metrics
+
+            except Exception as e:
+                logger.warning(f"Semantic clustering failed: {e}")
+                logger.warning("Falling back to LLM-based categorization...")
+                # Fall through to fallback
+
+        # FALLBACK METHOD: LLM-based categorization
+        logger.warning("=" * 80)
+        logger.warning("Using FALLBACK method: LLM-based categorization")
+        logger.warning("Reason: Semantic clustering not available or failed")
+        logger.warning("=" * 80)
+
+        self._emit("Clustering claims using LLM (FALLBACK method)...", 50, {
+            'event': 'llm_clustering_started',
+            'method': 'FALLBACK',
+            'reason': 'semantic_clustering_unavailable'
+        })
+
+        hierarchical_structure = self._extract_hierarchical_claims_with_agent_llm(text)
+
+        # Create fallback metrics
+        fallback_metrics = ClusteringMetrics(
+            silhouette_score=-999.0,  # Invalid sentinel value
+            davies_bouldin_score=-999.0,
+            n_clusters=len(hierarchical_structure.get('categories', [])),
+            method='llm-fallback'
+        )
+
+        logger.warning(f"LLM categorization created {fallback_metrics.n_clusters} categories")
+        logger.warning("⚠️  Note: This method is NOT mathematically optimal")
+
+        return hierarchical_structure, fallback_metrics
+
+    def _extract_flat_claims_with_agent(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Extract flat list of claims (no categorization yet).
+
+        This is step 1 - gets raw claims for later clustering.
+        """
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string"},
+                            "type": {"type": "string", "enum": ["factual", "methodological", "causal", "interpretive"]},
+                            "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+                        },
+                        "required": ["text", "type", "confidence"]
+                    }
+                }
+            },
+            "required": ["claims"]
+        }
+
+        agent_prompt = f"""Extract research claims from this text. Ignore copyright, metadata, headers/footers.
+
+TEXT:
+{text[:8000]}
+
+For each ACTUAL RESEARCH CLAIM (not metadata):
+1. Extract exact claim text
+2. Classify type (factual, methodological, causal, interpretive)
+3. Rate confidence (0.0-1.0)
+
+Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims."""
+
+        result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "flat-claim-extraction")
+        claims = result.get('claims', [])
+
+        if not isinstance(claims, list):
+            raise RuntimeError(f"Expected list, got {type(claims)}")
+
+        logger.info(f"✓ Extracted {len(claims)} flat claims for clustering")
+        return claims
+
+    def _extract_hierarchical_claims_with_agent_llm(self, text: str) -> Dict[str, Any]:
         """
         Use AI agent to extract HIERARCHICAL claims (categories + specific claims).
 
@@ -500,8 +652,14 @@ Create:
         })
 
         try:
-            hierarchical_result = self._extract_hierarchical_claims_with_agent(text)
+            hierarchical_result, clustering_metrics = self._extract_and_cluster_claims(text)
             categories = hierarchical_result.get('categories', [])
+
+            # Log which method was used
+            if clustering_metrics.method == 'semantic-embedding':
+                logger.info(f"✓ Used PRIMARY method - Silhouette: {clustering_metrics.silhouette_score:.3f}")
+            else:
+                logger.warning(f"⚠️  Used FALLBACK method - LLM categorization (not optimal)")
         except Exception as e:
             error_msg = f"Claude Code agent failed to extract claims: {str(e)}"
             logger.error(error_msg)
