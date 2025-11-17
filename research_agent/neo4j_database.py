@@ -18,6 +18,10 @@ import os
 from typing import Dict, List, Any, Optional, Tuple
 from uuid import uuid4
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class Neo4jDatabase:
