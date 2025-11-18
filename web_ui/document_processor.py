@@ -1257,14 +1257,63 @@ Find the main title/heading at the top of the document. Return just the title te
             'claim_previews': claim_previews
         })
 
-        # 4. Process and add each claim IMMEDIATELY to graph (real-time visualization)
-        logger.info(f"Processing {total_claims} claims with real-time graph updates...")
+        # 4. Create skeleton claim nodes IMMEDIATELY for real-time visualization
+        logger.info(f"Creating {total_claims} skeleton claim nodes for immediate rendering...")
+
+        claim_ids = []  # Store IDs for processing loop
 
         for idx, claim_text in enumerate(claims_list):
-            progress = 50 + ((idx + 1) / total_claims) * 40  # 50% to 90%
             claim_id = str(uuid4())
+            claim_ids.append(claim_id)
+
+            # Create minimal "skeleton" node with raw claim text
+            skeleton_node = {
+                'id': claim_id,
+                'text': claim_text,  # Raw text (will be updated with summary later)
+                'original_text': claim_text,
+                'status': 'processing',
+                'processing_stage': 'pending',
+                'claim_type': 'extracted',
+                'word_count_original': len(claim_text.split())
+            }
+
+            # Add to Neo4j immediately
+            self.db.create_node('Claim', skeleton_node)
+
+            # Link to document immediately
+            self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'order': idx})
+
+            # Emit IMMEDIATELY so user sees claim appear in graph
+            progress = 35 + (idx / total_claims) * 15  # 35% to 50%
+            self._emit(f"Extracted claim {idx+1}/{total_claims}", progress, {
+                'event': 'claim_added',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'node_data': skeleton_node,
+                'parent_id': doc_id,
+                'is_skeleton': True  # Flag for frontend to render with "processing" appearance
+            })
+
+            # Yield to event loop so events are sent
+            socketio.sleep(0)
+
+        logger.info(f"✓ Created {total_claims} skeleton nodes - user can see claims now!")
+
+        # 5. Now process each claim through 4-stage pipeline and UPDATE existing nodes
+        logger.info(f"Processing {total_claims} claims through 4-stage pipeline...")
+
+        for idx, (claim_id, claim_text) in enumerate(zip(claim_ids, claims_list)):
+            progress = 50 + ((idx + 1) / total_claims) * 40  # 50% to 90%
 
             logger.info(f"Processing claim {idx + 1}/{total_claims}: {claim_text[:60]}...")
+
+            # Emit processing started event for this specific claim
+            self._emit(f"Processing claim {idx+1}/{total_claims}", progress, {
+                'event': 'claim_processing_started',
+                'claim_id': claim_id,
+                'doc_id': doc_id,
+                'processing_stage': 'analysis'
+            })
 
             # Process claim through 4-stage pipeline (analyze → clarify → simplify → validate)
             simplification_result = self._simplify_claim_with_agent(
@@ -1275,16 +1324,17 @@ Find the main title/heading at the top of the document. Return just the title te
                 total_claims=total_claims
             )
 
-            # Create claim node with all processed data
-            claim_node = {
-                'id': claim_id,
-
-                # Display text (what user sees in graph)
+            # UPDATE existing skeleton node with all processed data
+            processed_data = {
+                # Display text (what user sees in graph) - UPDATED from raw text
                 'text': simplification_result['summary'],
-                'summary': simplification_result['summary'],  # Also set summary field for API compatibility
+                'summary': simplification_result['summary'],
+
+                # Status - mark as complete
+                'status': 'complete',
+                'processing_stage': 'complete',
 
                 # Complete processing chain (for details view)
-                'original_text': claim_text,  # The raw extracted claim
                 'analysis': simplification_result['analysis'],
                 'clarified': simplification_result['clarified'],
 
@@ -1313,11 +1363,7 @@ Find the main title/heading at the top of the document. Return just the title te
                 'duration_validation_ms': simplification_result['duration_validation_ms'],
                 'duration_total_ms': simplification_result['duration_total_ms'],
 
-                # Processing status
-                'processing_stage': simplification_result['processing_stage'],
-
                 # Word counts (for analytics)
-                'word_count_original': len(claim_text.split()),
                 'word_count_final': len(simplification_result['summary'].split()),
 
                 # Metadata - MVP flat structure (no super-claims yet)
@@ -1326,23 +1372,18 @@ Find the main title/heading at the top of the document. Return just the title te
                 'is_optimal': True  # Will be updated by optimizer later
             }
 
-            # Add claim to Neo4j
-            self.db.create_node('Claim', claim_node)
-            logger.info(f"✓ Created claim node: {claim_id}")
+            # UPDATE Neo4j node (not create - node already exists from skeleton)
+            self.db.update_node_properties(claim_id, processed_data)
+            logger.info(f"✓ Updated claim node with processed data: {claim_id}")
 
-            # Link directly to document (flat structure for MVP - no super-claims)
-            self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'order': idx})
-            logger.info(f"✓ Linked claim to document")
-
-            # Emit IMMEDIATELY so frontend adds to graph in real-time
-            self._emit(f"Added claim {idx+1}/{total_claims}", progress, {
-                'event': 'claim_added',
+            # Emit claim_updated event for frontend to update appearance
+            self._emit(f"Processed claim {idx+1}/{total_claims}", progress, {
+                'event': 'claim_updated',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
-                'node_data': claim_node,  # Full node data for immediate rendering
-                'parent_id': doc_id  # Link directly to document (not super-claim)
+                'updates': processed_data  # Send updated fields for frontend to apply
             })
-            logger.info(f"✓ Emitted claim_added event")
+            logger.info(f"✓ Emitted claim_updated event")
 
             # Yield to event loop to prevent UI freezing
             socketio.sleep(0)

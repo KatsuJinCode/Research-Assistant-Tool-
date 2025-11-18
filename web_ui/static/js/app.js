@@ -119,6 +119,19 @@ const App = {
                     GraphRenderer.clearFreshFlags();
                 }, 2000);
                 this.loadStats();
+            } else if (data.data && data.data.event === 'claim_updated') {
+                // Claim finished processing - update its appearance
+                console.log('Claim updated:', data.data.claim_id, data.data.updates);
+                if (data.data.claim_id && data.data.updates) {
+                    GraphRenderer.updateClaimNode(
+                        data.data.claim_id,
+                        data.data.updates
+                    );
+                }
+                // Update document progress
+                if (data.data.doc_id && data.progress) {
+                    GraphRenderer.updateDocumentProgress(data.data.doc_id, data.progress);
+                }
             } else if (data.data && (data.data.event === 'claim_extraction_failed' ||
                        data.data.event === 'claim_simplification_failed')) {
                 // Display error prominently

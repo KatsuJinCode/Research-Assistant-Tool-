@@ -625,9 +625,15 @@ const GraphRenderer = {
 
         // Add circle with growth animation (start tiny)
         const finalRadius = this.getNodeRadius(nodeData.type, nodeData);
+
+        // Check if this is a skeleton claim (still processing)
+        const isSkeleton = nodeData.status === 'processing';
+        const nodeColor = isSkeleton ? '#9E9E9E' : this.getNodeColor(nodeData.type, nodeData);  // Gray for processing
+        const nodeOpacity = isSkeleton ? 0.6 : 1.0;  // Faded while processing
+
         const circle = newNodeGroup.append('circle')
             .attr('r', 0.1)  // Start nearly invisible
-            .attr('fill', this.getNodeColor(nodeData.type, nodeData))
+            .attr('fill', nodeColor)
             .attr('stroke', '#fff')
             .attr('stroke-width', this.getNodeBorderWidth(nodeData))
             .attr('class', 'graph-node')
@@ -638,7 +644,7 @@ const GraphRenderer = {
             .duration(800)  // Smooth 800ms growth
             .ease(d3.easeBackOut)  // Gentle bounce
             .attr('r', finalRadius)
-            .style('opacity', 1);
+            .style('opacity', nodeOpacity);
 
         // Add circular progress indicator for processing documents
         if (nodeData.processing && nodeData.type === 'document') {
@@ -761,6 +767,65 @@ const GraphRenderer = {
             .style('opacity', 1);
 
         console.log('✓ Node label updated');
+    },
+
+    /**
+     * Update a claim node after processing completes
+     * Transitions from "skeleton" state to "complete" state with visual feedback
+     * @param {String} claimId - Claim node ID
+     * @param {Object} updates - Updated node properties
+     */
+    updateClaimNode(claimId, updates) {
+        console.log('Updating claim node:', claimId, updates);
+
+        // Update in-memory data
+        const node = this.currentGraphData.nodes.find(n => n.id === claimId);
+        if (node) {
+            Object.assign(node, updates);
+            if (node.fullData) {
+                Object.assign(node.fullData, updates);
+            }
+            node.label = updates.summary || updates.text;
+        }
+
+        // Update SVG appearance with quality-based color
+        const svg = d3.select('#graph-svg');
+
+        // Color map based on disposition (quality assessment)
+        const colorMap = {
+            'central': '#4CAF50',      // Green - important claims
+            'child': '#2196F3',         // Blue - supporting claims
+            'review': '#FF9800',        // Orange - needs review
+            'discard': '#F44336'        // Red - low quality
+        };
+        const newColor = colorMap[updates.disposition] || '#2196F3';
+
+        // Update circle with smooth color transition
+        svg.select(`circle[data-node-id="${claimId}"]`)
+            .transition()
+            .duration(1000)
+            .attr('fill', newColor)
+            .attr('stroke-width', 3)
+            .attr('stroke', '#fff')
+            .style('opacity', 1.0);  // Fully opaque (no longer processing)
+
+        // Update text label with fade-out/fade-in transition
+        const displayText = updates.summary || updates.text;
+        const truncated = displayText.length > 35
+            ? displayText.substring(0, 35) + '...'
+            : displayText;
+
+        svg.select(`text[data-node-id="${claimId}"]`)
+            .transition()
+            .duration(500)
+            .style('opacity', 0)
+            .transition()
+            .duration(500)
+            .text(truncated)
+            .style('opacity', 1)
+            .style('font-weight', '700');  // Bold when complete
+
+        console.log('✓ Claim node updated to complete state');
     },
 
     /**
