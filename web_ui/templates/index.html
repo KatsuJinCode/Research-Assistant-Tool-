@@ -384,6 +384,34 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+
+        /* Version Indicator - Bottom-right corner */
+        #version-indicator {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #4CAF50;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            z-index: 10000;
+            border: 1px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        #version-indicator:hover {
+            background: rgba(0, 0, 0, 0.95);
+            border-color: #66BB6A;
+            color: #66BB6A;
+        }
+
+        #version-indicator .version-separator {
+            color: #666;
+            margin: 0 6px;
+        }
     </style>
 </head>
 <body>
@@ -589,6 +617,13 @@
                 <button class="btn btn-primary" onclick="customInvestigate()" style="flex: 1;">Custom Investigate</button>
             </div>
         </div>
+    </div>
+
+    <!-- Version Indicator (bottom-right corner) -->
+    <div id="version-indicator">
+        <span id="version-build">Build: loading...</span>
+        <span class="version-separator">|</span>
+        <span id="version-restart">Restart #0</span>
     </div>
 
     <!-- Modular JavaScript -->

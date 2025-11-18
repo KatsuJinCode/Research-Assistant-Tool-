@@ -16,6 +16,9 @@ const App = {
         // Setup Socket.IO for real-time updates
         this.initializeSocket();
 
+        // Load version info (build hash, restart count)
+        await this.loadVersionInfo();
+
         // Load initial data (safe to call even during processing)
         await this.loadGraph();
         await this.loadStats();
@@ -226,6 +229,35 @@ const App = {
             UI.updateStats(stats);
         } catch (error) {
             console.error('Failed to load stats:', error);
+        }
+    },
+
+    /**
+     * Load and display version info (build hash, restart count)
+     */
+    async loadVersionInfo() {
+        try {
+            // Add cache-busting timestamp to force fresh load
+            const response = await fetch('/static/VERSION.json?t=' + Date.now());
+            const version = await response.json();
+
+            const buildEl = document.getElementById('version-build');
+            const restartEl = document.getElementById('version-restart');
+
+            if (buildEl) {
+                buildEl.textContent = `Build: ${version.build_hash}`;
+            }
+            if (restartEl) {
+                restartEl.textContent = `Restart #${version.restart_count}`;
+            }
+
+            console.log('✓ Version loaded:', version);
+        } catch (error) {
+            console.warn('Could not load version info:', error);
+            const buildEl = document.getElementById('version-build');
+            if (buildEl) {
+                buildEl.textContent = 'Build: unknown';
+            }
         }
     },
 
