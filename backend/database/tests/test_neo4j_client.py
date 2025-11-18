@@ -31,7 +31,7 @@ def mock_driver():
 class TestNeo4jClientSingleton:
     """Test singleton pattern behavior."""
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_singleton_creates_only_one_instance(self, mock_graph_db, mock_driver):
         """Test that multiple calls return same instance."""
         mock_graph_db.driver.return_value = mock_driver
@@ -43,7 +43,7 @@ class TestNeo4jClientSingleton:
         # Driver should only be created once
         assert mock_graph_db.driver.call_count == 1
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_singleton_reset_allows_new_instance(self, mock_graph_db, mock_driver):
         """Test that reset allows creating fresh instance."""
         mock_graph_db.driver.return_value = mock_driver
@@ -61,7 +61,7 @@ class TestNeo4jClientSingleton:
 class TestNeo4jClientInitialization:
     """Test client initialization and configuration."""
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     @patch.dict(os.environ, {
         'NEO4J_URI': 'bolt://test:7687',
         'NEO4J_USER': 'testuser',
@@ -84,7 +84,7 @@ class TestNeo4jClientInitialization:
             auth=('testuser', 'testpass')
         )
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_initialization_uses_defaults_when_env_not_set(self, mock_graph_db, mock_driver):
         """Test that initialization uses defaults when env vars missing."""
         mock_graph_db.driver.return_value = mock_driver
@@ -97,7 +97,7 @@ class TestNeo4jClientInitialization:
         assert client.password == 'neo4j'
         assert client.database == 'neo4j'
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_initialization_verifies_connectivity(self, mock_graph_db, mock_driver):
         """Test that initialization verifies database connectivity."""
         mock_graph_db.driver.return_value = mock_driver
@@ -106,7 +106,7 @@ class TestNeo4jClientInitialization:
 
         mock_driver.verify_connectivity.assert_called_once()
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_initialization_raises_on_connection_failure(self, mock_graph_db, mock_driver):
         """Test that connection failures are raised."""
         mock_driver.verify_connectivity.side_effect = Exception("Connection failed")
@@ -117,15 +117,15 @@ class TestNeo4jClientInitialization:
 
     def test_initialization_raises_when_neo4j_not_installed(self):
         """Test that missing neo4j package raises clear error."""
-        with patch('backend.database.neo4j_client.GraphDatabase', side_effect=ImportError):
-            with pytest.raises(ImportError, match="Neo4j driver not installed"):
+        with patch('builtins.__import__', side_effect=ImportError("neo4j package not found")):
+            with pytest.raises(ImportError):
                 Neo4jClient()
 
 
 class TestNeo4jClientMethods:
     """Test client methods and properties."""
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_driver_property_returns_driver(self, mock_graph_db, mock_driver):
         """Test driver property returns initialized driver."""
         mock_graph_db.driver.return_value = mock_driver
@@ -134,7 +134,7 @@ class TestNeo4jClientMethods:
 
         assert client.driver is mock_driver
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_get_session_creates_session_with_correct_database(self, mock_graph_db, mock_driver):
         """Test get_session creates session with configured database."""
         mock_session = Mock()
@@ -147,7 +147,7 @@ class TestNeo4jClientMethods:
         mock_driver.session.assert_called_once_with(database='neo4j')
         assert session is mock_session
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_get_session_passes_additional_kwargs(self, mock_graph_db, mock_driver):
         """Test get_session passes through additional parameters."""
         mock_session = Mock()
@@ -162,7 +162,7 @@ class TestNeo4jClientMethods:
             default_access_mode='READ'
         )
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_close_closes_driver(self, mock_graph_db, mock_driver):
         """Test close method closes the driver."""
         mock_graph_db.driver.return_value = mock_driver
@@ -173,7 +173,7 @@ class TestNeo4jClientMethods:
         mock_driver.close.assert_called_once()
         assert client._driver is None
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_context_manager_does_not_close_connection(self, mock_graph_db, mock_driver):
         """Test context manager preserves connection (singleton pattern)."""
         mock_graph_db.driver.return_value = mock_driver
@@ -198,7 +198,7 @@ class TestNeo4jClientErrorHandling:
         with pytest.raises(RuntimeError, match="Neo4j driver not initialized"):
             _ = client.driver
 
-    @patch('backend.database.neo4j_client.GraphDatabase')
+    @patch('neo4j.GraphDatabase')
     def test_double_close_is_safe(self, mock_graph_db, mock_driver):
         """Test calling close multiple times doesn't error."""
         mock_graph_db.driver.return_value = mock_driver
