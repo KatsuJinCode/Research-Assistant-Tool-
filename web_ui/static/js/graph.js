@@ -917,7 +917,21 @@ const GraphRenderer = {
      * Color encodes confidence and quality
      */
     getNodeColor(type, node) {
-        // Base colors by type
+        // Check for disposition-based coloring first (NEW schema)
+        const disposition = node?.fullData?.disposition || node?.disposition;
+        if (disposition) {
+            const dispositionColors = {
+                'central': '#4CAF50',      // Green - important/central claims
+                'child': '#2196F3',         // Blue - supporting/child claims
+                'review': '#FF9800',        // Orange - needs review
+                'discard': '#F44336'        // Red - low quality/discard
+            };
+            if (dispositionColors[disposition]) {
+                return dispositionColors[disposition];
+            }
+        }
+
+        // Fall back to type-based coloring (OLD schema compatibility)
         const baseColors = {
             'document': { r: 76, g: 175, b: 80 },    // Green
             'super': { r: 33, g: 150, b: 243 },       // Blue
