@@ -5,6 +5,7 @@
 const App = {
     socket: null,
     processingInProgress: false,  // Track if document processing is ongoing
+    claimStates: {},  // Track claim processing states for live updates
 
     /**
      * Initialize the application
@@ -124,6 +125,56 @@ const App = {
             UI.updateProcessingStatus('Processing complete!', 100);
             this.loadGraph();
             this.loadStats();
+        });
+
+        // NEW: Claim stage update events for live 4-stage pipeline visualization
+        this.socket.on('claim_stage_update', (data) => {
+            const { claim_id, stage, status } = data;
+            console.log(`Claim ${claim_id} - ${stage}: ${status}`, data);
+
+            // Initialize claim state if needed
+            if (!this.claimStates[claim_id]) {
+                this.claimStates[claim_id] = {
+                    stages: {
+                        analysis: { status: 'pending' },
+                        clarification: { status: 'pending' },
+                        simplification: { status: 'pending' },
+                        validation: { status: 'pending' }
+                    },
+                    allData: {}
+                };
+            }
+
+            // Update stage status
+            this.claimStates[claim_id].stages[stage] = { status, ...data.data };
+            this.claimStates[claim_id].allData[stage] = data.data;
+
+            // Log progress for debugging
+            if (status === 'complete') {
+                const duration = data.data?.duration_ms;
+                console.log(`✓ ${stage} complete ${duration ? `(${(duration/1000).toFixed(1)}s)` : ''}`);
+            }
+        });
+
+        // NEW: Claim complete event - final results ready
+        this.socket.on('claim_complete', (data) => {
+            const { claim_id, final_text, quality_score, disposition, total_duration_ms } = data;
+            console.log(`✓ Claim ${claim_id} complete:`, {
+                text: final_text,
+                quality: quality_score,
+                disposition: disposition,
+                duration: `${(total_duration_ms/1000).toFixed(1)}s`
+            });
+
+            // Store final data
+            if (this.claimStates[claim_id]) {
+                this.claimStates[claim_id].final = {
+                    text: final_text,
+                    quality_score: quality_score,
+                    disposition: disposition,
+                    total_duration_ms: total_duration_ms
+                };
+            }
         });
     },
 
