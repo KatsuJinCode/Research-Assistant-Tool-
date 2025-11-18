@@ -1298,9 +1298,6 @@ Find the main title/heading at the top of the document. Return just the title te
                 'is_skeleton': True  # Flag for frontend to render with "processing" appearance
             })
 
-            # Yield to event loop so events are sent
-            socketio.sleep(0)
-
         logger.info(f"✓ Created {total_claims} skeleton nodes - user can see claims now!")
 
         # 5. Now process each claim through 4-stage pipeline and UPDATE existing nodes
@@ -1391,9 +1388,6 @@ Find the main title/heading at the top of the document. Return just the title te
                 'updates': processed_data  # Send updated fields for frontend to apply
             })
             logger.info(f"✓ Emitted claim_updated event")
-
-            # Yield to event loop to prevent UI freezing
-            socketio.sleep(0)
 
         # 5. Skip optimization for now (too slow for web interface)
         self._emit("Skipping claim hierarchy analysis (can run later)", 90, {
