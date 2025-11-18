@@ -1137,31 +1137,29 @@ Find the main title/heading at the top of the document. Return just the title te
         Returns:
             document_id
         """
-        if not doc_id:
-            doc_id = str(uuid4())
+        # 1. Create document node in database FIRST to get the real ID
+        # Use repository to create document - it will generate the ID
+        doc_id = self.doc_repo.create_document(
+            title=Path(file_path).name,
+            source_file=str(file_path),
+            status='processing'
+        )
 
-        # 1. Create document node
+        # Now build node data with the ACTUAL database ID
         doc_node = {
             'id': doc_id,
             'title': Path(file_path).name,
-            'source_file': file_path,
+            'source_file': str(file_path),
             'status': 'processing'
         }
 
+        # Emit with the correct ID that matches the database
         self._emit("Creating document node...", 5, {
             'event': 'document_created',
             'doc_id': doc_id,
             'file_path': file_path,
             'node_data': doc_node  # Full node data for immediate rendering
         })
-
-        # Use repository instead of direct DB call
-        self.doc_repo.create_document(
-            title=doc_node['title'],
-            source_file=str(file_path),
-            status='processing',
-            **{k: v for k, v in doc_node.items() if k not in ['id', 'title', 'source_file', 'status', 'created_at']}
-        )
 
         # 2. Extract text
         self._emit("Extracting text from PDF...", 10, {
@@ -1266,15 +1264,13 @@ Find the main title/heading at the top of the document. Return just the title te
         claim_ids = []  # Store IDs for processing loop
 
         for idx, claim_dict in enumerate(claims_list):
-            claim_id = str(uuid4())
-            claim_ids.append(claim_id)
-
             # Extract text from claim dictionary
             claim_text = claim_dict.get('text', str(claim_dict))  # Fallback to string representation if no 'text' key
 
             # Create minimal "skeleton" node with raw claim text using repository
             # Note: create_claim automatically creates the CONTAINS_CLAIM relationship
-            created_claim_id = self.claim_repo.create_claim(
+            # CRITICAL: Use the ID returned from repository, not a random UUID!
+            claim_id = self.claim_repo.create_claim(
                 text=claim_text,  # Raw text (will be updated with summary later)
                 original_text=claim_text,
                 doc_id=doc_id,
@@ -1284,10 +1280,11 @@ Find the main title/heading at the top of the document. Return just the title te
                 processing_stage='pending',
                 word_count_original=len(claim_text.split())
             )
+            claim_ids.append(claim_id)
 
-            # Skeleton node data for event emission (reconstructed for backward compatibility)
+            # Skeleton node data for event emission with ACTUAL database ID
             skeleton_node = {
-                'id': claim_id,
+                'id': claim_id,  # Use the real ID from database!
                 'text': claim_text,
                 'original_text': claim_text,
                 'status': 'processing',
@@ -1302,7 +1299,7 @@ Find the main title/heading at the top of the document. Return just the title te
             self._emit(f"Extracted claim {idx+1}/{total_claims}", progress, {
                 'event': 'claim_added',
                 'doc_id': doc_id,
-                'claim_id': claim_id,
+                'claim_id': claim_id,  # Use the real ID from database!
                 'node_data': skeleton_node,
                 'parent_id': doc_id,
                 'is_skeleton': True  # Flag for frontend to render with "processing" appearance
