@@ -40,12 +40,12 @@ class SimpleResearchAssistant:
         if AI_AVAILABLE:
             self.ai = AIHelper()
             if self.ai.has_api:
-                print(f"✓ AI features enabled ({self.ai.get_provider_info()})")
+                print(f"[OK] AI features enabled ({self.ai.get_provider_info()})")
             else:
-                print("⚠ AI features unavailable (run: ./setup.sh to configure)")
+                print("[WARNING] AI features unavailable (run: ./setup.sh to configure)")
         else:
             self.ai = None
-            print("⚠ AI features unavailable (run: ./setup.sh)")
+            print("[WARNING] AI features unavailable (run: ./setup.sh)")
 
     def _init_database(self):
         """Initialize SQLite database."""
@@ -447,7 +447,7 @@ Examples:
 
     if args.command == "create-project":
         project_id = assistant.create_project(args.name, args.description)
-        print(f"✓ Created project '{args.name}' with ID: {project_id}\n")
+        print(f"[OK] Created project '{args.name}' with ID: {project_id}\n")
 
     elif args.command == "list-projects":
         projects = assistant.list_projects()
@@ -466,9 +466,9 @@ Examples:
     elif args.command == "add-document":
         try:
             doc_id = assistant.add_document_from_file(args.project_id, args.file_path)
-            print(f"✓ Added document with ID: {doc_id}\n")
+            print(f"[OK] Added document with ID: {doc_id}\n")
         except Exception as e:
-            print(f"✗ Error: {e}\n")
+            print(f"[X] Error: {e}\n")
 
     elif args.command == "search":
         results = assistant.search_documents(args.query, args.project)
@@ -513,7 +513,7 @@ Examples:
             print("=" * 80 + "\n")
 
     elif args.command == "summarize":
-        print(f"🤖 Generating AI summary for document {args.doc_id}...")
+        print(f"[BOT] Generating AI summary for document {args.doc_id}...")
         summary = assistant.summarize_document(args.doc_id, args.length)
         print("\nSUMMARY")
         print("=" * 80)
@@ -521,7 +521,7 @@ Examples:
         print("=" * 80 + "\n")
 
     elif args.command == "ask":
-        print(f"🤖 Asking AI: {args.question}")
+        print(f"[BOT] Asking AI: {args.question}")
         answer = assistant.ask_question(args.doc_id, args.question)
         print("\nANSWER")
         print("=" * 80)
@@ -529,7 +529,7 @@ Examples:
         print("=" * 80 + "\n")
 
     elif args.command == "keypoints":
-        print(f"🤖 Extracting {args.num} key points with AI...")
+        print(f"[BOT] Extracting {args.num} key points with AI...")
         points = assistant.extract_key_points(args.doc_id, args.num)
         print("\nKEY POINTS")
         print("=" * 80)
@@ -538,7 +538,7 @@ Examples:
         print("=" * 80 + "\n")
 
     elif args.command == "auto-tag":
-        print(f"🤖 Generating tags with AI...")
+        print(f"[BOT] Generating tags with AI...")
         tags = assistant.auto_tag_document(args.doc_id, args.max)
         print("\nSUGGESTED TAGS")
         print("=" * 80)

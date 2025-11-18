@@ -16,10 +16,10 @@ def install_package(package):
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", "--quiet", package
         ])
-        print(f"✓ {package} installed successfully")
+        print(f"[OK] {package} installed successfully")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"✗ Failed to install {package}: {e}")
+        print(f"[X] Failed to install {package}: {e}")
         return False
 
 
@@ -45,12 +45,12 @@ def main():
 
     print("=" * 80)
     if failed:
-        print(f"⚠ Setup completed with {len(failed)} error(s)")
+        print(f"[WARNING] Setup completed with {len(failed)} error(s)")
         print("Failed packages:", ", ".join(failed))
         print("\nYou can try installing them manually with:")
         print(f"  pip install {' '.join(failed)}")
     else:
-        print("✓ All dependencies installed successfully!")
+        print("[OK] All dependencies installed successfully!")
 
     print("\nNext steps:")
     print("1. Set your OpenAI API key:")

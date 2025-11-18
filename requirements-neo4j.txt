@@ -1,0 +1,5 @@
+# Neo4j Python Driver
+neo4j>=5.14.0
+
+# For environment variables
+python-dotenv>=1.0.0

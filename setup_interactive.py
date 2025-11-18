@@ -28,9 +28,9 @@ def print_section(text):
 def check_python():
     """Check Python version."""
     version = sys.version_info
-    print(f"✓ Python {version.major}.{version.minor}.{version.micro} found")
+    print(f"[OK] Python {version.major}.{version.minor}.{version.micro} found")
     if version.major < 3 or (version.major == 3 and version.minor < 7):
-        print("❌ Error: Python 3.7+ is required")
+        print("[FAIL] Error: Python 3.7+ is required")
         sys.exit(1)
 
 def install_dependencies():
@@ -46,10 +46,10 @@ def install_dependencies():
             sys.executable, "-m", "pip", "install", "--quiet",
             "openai", "anthropic"
         ])
-        print("✓ Dependencies installed (OpenAI + Anthropic)\n")
+        print("[OK] Dependencies installed (OpenAI + Anthropic)\n")
         return True
     except subprocess.CalledProcessError:
-        print("⚠ Warning: Some dependencies may not have installed correctly\n")
+        print("[WARNING] Warning: Some dependencies may not have installed correctly\n")
         return False
 
 def validate_openai_key(key):
@@ -80,7 +80,7 @@ def configure_openai():
             return None, None
 
         if validate_openai_key(key):
-            print("✓ Valid OpenAI API key format\n")
+            print("[OK] Valid OpenAI API key format\n")
 
             print("Available OpenAI models:")
             print("  1. gpt-3.5-turbo (Faster, cheaper)")
@@ -95,10 +95,10 @@ def configure_openai():
             }
             model = models.get(model_choice, "gpt-3.5-turbo")
 
-            print(f"✓ OpenAI configured (model: {model})")
+            print(f"[OK] OpenAI configured (model: {model})")
             return key, model
         else:
-            print("⚠ Invalid key format. OpenAI keys start with 'sk-' or 'sk-proj-'")
+            print("[WARNING] Invalid key format. OpenAI keys start with 'sk-' or 'sk-proj-'")
             retry = input("Try again? (y/n): ").strip().lower()
             if retry != 'y':
                 return None, None
@@ -122,7 +122,7 @@ def configure_anthropic():
             return None, None
 
         if validate_anthropic_key(key):
-            print("✓ Valid Anthropic API key format\n")
+            print("[OK] Valid Anthropic API key format\n")
 
             print("Available Anthropic models:")
             print("  1. claude-3-5-sonnet-20241022 (Latest, most capable)")
@@ -139,10 +139,10 @@ def configure_anthropic():
             }
             model = models.get(model_choice, "claude-3-5-sonnet-20241022")
 
-            print(f"✓ Anthropic configured (model: {model})")
+            print(f"[OK] Anthropic configured (model: {model})")
             return key, model
         else:
-            print("⚠ Invalid key format. Anthropic keys start with 'sk-ant-'")
+            print("[WARNING] Invalid key format. Anthropic keys start with 'sk-ant-'")
             retry = input("Try again? (y/n): ").strip().lower()
             if retry != 'y':
                 return None, None
@@ -172,16 +172,16 @@ def save_config(openai_key, openai_model, anthropic_key, anthropic_model):
 
         if choice == "2":
             config_lines.append('DEFAULT_PROVIDER="anthropic"')
-            print("✓ Default provider: Anthropic (Claude)")
+            print("[OK] Default provider: Anthropic (Claude)")
         else:
             config_lines.append('DEFAULT_PROVIDER="openai"')
-            print("✓ Default provider: OpenAI (ChatGPT)")
+            print("[OK] Default provider: OpenAI (ChatGPT)")
     elif has_openai:
         config_lines.append('DEFAULT_PROVIDER="openai"')
-        print("✓ Using OpenAI (ChatGPT)")
+        print("[OK] Using OpenAI (ChatGPT)")
     elif has_anthropic:
         config_lines.append('DEFAULT_PROVIDER="anthropic"')
-        print("✓ Using Anthropic (Claude)")
+        print("[OK] Using Anthropic (Claude)")
 
     if config_lines:
         with open(CONFIG_FILE, 'w') as f:
@@ -228,9 +228,9 @@ def main():
         print()
         make_executable()
 
-        print_header("Setup Complete! ✓")
-        print("✓ Configuration saved to .research_config\n")
-        print("🚀 Quick Start:\n")
+        print_header("Setup Complete! [OK]")
+        print("[OK] Configuration saved to .research_config\n")
+        print("[->] Quick Start:\n")
         print("  1. Try the demo:")
 
         if os.name == 'nt':  # Windows
@@ -240,11 +240,11 @@ def main():
             print("  2. Or use the assistant directly:")
             print("     ./research.sh create-project \"My Research\"")
 
-        print("\n💡 Tip: You can switch providers anytime by editing .research_config")
+        print("\n[IDEA] Tip: You can switch providers anytime by editing .research_config")
         print("    or running this setup again")
     else:
         print_header("No API keys configured")
-        print("⚠ No API keys configured\n")
+        print("[WARNING] No API keys configured\n")
         print("You can still use basic features without AI:")
 
         if os.name == 'nt':
@@ -256,7 +256,7 @@ def main():
 
         print("\nTo add AI features later, run this setup again")
 
-    print("\n📚 Documentation:")
+    print("\n[BOOK] Documentation:")
     print("   QUICKSTART.md - 60 second guide")
     print("   CLI_README.md - Complete reference")
     print("   USAGE_EXAMPLES.md - Detailed examples\n")
@@ -273,5 +273,5 @@ if __name__ == "__main__":
         print("\n\nSetup cancelled by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[FAIL] Error: {e}")
         sys.exit(1)
