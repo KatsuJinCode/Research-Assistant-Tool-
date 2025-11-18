@@ -1262,9 +1262,12 @@ Find the main title/heading at the top of the document. Return just the title te
 
         claim_ids = []  # Store IDs for processing loop
 
-        for idx, claim_text in enumerate(claims_list):
+        for idx, claim_dict in enumerate(claims_list):
             claim_id = str(uuid4())
             claim_ids.append(claim_id)
+
+            # Extract text from claim dictionary
+            claim_text = claim_dict.get('text', str(claim_dict))  # Fallback to string representation if no 'text' key
 
             # Create minimal "skeleton" node with raw claim text
             skeleton_node = {
@@ -1273,7 +1276,8 @@ Find the main title/heading at the top of the document. Return just the title te
                 'original_text': claim_text,
                 'status': 'processing',
                 'processing_stage': 'pending',
-                'claim_type': 'extracted',
+                'claim_type': claim_dict.get('type', 'extracted'),  # Preserve type from extraction
+                'confidence': claim_dict.get('confidence', 0.0),  # Preserve initial confidence
                 'word_count_original': len(claim_text.split())
             }
 
@@ -1302,8 +1306,11 @@ Find the main title/heading at the top of the document. Return just the title te
         # 5. Now process each claim through 4-stage pipeline and UPDATE existing nodes
         logger.info(f"Processing {total_claims} claims through 4-stage pipeline...")
 
-        for idx, (claim_id, claim_text) in enumerate(zip(claim_ids, claims_list)):
+        for idx, (claim_id, claim_dict) in enumerate(zip(claim_ids, claims_list)):
             progress = 50 + ((idx + 1) / total_claims) * 40  # 50% to 90%
+
+            # Extract text from claim dictionary
+            claim_text = claim_dict.get('text', str(claim_dict))
 
             logger.info(f"Processing claim {idx + 1}/{total_claims}: {claim_text[:60]}...")
 
