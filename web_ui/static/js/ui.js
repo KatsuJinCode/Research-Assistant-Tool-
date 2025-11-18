@@ -8,7 +8,9 @@ const UI = {
      */
     async showClaimDetails(claimId) {
         try {
+            console.log('🔍 Fetching details for claim:', claimId);
             const claim = await API.fetchClaim(claimId);
+            console.log('✓ Claim data loaded:', claim);
 
             // Use the sidebar detail panel, not a modal
             const detailPanel = document.getElementById('detail-panel');
