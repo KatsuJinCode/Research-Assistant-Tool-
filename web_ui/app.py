@@ -285,11 +285,13 @@ def upload_document():
                 else:
                     logger.info(f"{message}")
                 socketio.sleep(0)  # Yield to eventlet event loop before emitting
-                socketio.emit('processing_update', {
-                    'message': message,
-                    'progress': progress,
-                    'data': data
-                })
+                # CRITICAL: socketio.emit() from background thread requires app context
+                with app.app_context():
+                    socketio.emit('processing_update', {
+                        'message': message,
+                        'progress': progress,
+                        'data': data
+                    }, broadcast=True)  # broadcast=True to send to ALL clients
                 socketio.sleep(0)  # Yield again after emitting to allow event delivery
                 if progress is not None:
                     logger.debug(f"Emitted processing_update: {progress:.0f}%")
@@ -301,13 +303,15 @@ def upload_document():
             doc_id = processor.process_document(filepath)
             logger.info(f"Background processing completed: {doc_id}")
 
-            # Emit completion
-            socketio.emit('document_processed', {'document_id': doc_id})
+            # Emit completion (also needs app context)
+            with app.app_context():
+                socketio.emit('document_processed', {'document_id': doc_id}, broadcast=True)
 
         except Exception as e:
             logger.error(f"BACKGROUND THREAD ERROR: {e}")
             logger.error(traceback.format_exc())
-            socketio.emit('processing_error', {'error': str(e)})
+            with app.app_context():
+                socketio.emit('processing_error', {'error': str(e)}, broadcast=True)
 
     # CRITICAL: Use socketio.start_background_task() instead of threading.Thread()
     # This ensures the task runs in the eventlet greenthread context where Socket.IO events work
