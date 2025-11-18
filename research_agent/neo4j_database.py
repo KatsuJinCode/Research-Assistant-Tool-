@@ -160,6 +160,32 @@ class Neo4jDatabase:
                 return node
             return None
 
+    def update_node_properties(self, node_id: str, properties: Dict[str, Any]) -> None:
+        """
+        Update properties of an existing node.
+
+        Args:
+            node_id: ID of the node to update
+            properties: Dictionary of properties to set/update
+        """
+        # Build SET clause for all properties
+        set_clauses = []
+        params = {'node_id': node_id}
+
+        for key, value in properties.items():
+            param_name = f'prop_{key}'
+            set_clauses.append(f'n.{key} = ${param_name}')
+            params[param_name] = value
+
+        query = f"""
+        MATCH (n {{id: $node_id}})
+        SET {', '.join(set_clauses)}
+        RETURN n
+        """
+
+        with self.driver.session(database=self.database) as session:
+            session.run(query, **params)
+
     def find_nodes(self, label: str, properties: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
         Find nodes by label and optional property filters.
