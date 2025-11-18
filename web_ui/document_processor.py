@@ -1320,6 +1320,7 @@ Find the main title/heading at the top of the document. Return just the title te
 
                     # Display text (what user sees in graph)
                     'text': simplification_result['summary'],
+                    'summary': simplification_result['summary'],  # FIX: Also set summary field for API compatibility
 
                     # Complete processing chain (for details view)
                     'original_text': claim_data['text'],
