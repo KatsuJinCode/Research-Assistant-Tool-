@@ -209,6 +209,7 @@ const GraphRenderer = {
             .selectAll('text')
             .data(nodes)
             .enter().append('text')
+            .attr('data-node-id', d => d.id)  // For finding later (e.g., title updates)
             .attr('text-anchor', 'middle')
             .attr('font-size', '12px')
             .attr('fill', '#ffffff')  // White text for high contrast
@@ -685,6 +686,7 @@ const GraphRenderer = {
 
         const newLabel = g.append('text')
             .datum(nodeData)
+            .attr('data-node-id', nodeData.id)  // For finding later (e.g., title updates)
             .attr('x', startX)
             .attr('y', startY + 30)
             .attr('text-anchor', 'middle')
