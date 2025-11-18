@@ -42,6 +42,15 @@ const App = {
             // Update progress UI
             UI.updateProcessingStatus(data.message, data.progress);
 
+            // Handle node updates (e.g., document title changes)
+            if (data.data && data.data.node_update) {
+                console.log('Node update:', data.data.node_update);
+                GraphRenderer.updateNodeLabel(
+                    data.data.node_update.node_id,
+                    data.data.node_update.updates.title
+                );
+            }
+
             // Handle different events from the nested data.data.event field
             if (data.data && data.data.event === 'document_created') {
                 // Document node created - add incrementally with processing indicator

@@ -731,6 +731,37 @@ const GraphRenderer = {
     },
 
     /**
+     * Update node label (e.g., when document title is extracted)
+     * @param {String} nodeId - Node ID to update
+     * @param {String} newLabel - New label text
+     */
+    updateNodeLabel(nodeId, newLabel) {
+        console.log('Updating node label:', nodeId, newLabel);
+
+        // Update in-memory data
+        const node = this.currentGraphData.nodes.find(n => n.id === nodeId);
+        if (node) {
+            node.label = newLabel;
+            if (node.fullData) {
+                node.fullData.title = newLabel;
+            }
+        }
+
+        // Update SVG label
+        const svg = d3.select('#graph-svg');
+        svg.select(`text[data-node-id="${nodeId}"]`)
+            .transition()
+            .duration(500)
+            .style('opacity', 0)
+            .transition()
+            .duration(500)
+            .text(newLabel.length > 35 ? newLabel.substring(0, 35) + '...' : newLabel)
+            .style('opacity', 1);
+
+        console.log('✓ Node label updated');
+    },
+
+    /**
      * Update document processing progress with circular indicator
      * @param {String} docId - Document node ID
      * @param {Number} progress - Progress percentage (0-100)
