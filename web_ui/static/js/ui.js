@@ -269,14 +269,27 @@ const UI = {
     },
 
     /**
-     * Update processing status
+     * Update processing status with scrolling log
      */
     updateProcessingStatus(message, progress) {
         const statusText = document.getElementById('status-text');
         const progressBar = document.getElementById('progress-bar');
 
         if (statusText) {
-            statusText.textContent = message;
+            // Append new message with timestamp instead of replacing
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.cssText = 'margin-bottom: 4px; color: #999;';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            statusText.appendChild(logEntry);
+
+            // Auto-scroll to bottom
+            statusText.scrollTop = statusText.scrollHeight;
+
+            // Keep only last 50 messages to prevent memory issues
+            while (statusText.children.length > 50) {
+                statusText.removeChild(statusText.firstChild);
+            }
         }
 
         if (progressBar) {
