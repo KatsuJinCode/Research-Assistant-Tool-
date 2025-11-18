@@ -67,7 +67,9 @@ const App = {
                     };
                     GraphRenderer.addNodeIncremental(nodeData, null);
                 }
-            } else if (data.data && data.data.event === 'super_claim_added') {
+            // MVP: super_claim_added event disabled - using flat structure
+            // Will be re-enabled when community detection is implemented
+            /* } else if (data.data && data.data.event === 'super_claim_added') {
                 // Super-claim added - add incrementally with link to document
                 console.log('Super-claim added:', data.data.super_claim_id);
                 if (data.data.node_data) {
@@ -84,18 +86,20 @@ const App = {
                 if (data.data.doc_id && data.progress) {
                     GraphRenderer.updateDocumentProgress(data.data.doc_id, data.progress);
                 }
+            */
             } else if (data.data && data.data.event === 'claim_added') {
-                // Sub-claim added - add incrementally with link to parent
+                // Claim added - add incrementally with link to parent (MVP: all claims link directly to document)
                 console.log('Claim added:', data.data.claim_id);
                 if (data.data.node_data) {
                     const nodeData = {
                         id: data.data.node_data.id,
                         label: data.data.node_data.summary || data.data.node_data.text?.substring(0, 40) || 'Claim',
-                        type: 'sub',
+                        type: 'sub',  // Visual type (can be 'super' later for community detection)
                         fullData: data.data.node_data,
                         fresh: true  // Mark as fresh/newly added
                     };
-                    const parentId = data.data.node_data.parent_super_claim || data.data.doc_id;
+                    // MVP: Use parent_id from event (directly to document, no super-claims)
+                    const parentId = data.data.parent_id || data.data.doc_id;
                     GraphRenderer.addNodeIncremental(nodeData, parentId);
                 }
                 // Update document progress

@@ -1275,80 +1275,77 @@ Find the main title/heading at the top of the document. Return just the title te
                 total_claims=total_claims
             )
 
-                claim_node = {
-                    'id': claim_id,
+            # Create claim node with all processed data
+            claim_node = {
+                'id': claim_id,
 
-                    # Display text (what user sees in graph)
-                    'text': simplification_result['summary'],
-                    'summary': simplification_result['summary'],  # FIX: Also set summary field for API compatibility
+                # Display text (what user sees in graph)
+                'text': simplification_result['summary'],
+                'summary': simplification_result['summary'],  # Also set summary field for API compatibility
 
-                    # Complete processing chain (for details view)
-                    'original_text': claim_data['text'],
-                    'analysis': simplification_result['analysis'],
-                    'clarified': simplification_result['clarified'],
+                # Complete processing chain (for details view)
+                'original_text': claim_text,  # The raw extracted claim
+                'analysis': simplification_result['analysis'],
+                'clarified': simplification_result['clarified'],
 
-                    # All 3 candidates
-                    'candidate_1': simplification_result['candidate_1'],
-                    'candidate_2': simplification_result['candidate_2'],
-                    'candidate_3': simplification_result['candidate_3'],
+                # All 3 candidates
+                'candidate_1': simplification_result['candidate_1'],
+                'candidate_2': simplification_result['candidate_2'],
+                'candidate_3': simplification_result['candidate_3'],
 
-                    # Fidelity scores (how well candidates preserve meaning)
-                    'score_1': simplification_result['score_1'],
-                    'score_2': simplification_result['score_2'],
-                    'score_3': simplification_result['score_3'],
-                    'fidelity_reason': simplification_result['fidelity_reason'],
-                    'selected_candidate': simplification_result['selected_candidate'],
+                # Fidelity scores (how well candidates preserve meaning)
+                'score_1': simplification_result['score_1'],
+                'score_2': simplification_result['score_2'],
+                'score_3': simplification_result['score_3'],
+                'fidelity_reason': simplification_result['fidelity_reason'],
+                'selected_candidate': simplification_result['selected_candidate'],
 
-                    # Quality assessment (overall claim value)
-                    'quality_score': simplification_result['quality_score'],
-                    'quality_reason': simplification_result['quality_reason'],
-                    'disposition': simplification_result['disposition'],  # central/child/review/discard
-                    'recommendation': simplification_result['recommendation'],
+                # Quality assessment (overall claim value)
+                'quality_score': simplification_result['quality_score'],
+                'quality_reason': simplification_result['quality_reason'],
+                'disposition': simplification_result['disposition'],  # central/child/review/discard
+                'recommendation': simplification_result['recommendation'],
 
-                    # Timing data (milliseconds)
-                    'duration_analysis_ms': simplification_result['duration_analysis_ms'],
-                    'duration_clarification_ms': simplification_result['duration_clarification_ms'],
-                    'duration_simplification_ms': simplification_result['duration_simplification_ms'],
-                    'duration_validation_ms': simplification_result['duration_validation_ms'],
-                    'duration_total_ms': simplification_result['duration_total_ms'],
+                # Timing data (milliseconds)
+                'duration_analysis_ms': simplification_result['duration_analysis_ms'],
+                'duration_clarification_ms': simplification_result['duration_clarification_ms'],
+                'duration_simplification_ms': simplification_result['duration_simplification_ms'],
+                'duration_validation_ms': simplification_result['duration_validation_ms'],
+                'duration_total_ms': simplification_result['duration_total_ms'],
 
-                    # Processing status
-                    'processing_stage': simplification_result['processing_stage'],
+                # Processing status
+                'processing_stage': simplification_result['processing_stage'],
 
-                    # Word counts (for analytics)
-                    'word_count_original': len(claim_data['text'].split()),
-                    'word_count_final': len(simplification_result['summary'].split()),
+                # Word counts (for analytics)
+                'word_count_original': len(claim_text.split()),
+                'word_count_final': len(simplification_result['summary'].split()),
 
-                    # Metadata
-                    'parent_super_claim': super_claim_id,
-                    'claim_type': claim_data.get('type', 'unknown'),  # factual, methodological, causal, interpretive
-                    'confidence': claim_data.get('confidence', 0.5),
-                    'is_optimal': True  # Will be updated by optimizer
-                }
+                # Metadata - MVP flat structure (no super-claims yet)
+                'claim_type': 'extracted',  # Will be refined by community detection later
+                'confidence': simplification_result['quality_score'],  # Use quality as confidence
+                'is_optimal': True  # Will be updated by optimizer later
+            }
 
-                self.db.create_node('Claim', claim_node)
+            # Add claim to Neo4j
+            self.db.create_node('Claim', claim_node)
+            logger.info(f"✓ Created claim node: {claim_id}")
 
-                # Link sub-claim to super-claim (hierarchical relationship)
-                self.db.create_relationship(
-                    super_claim_id, claim_id,
-                    'HAS_SUB_CLAIM',
-                    {'order': sub_idx}
-                )
+            # Link directly to document (flat structure for MVP - no super-claims)
+            self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'order': idx})
+            logger.info(f"✓ Linked claim to document")
 
-                # Also link sub-claim to document for easier querying
-                self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'is_sub_claim': True})
+            # Emit IMMEDIATELY so frontend adds to graph in real-time
+            self._emit(f"Added claim {idx+1}/{total_claims}", progress, {
+                'event': 'claim_added',
+                'doc_id': doc_id,
+                'claim_id': claim_id,
+                'node_data': claim_node,  # Full node data for immediate rendering
+                'parent_id': doc_id  # Link directly to document (not super-claim)
+            })
+            logger.info(f"✓ Emitted claim_added event")
 
-                # Emit live update for each sub-claim
-                self._emit(f"Added sub-claim {all_claims_processed}/{total_subclaims}", progress, {
-                    'event': 'claim_added',
-                    'doc_id': doc_id,
-                    'claim_id': claim_id,
-                    'super_claim_id': super_claim_id,
-                    'claim_summary': claim_data['text'][:100],
-                    'total_claims': total_subclaims,
-                    'current_claim': all_claims_processed,
-                    'node_data': claim_node  # Full node data for immediate rendering
-                })
+            # Yield to event loop to prevent UI freezing
+            socketio.sleep(0)
 
         # 5. Skip optimization for now (too slow for web interface)
         self._emit("Skipping claim hierarchy analysis (can run later)", 90, {
