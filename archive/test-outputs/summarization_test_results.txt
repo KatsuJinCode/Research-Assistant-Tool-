@@ -1,0 +1,261 @@
+C:\Users\jpswi\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\cuda\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+================================================================================
+SUMMARIZATION UNIT TEST
+================================================================================
+
+Initializing database connection...
+Initializing document processor...
+
+================================================================================
+FETCHING CLAIMS FROM DATABASE
+================================================================================
+
+✓ Found 10 claims in database
+
+================================================================================
+CLAIM #1: 09e04bb6-f1d3-4c00-814c-ac127d1a671b
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+A person's belief—whether this be a belief in Christianity, in Communism, or in the idea that his internal organs are 'rotting' and that his body is, in fact, already 'dead'—cannot be explained by a defect or disease of the nervous system
+
+   Length: 41 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Beliefs can't be explained by nervous system defects
+
+   Length: 8 words
+   Qualifiers in original: can
+   Qualifiers in simplified: can
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+A person's beliefs, whether religious, political, or delusional, cannot be explained by nervous system defects or disease
+
+   Length: 17 words
+
+
+================================================================================
+CLAIM #2: 0e9b2efe-a47c-4c3e-b0a6-2f040353531c
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+A disease of the brain, analogous to a disease of the skin or bone, is a neurological defect, and not a problem in living
+
+   Length: 24 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Brain disease is neurological defect, not living problem
+
+   Length: 8 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+A brain disease, analogous to skin or bone disease, is a neurological defect rather than a living problem
+
+   Length: 18 words
+
+
+================================================================================
+CLAIM #3: 0f4bf8b7-7c63-4d85-87b5-b2a642523eee
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+Diseases like syphilis of the brain are diseases of the brain, not of the mind
+
+   Length: 15 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Brain syphilis is brain disease, not mental
+
+   Length: 7 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+Diseases like brain syphilis are diseases of the brain itself, not diseases of the mind
+
+   Length: 15 words
+
+
+================================================================================
+CLAIM #4: 1a9fca9f-d1d4-42af-8d1c-04b4b295bcfa
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+A defect in a person's visual field may be satisfactorily explained by correlating it with certain definite lesions in the nervous system
+
+   Length: 22 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Visual field defects may correlate with nervous system lesions
+
+   Length: 9 words
+   Qualifiers in original: may
+   Qualifiers in simplified: may
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+A visual field defect may be satisfactorily explained by correlating it with certain nervous system lesions
+
+   Length: 16 words
+
+
+================================================================================
+CLAIM #5: 27601ad2-ad35-4674-a388-13e8b971e785
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+The statement that 'X is a mental symptom' involves rendering a judgment that entails a covert comparison or matching of the patient's ideas, concepts, or beliefs with those of the observer and the society in which they live
+
+   Length: 38 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Mental symptom judgments involve covert comparison with observer's beliefs
+
+   Length: 9 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+Judging X as mental symptom involves covert comparison of patient's beliefs with observer's and society's concepts
+
+   Length: 16 words
+
+
+================================================================================
+CLAIM #6: 2a3bb213-aa9f-4eff-b0d3-473a8d76a844
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+In the case of physical illness, the norm is the structural and...
+
+   Length: 12 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+In the case of physical illness, the norm is the structural and...
+
+   Length: 12 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+In the case of physical illness, the norm is the structural and...
+
+   Length: 12 words
+
+
+================================================================================
+CLAIM #7: 38efdaa4-ba0f-4663-af00-77b2b9661f1e
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+For those who regard mental symptoms as signs of brain disease, the...
+
+   Length: 12 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+For those who regard mental symptoms as signs of brain disease, the...
+
+   Length: 12 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+For those who regard mental symptoms as signs of brain disease, the...
+
+   Length: 12 words
+
+
+================================================================================
+CLAIM #8: 44696f5d-0ec2-430e-b71a-66b5f8561f4c
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+The position that all mental illness is brain disease implies that people cannot have troubles—expressed in what are now called 'mental illnesses'—because of differences in personal needs, opinions, social aspirations, values, and so on
+
+   Length: 34 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+All mental illness as brain disease cannot explain personal differences
+
+   Length: 10 words
+   Qualifiers in original: can, all
+   Qualifiers in simplified: can, all
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+Viewing all mental illness as brain disease implies people cannot have troubles from personal needs, values, or social differences
+
+   Length: 19 words
+
+
+================================================================================
+CLAIM #9: 45593bc5-2826-44aa-98b5-a6b4b2fecd12
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+Mental illness is used to identify or describe some feature of an individual's so-called personality, regarded as the cause of human disharmony
+
+   Length: 22 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Mental illness describes personality features causing human disharmony
+
+   Length: 8 words
+   Qualifiers in original: all, some
+   Qualifiers in simplified: 
+   ⚠️  MISSING QUALIFIERS: all, some
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+Mental illness identifies some feature of an individual's personality regarded as causing human disharmony
+
+   Length: 14 words
+
+
+================================================================================
+CLAIM #10: 4ade5cd6-6d58-4e12-ba7f-d06b07c754ac
+================================================================================
+
+📄 ORIGINAL TEXT:
+--------------------------------------------------------------------------------
+Mental illness derives its main support from such phenomena as syphilis of the brain or delirious conditions—intoxications, for instance—in which persons are known to manifest various peculiarities or disorders of thinking and behavior
+
+   Length: 33 words
+
+✂️  SIMPLIFIED (5-12 words):
+--------------------------------------------------------------------------------
+Mental illness supported by brain syphilis or intoxications
+
+   Length: 8 words
+
+📋 NORMALIZED (15-25 words):
+--------------------------------------------------------------------------------
+Mental illness derives main support from phenomena such as brain syphilis or delirious intoxications manifesting thinking disorders
+
+   Length: 17 words
+
+
+================================================================================
+SUMMARY
+================================================================================
+Total claims tested: 10
+Claims with simplified summary: 10/10
+Claims with normalized summary: 10/10
+

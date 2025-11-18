@@ -1,0 +1,72 @@
+====================================================================================================
+NEW 4-STAGE PIPELINE - CLAIM 3 (Example)
+====================================================================================================
+
+SOURCE:
+Mental illness derives its main support from syphilis of the brain in which persons manifest various peculiarities or disorders of thinking
+(21 words)
+
+----------------------------------------------------------------------------------------------------
+STAGE 1: ANALYSIS (Deep Understanding)
+----------------------------------------------------------------------------------------------------
+This claim asserts that the concept of mental illness as a disease entity derives its primary evidential support from the case of neurosyphilis. The critical word is "support" - this is not claiming mental illness IS caused by brain disease, but rather that the THEORY of mental illness as brain disease gains its justification by pointing to neurosyphilis. In neurosyphilis, observable mental symptoms are caused by a known biological brain pathology. Proponents use this as an analogous case to argue other mental illnesses must likewise have biological causes, even when no disease can be identified. The claim is about epistemological support for a theoretical framework, not an assertion of direct causation.
+
+(110 words, 15234.2ms)
+
+----------------------------------------------------------------------------------------------------
+STAGE 2: CLARIFICATION (Explicit Rewording - Similar Length)
+----------------------------------------------------------------------------------------------------
+The theory of mental illness as brain disease derives its evidential support from neurosyphilis as an analogous case
+
+(19 words, 13421.7ms)
+
+----------------------------------------------------------------------------------------------------
+STAGE 3: SIMPLIFICATION (3 Optimal Attempts - Same Goal)
+----------------------------------------------------------------------------------------------------
+1. Mental illness theory derives support from neurosyphilis analogy (8 words)
+2. Brain disease theory gains evidential support from neurosyphilis case (9 words)
+3. Mental illness concept supported by neurosyphilis as analogous example (9 words)
+
+(14892.3ms)
+
+----------------------------------------------------------------------------------------------------
+STAGE 4: VALIDATION (Against All Stages)
+----------------------------------------------------------------------------------------------------
+Candidate 1: 0.82
+Candidate 2: 0.89
+Candidate 3: 0.78
+Best: 2
+Reason: Candidate 2 preserves "brain disease theory" and "evidential support" explicitly, maintaining the distinction between theory and causation while being optimally concise.
+
+(11234.8ms)
+
+----------------------------------------------------------------------------------------------------
+FINAL
+----------------------------------------------------------------------------------------------------
+Selected: Candidate 2
+Brain disease theory gains evidential support from neurosyphilis case
+
+Total time: 54783.0ms (54.78s)
+
+====================================================================================================
+KEY IMPROVEMENTS FROM OLD SYSTEM
+====================================================================================================
+
+OLD SYSTEM PROBLEMS:
+1. Clarification was too verbose (added supporting sentences)
+2. 3 candidates used DIFFERENT strategies (brevity/balance/complete) - inconsistent quality
+3. No deep analysis stage to ensure full understanding
+4. Validation only checked against original + clarified (not full chain)
+
+NEW SYSTEM FIXES:
+1. Stage 1 (Analysis): Deep paragraph understanding - can be verbose
+2. Stage 2 (Clarification): Reword original to be explicit - SIMILAR length, no extra sentences
+3. Stage 3 (Simplification): All 3 candidates attempt SAME optimization goal - just different random seeds
+4. Stage 4 (Validation): Checks against ALL stages - original, analysis, clarified, simplified
+
+RESULT: "Brain disease theory gains evidential support from neurosyphilis case"
+✓ Preserves "theory" (not stating as fact)
+✓ Preserves "evidential support" (not "causes")
+✓ Preserves "neurosyphilis" (specific disease, not vague "brain disease")
+✓ Preserves "case" (analogous example, not direct claim)
+✓ Optimally simplified (9 words, no redundancy)
