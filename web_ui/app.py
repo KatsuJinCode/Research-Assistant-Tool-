@@ -291,7 +291,7 @@ def upload_document():
                         'message': message,
                         'progress': progress,
                         'data': data
-                    }, broadcast=True)  # broadcast=True to send to ALL clients
+                    })  # No room/to parameter = broadcast to all
                 socketio.sleep(0)  # Yield again after emitting to allow event delivery
                 if progress is not None:
                     logger.debug(f"Emitted processing_update: {progress:.0f}%")
@@ -305,13 +305,13 @@ def upload_document():
 
             # Emit completion (also needs app context)
             with app.app_context():
-                socketio.emit('document_processed', {'document_id': doc_id}, broadcast=True)
+                socketio.emit('document_processed', {'document_id': doc_id})
 
         except Exception as e:
             logger.error(f"BACKGROUND THREAD ERROR: {e}")
             logger.error(traceback.format_exc())
             with app.app_context():
-                socketio.emit('processing_error', {'error': str(e)}, broadcast=True)
+                socketio.emit('processing_error', {'error': str(e)})
 
     # CRITICAL: Use socketio.start_background_task() instead of threading.Thread()
     # This ensures the task runs in the eventlet greenthread context where Socket.IO events work
