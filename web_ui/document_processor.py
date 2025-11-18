@@ -1157,7 +1157,7 @@ Find the main title/heading at the top of the document. Return just the title te
 
         # Use repository instead of direct DB call
         self.doc_repo.create_document(
-            title=title,
+            title=doc_node['title'],
             source_file=str(file_path),
             status='processing',
             **{k: v for k, v in doc_node.items() if k not in ['id', 'title', 'source_file', 'status', 'created_at']}
