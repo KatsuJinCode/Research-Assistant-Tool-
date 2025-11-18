@@ -1205,7 +1205,12 @@ Find the main title/heading at the top of the document. Return just the title te
         self._emit(f"Document title: {actual_title}", 28, {
             'event': 'title_extracted',
             'doc_id': doc_id,
-            'title': actual_title
+            'title': actual_title,
+            'node_update': {  # FIX: Tell frontend to update the document node label
+                'node_id': doc_id,
+                'node_type': 'document',
+                'updates': {'title': actual_title}
+            }
         })
 
         # 3. Extract claims with AI, then organize hierarchically
