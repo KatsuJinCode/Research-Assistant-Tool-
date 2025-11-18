@@ -161,8 +161,10 @@ const UI = {
 
             detailTitle.innerHTML = detailsHTML;
             detailPanel.style.display = 'block';
+            detailPanel.classList.add('visible');
+            console.log('✓ Detail panel shown');
         } catch (error) {
-            console.error('Failed to load claim details:', error);
+            console.error('❌ Failed to load claim details:', error);
             alert(`Failed to load claim: ${error.message}`);
         }
     },
