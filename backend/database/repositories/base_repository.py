@@ -12,6 +12,7 @@ from datetime import datetime
 import logging
 
 from backend.database.neo4j_client import Neo4jClient
+from backend.database.event_emitter import event_emitter
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,10 @@ class BaseRepository(ABC):
 
         result = self.execute_write(query, {'props': properties})
         logger.info(f"Created {label} node: {result}")
+
+        # Emit WebSocket event for real-time UI updates
+        event_emitter.emit_node_created(label, node_id, properties)
+
         return result
 
     def get_node_by_id(self, label: str, node_id: str) -> Optional[Dict[str, Any]]:
@@ -157,6 +162,10 @@ class BaseRepository(ABC):
         result = self.execute_write(query, {'id': node_id, 'updates': updates})
         if result:
             logger.info(f"Updated {label} node: {node_id}")
+
+            # Emit WebSocket event for real-time UI updates
+            event_emitter.emit_node_updated(label, node_id, updates)
+
             return True
         return False
 

@@ -255,16 +255,26 @@ const UI = {
      * Update statistics display
      */
     updateStats(stats) {
-        const docCount = document.getElementById('doc-count');
-        const claimCount = document.getElementById('claim-count');
-        const evidenceCount = document.getElementById('evidence-count');
+        const statNodes = document.getElementById('stat-nodes');
+        const statClaims = document.getElementById('stat-claims');
+        const statEvidence = document.getElementById('stat-evidence');
+        const statResearch = document.getElementById('stat-research');
 
-        if (docCount) docCount.textContent = stats.documents || 0;
-        if (claimCount) claimCount.textContent = stats.claims || 0;
-        if (evidenceCount) evidenceCount.textContent = stats.evidence || 0;
+        // stats.nodes = total node count from API
+        // stats.node_types = object with counts by label (Document, Claim, Evidence, etc.)
+        if (statNodes) statNodes.textContent = stats.nodes || 0;
 
-        if (!docCount || !claimCount || !evidenceCount) {
-            console.warn('Stats elements not found in DOM:', {docCount, claimCount, evidenceCount});
+        // Get specific counts from node_types object
+        const claimCount = (stats.node_types && stats.node_types['Claim']) || 0;
+        const evidenceCount = (stats.node_types && stats.node_types['Evidence']) || 0;
+        const researchCount = (stats.research && stats.research.total_results) || 0;
+
+        if (statClaims) statClaims.textContent = claimCount;
+        if (statEvidence) statEvidence.textContent = evidenceCount;
+        if (statResearch) statResearch.textContent = researchCount;
+
+        if (!statNodes || !statClaims || !statEvidence || !statResearch) {
+            console.warn('Stats elements not found in DOM:', {statNodes, statClaims, statEvidence, statResearch});
         }
     },
 

@@ -32,6 +32,7 @@ from web_ui.document_processor import LiveDocumentProcessor
 
 # Repository pattern for database access
 from backend.database.repositories import ClaimRepository, DocumentRepository
+from backend.database.event_emitter import RepositoryEventEmitter
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'research-assistant-secret-key'
@@ -40,6 +41,9 @@ app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 db = Neo4jDatabase()  # Keep for backward compatibility during migration
+
+# Register WebSocket event emitter callback for real-time updates
+RepositoryEventEmitter.set_emit_callback(socketio.emit)
 
 # Initialize repositories
 claim_repo = ClaimRepository()
