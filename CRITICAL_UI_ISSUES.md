@@ -83,7 +83,9 @@
 1. ✅ **Issue #1**: Nodes disappear on refresh - FIXED ✅
 2. ✅ **Issue #2**: Stats show zero - FIXED ✅
 3. ✅ **Issue #3**: Nodes only appear at end - FIXED ✅
-4. **Issue #8**: Can't select nodes during processing (UI feels broken) - NEEDS INVESTIGATION
+4. ✅ **Issue #9**: Claims attach to phantom document (ID mismatch) - FIXED ✅
+5. ✅ **Issue #10**: 4 separate agent calls waste context/time - FIXED ✅
+6. **Issue #8**: Can't select nodes during processing (UI feels broken) - NEEDS INVESTIGATION
 
 ### P1 - Important (Fix soon)
 5. **Issue #4**: Processing log UX backwards (can't see remaining work)
@@ -144,6 +146,27 @@ self.claim_repo.create_claim(...)  # <-- No events!
 
 ---
 
+## Issue #9: Claims Attach to Phantom Document Node ✅ FIXED
+**What happens**: Logs show `Created document d98961b4...` but `Created claim xxx for document c1eaaaa4...` (wrong ID!)
+**Root cause**: Flask auto-reload restarted main server but background tasks kept running with OLD cached code
+**Impact**: Nodes appeared disjointed, not attached to visible document
+**Fix**:
+  1. Killed ALL background shells, not just Python processes
+  2. Identified that `socketio.start_background_task()` keeps old code cached
+  3. Verified fix works: All claims now attach to correct document ID
+**Status**: ✅ FIXED - Nodes now attach correctly on first appearance
+
+## Issue #10: 4 Separate Agent Calls Waste Context ✅ FIXED
+**What happens**: Each claim processes through 4 stages: analyze, clarify, simplify, validate (4 separate agent calls!)
+**Impact**: VERY slow (4x redundant context loading), each stage re-reads same claim text
+**Root cause**: Pipeline designed before realizing LLMs can do all stages in one pass
+**Fix**: Created `_normalize_claim_unified()` that does all 4 stages in ONE agent call
+  - Single prompt with all 4 stage instructions
+  - Agent uses same context for all stages
+  - Returns all results at once: analysis, clarified, 3 candidates, scores, disposition
+  - Estimated 4x faster (eliminates 3 redundant API calls per claim)
+**Status**: ✅ FIXED - Unified normalization pipeline implemented and deployed
+
 **Created**: 2025-11-18
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-11-18 (Added Issues #9 and #10)
 **Owner**: Development Team

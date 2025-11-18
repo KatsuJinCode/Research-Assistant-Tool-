@@ -610,161 +610,63 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         pipeline_start_time = time.time()
 
         try:
-            # STAGE 1: ANALYSIS - Deep understanding
+            # NEW: UNIFIED PIPELINE - All 4 stages in ONE agent call for speed!
+            # This reuses the same context instead of making 4 separate calls
             start_time = time.time()
 
             # Create claim preview for UI (truncate to 50 chars)
             claim_preview = claim_text[:50] + '...' if len(claim_text) > 50 else claim_text
 
-            self._emit(f"Analyzing claim for deep understanding...", None, {
+            self._emit(f"Normalizing claim (all stages)...", None, {
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD (1-based)
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'analysis',
+                'claim_index': claim_index,
+                'total_claims': total_claims,
+                'claim_preview': claim_preview,
+                'stage': 'normalization',
                 'status': 'in_progress',
-                'message': 'Analyzing claim for deep understanding...',
+                'message': 'Analyzing, clarifying, simplifying, and validating...',
                 'data': {
                     'original_text': claim_text,
                     'word_count': len(claim_text.split())
                 }
             })
 
-            result['analysis'] = self._analyze_claim(claim_text)
-            result['duration_analysis_ms'] = (time.time() - start_time) * 1000
-            result['processing_stage'] = 'analyzed'
+            # Call unified normalization pipeline
+            normalization_result = self._normalize_claim_unified(claim_text)
 
-            self._emit(f"✓ Analysis complete", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'analysis',
-                'status': 'complete',
-                'data': {
-                    'analysis': result['analysis'],
-                    'word_count': len(result['analysis'].split()),
-                    'duration_ms': result['duration_analysis_ms']
-                }
-            })
-
-            # STAGE 2: CLARIFICATION - Make implicit meaning explicit
-            start_time = time.time()
-            self._emit(f"Clarifying claim meaning...", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'clarification',
-                'status': 'in_progress',
-                'message': 'Making implicit meaning explicit...'
-            })
-
-            result['clarified'] = self._clarify_claim(claim_text, result['analysis'])
-            result['duration_clarification_ms'] = (time.time() - start_time) * 1000
-            result['processing_stage'] = 'clarified'
-
-            self._emit(f"✓ Clarification complete", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'clarification',
-                'status': 'complete',
-                'data': {
-                    'clarified': result['clarified'],
-                    'word_count': len(result['clarified'].split()),
-                    'duration_ms': result['duration_clarification_ms']
-                }
-            })
-
-            # STAGE 3: SIMPLIFICATION - Generate 3 optimal candidates
-            start_time = time.time()
-            self._emit(f"Generating simplified candidates...", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'simplification',
-                'status': 'in_progress',
-                'message': 'Generating 3 simplified candidates...'
-            })
-
-            candidates = self._simplify_claim_candidates(result['clarified'])
-            result['candidate_1'] = candidates['candidate_1']
-            result['candidate_2'] = candidates['candidate_2']
-            result['candidate_3'] = candidates['candidate_3']
-            result['duration_simplification_ms'] = (time.time() - start_time) * 1000
-            result['processing_stage'] = 'simplified'
-
-            self._emit(f"✓ Simplification complete", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'simplification',
-                'status': 'complete',
-                'data': {
-                    'candidate_1': result['candidate_1'],
-                    'candidate_2': result['candidate_2'],
-                    'candidate_3': result['candidate_3'],
-                    'duration_ms': result['duration_simplification_ms']
-                }
-            })
-
-            # STAGE 4: VALIDATION - Fidelity + Quality scoring
-            start_time = time.time()
-            self._emit(f"Validating candidates and assessing quality...", None, {
-                'event': 'claim_stage_update',
-                'doc_id': doc_id,
-                'claim_id': claim_id,
-                'claim_index': claim_index,  # NEW FIELD
-                'total_claims': total_claims,  # NEW FIELD
-                'claim_preview': claim_preview,  # NEW FIELD
-                'stage': 'validation',
-                'status': 'in_progress',
-                'message': 'Validating fidelity and assessing quality...'
-            })
-
-            validation = self._validate_final(claim_text, result['analysis'], result['clarified'], candidates)
-            result['score_1'] = validation.get('score_1', 0)
-            result['score_2'] = validation.get('score_2', 0)
-            result['score_3'] = validation.get('score_3', 0)
-            result['fidelity_reason'] = validation.get('fidelity_reason', '')
-            result['quality_score'] = validation.get('quality_score', 0)
-            result['quality_reason'] = validation.get('quality_reason', '')
-            result['disposition'] = validation.get('disposition', 'review')
-            result['recommendation'] = validation.get('recommendation', '')
-            result['selected_candidate'] = validation['best_candidate']
-            result['duration_validation_ms'] = (time.time() - start_time) * 1000
+            # Unpack results
+            result['analysis'] = normalization_result['analysis']
+            result['clarified'] = normalization_result['clarified']
+            result['candidate_1'] = normalization_result['candidate_1']
+            result['candidate_2'] = normalization_result['candidate_2']
+            result['candidate_3'] = normalization_result['candidate_3']
+            result['score_1'] = normalization_result['score_1']
+            result['score_2'] = normalization_result['score_2']
+            result['score_3'] = normalization_result['score_3']
+            result['fidelity_reason'] = normalization_result['fidelity_reason']
+            result['quality_score'] = normalization_result['quality_score']
+            result['quality_reason'] = normalization_result['quality_reason']
+            result['disposition'] = normalization_result['disposition']
+            result['recommendation'] = normalization_result['recommendation']
+            result['selected_candidate'] = normalization_result['best_candidate']
             result['duration_total_ms'] = (time.time() - pipeline_start_time) * 1000
+            result['processing_stage'] = 'validated'
 
-            if validation['best_candidate'] != 'none':
+            if normalization_result['best_candidate'] != 'none':
                 # Success!
-                selected_num = int(validation['best_candidate'])
-                result['summary'] = candidates[f'candidate_{selected_num}']
-                result['processing_stage'] = 'validated'
+                selected_num = int(normalization_result['best_candidate'])
+                result['summary'] = normalization_result[f'candidate_{selected_num}']
 
-                self._emit(f"✓ Validation complete", None, {
+                self._emit(f"✓ Normalization complete", None, {
                     'event': 'claim_stage_update',
                     'doc_id': doc_id,
                     'claim_id': claim_id,
-                    'claim_index': claim_index,  # NEW FIELD
-                    'total_claims': total_claims,  # NEW FIELD
-                    'claim_preview': claim_preview,  # NEW FIELD
-                    'stage': 'validation',
+                    'claim_index': claim_index,
+                    'total_claims': total_claims,
+                    'claim_preview': claim_preview,
+                    'stage': 'normalization',
                     'status': 'complete',
                     'data': {
                         'fidelity_scores': {
@@ -778,7 +680,7 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                         'quality_reason': result['quality_reason'],
                         'disposition': result['disposition'],
                         'recommendation': result['recommendation'],
-                        'duration_ms': result['duration_validation_ms']
+                        'duration_ms': result['duration_total_ms']
                     }
                 })
 
@@ -793,7 +695,7 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                     'total_duration_ms': result['duration_total_ms']
                 })
 
-                logger.info(f"✓ Claim processed successfully (candidate {selected_num}, quality: {result['quality_score']:.2f}, disposition: {result['disposition']})")
+                logger.info(f"✓ Claim normalized successfully (candidate {selected_num}, quality: {result['quality_score']:.2f}, disposition: {result['disposition']})")
                 return result
 
             # No valid candidate found
@@ -1009,6 +911,107 @@ EXAMPLE - LOW QUALITY CLAIM:
 """
 
         result = self._invoke_agent_with_structured_output(prompt, schema, "validate-final")
+        return result
+
+    def _normalize_claim_unified(self, claim_text: str) -> dict:
+        """
+        UNIFIED NORMALIZATION PIPELINE - All 4 stages in ONE agent call!
+
+        This combines analyze, clarify, simplify, and validate into a single context.
+        MUCH faster because the agent doesn't need to re-process the claim 4 times.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "analysis": {"type": "string"},
+                "clarified": {"type": "string"},
+                "candidate_1": {"type": "string"},
+                "candidate_2": {"type": "string"},
+                "candidate_3": {"type": "string"},
+                "score_1": {"type": "number"},
+                "score_2": {"type": "number"},
+                "score_3": {"type": "number"},
+                "best_candidate": {"type": "string", "enum": ["1", "2", "3", "none"]},
+                "fidelity_reason": {"type": "string"},
+                "quality_score": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "quality_reason": {"type": "string"},
+                "disposition": {"type": "string", "enum": ["central", "child", "review", "discard"]},
+                "recommendation": {"type": "string"}
+            },
+            "required": ["analysis", "clarified", "candidate_1", "candidate_2", "candidate_3",
+                        "score_1", "score_2", "score_3", "best_candidate", "fidelity_reason",
+                        "quality_score", "quality_reason", "disposition", "recommendation"]
+        }
+
+        prompt = f"""UNIFIED CLAIM NORMALIZATION - Process this claim through ALL 4 stages in one pass:
+
+ORIGINAL CLAIM:
+"{claim_text}"
+
+YOUR TASK: Complete all 4 stages below using the SAME shared context (much faster than 4 separate calls!)
+
+---
+STAGE 1: DEEP ANALYSIS
+Write 1-2 paragraphs fully understanding this claim:
+- What is it actually saying?
+- What are the implicit assumptions?
+- Evidence vs stated fact?
+- Correlation vs causation?
+- Qualifiers and conditions?
+- Context needed to understand properly?
+
+---
+STAGE 2: CLARIFICATION
+Reword the claim to make ALL implicit meaning EXPLICIT.
+- Same length as original - just clearer
+- Don't add supporting sentences - just clarify phrasing
+
+---
+STAGE 3: SIMPLIFICATION
+Generate 3 independent simplified candidates (all attempting same optimization):
+- Preserve ALL qualifiers (may/might/can/must/some/all/possibly/likely)
+- Preserve exact meaning from clarified version
+- Keep causation vs correlation distinction
+- Keep "supports/evidence" vs "causes/is" distinction
+- Remove ALL redundancy
+
+---
+STAGE 4: VALIDATION
+Score each candidate's fidelity (0.0-1.0) and select best:
+- Does it preserve meaning from analysis?
+- Does it preserve all qualifiers?
+- Is it the simplest possible form?
+
+Then assess overall quality (0.0-1.0):
+- Is claim specific and testable?
+- Or vague and meaningless?
+
+Assign disposition:
+- "central": Important standalone claim
+- "child": Supporting detail for larger claim
+- "review": Needs human review
+- "discard": Too vague/meaningless to keep
+
+EXAMPLE OUTPUT:
+{{
+  "analysis": "This claim states that the concept of mental illness as a disease derives its primary evidential support from neurosyphilis. The key word is 'support' - not that mental illness IS caused by brain disease, but that the THEORY gains justification from neurosyphilis as an analogous case...",
+  "clarified": "The theory of mental illness as brain disease derives evidential support from neurosyphilis as an analogous case",
+  "candidate_1": "Mental illness theory derives support from neurosyphilis analogy",
+  "candidate_2": "Brain disease theory gains evidential support from neurosyphilis case",
+  "candidate_3": "Mental illness concept supported by neurosyphilis as analogous example",
+  "score_1": 0.95,
+  "score_2": 0.90,
+  "score_3": 0.92,
+  "best_candidate": "1",
+  "fidelity_reason": "Candidate 1 best preserves the key distinction between 'theory derives support' vs 'causes', while being maximally concise",
+  "quality_score": 0.85,
+  "quality_reason": "Specific, testable claim about epistemological support. Meaningful research direction.",
+  "disposition": "central",
+  "recommendation": "Keep as top-level claim - central to understanding theory vs evidence distinction"
+}}
+"""
+
+        result = self._invoke_agent_with_structured_output(prompt, schema, "normalize-unified")
         return result
 
     def _extract_document_title(self, text: str) -> str:
