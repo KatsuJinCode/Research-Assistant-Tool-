@@ -94,6 +94,16 @@ const GraphRenderer = {
                 });
             }
 
+            // Also add all claims that aren't already added (MVP: flat structure)
+            // This ensures regular claims show up even if not marked as super-claims
+            if (doc.all_claims) {
+                doc.all_claims.forEach(claim => {
+                    if (!addedNodes.has(claim.id)) {
+                        addClaimRecursively(claim, 0);
+                    }
+                });
+            }
+
             // Add evidence
             if (doc.evidence) {
                 Object.entries(doc.evidence).forEach(([claimId, evidenceList]) => {
