@@ -330,7 +330,11 @@ def upload_document():
     def process_with_updates(filepath):
         try:
             def progress_callback(message, progress, data):
-                logger.info(f"[PROGRESS {progress:.0f}%] {message}")
+                # Handle progress being None (for stage events that don't have overall progress)
+                if progress is not None:
+                    logger.info(f"[PROGRESS {progress:.0f}%] {message}")
+                else:
+                    logger.info(f"{message}")
                 socketio.sleep(0)  # Yield to eventlet event loop before emitting
                 socketio.emit('processing_update', {
                     'message': message,
@@ -338,7 +342,10 @@ def upload_document():
                     'data': data
                 })
                 socketio.sleep(0)  # Yield again after emitting to allow event delivery
-                logger.debug(f"Emitted processing_update: {progress:.0f}%")
+                if progress is not None:
+                    logger.debug(f"Emitted processing_update: {progress:.0f}%")
+                else:
+                    logger.debug(f"Emitted processing_update: {message}")
 
             logger.info(f"Starting background processing for: {filepath}")
             processor = LiveDocumentProcessor(progress_callback)
