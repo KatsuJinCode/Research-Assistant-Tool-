@@ -161,9 +161,10 @@ def get_full_graph():
     """
 
     # Get all claims with their relationships (supports arbitrary depth)
+    # Note: Using PARENT_OF for hierarchical relationships (matches actual schema)
     claims_query = """
     MATCH (c:Claim)
-    OPTIONAL MATCH (c)-[r:HAS_SUB_CLAIM]->(child:Claim)
+    OPTIONAL MATCH (c)-[r:PARENT_OF]->(child:Claim)
     RETURN
         c.id as id,
         c.text as text,
