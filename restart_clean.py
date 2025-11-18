@@ -39,15 +39,15 @@ def get_build_hash():
 
 def kill_all_python():
     """Kill ALL Python processes - nuclear option."""
-    print("🔥 KILLING ALL PYTHON PROCESSES...")
+    print("[*] KILLING ALL PYTHON PROCESSES...")
     try:
         subprocess.run(
             ['powershell', '-Command', 'Stop-Process -Name python -Force'],
             capture_output=True
         )
-        print("   ✓ Killed all python.exe processes")
+        print("   [+] Killed all python.exe processes")
     except Exception as e:
-        print(f"   ⚠ Failed to kill processes: {e}")
+        print(f"   [!] Failed to kill processes: {e}")
 
     # Wait for cleanup
     time.sleep(2)
@@ -65,7 +65,7 @@ def write_version_file(build_hash):
     with open(version_file, 'w') as f:
         json.dump(version_data, f, indent=2)
 
-    print(f"📝 Version file written: {build_hash}")
+    print(f"[+] Version file written: {build_hash}")
     return version_data
 
 def get_restart_count():
@@ -93,7 +93,7 @@ def main():
     version_data = write_version_file(build_hash)
 
     print()
-    print("🚀 STARTING FRESH SERVER")
+    print("[*] STARTING FRESH SERVER")
     print(f"   Build Hash: {build_hash}")
     print(f"   Restart #: {version_data['restart_count']}")
     print(f"   Time: {version_data['timestamp']}")
@@ -112,7 +112,7 @@ def main():
     try:
         subprocess.run([sys.executable, 'app.py'], env=env)
     except KeyboardInterrupt:
-        print("\n\n🛑 Server stopped by user")
+        print("\n\n[!] Server stopped by user")
         print("=" * 80)
 
 if __name__ == '__main__':
