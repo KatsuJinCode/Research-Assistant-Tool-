@@ -49,7 +49,12 @@ class LiveDocumentProcessor:
             progress_callback: Function called with (status_message, progress_percent, data)
         """
         self.progress_callback = progress_callback or self._default_callback
-        self.db = Neo4jDatabase()
+        self.db = Neo4jDatabase()  # Keep for backward compatibility during migration
+
+        # Repository pattern for new code
+        from backend.database.repositories import DocumentRepository, ClaimRepository
+        self.doc_repo = DocumentRepository()
+        self.claim_repo = ClaimRepository()
         # Summarization uses _simplify_claim_with_agent() - AI-powered via Claude Code CLI
 
     def _default_callback(self, message: str, progress: float, data: Dict[str, Any]):
@@ -1150,7 +1155,13 @@ Find the main title/heading at the top of the document. Return just the title te
             'node_data': doc_node  # Full node data for immediate rendering
         })
 
-        self.db.create_node('Document', doc_node)
+        # Use repository instead of direct DB call
+        self.doc_repo.create_document(
+            title=title,
+            source_file=str(file_path),
+            status='processing',
+            **{k: v for k, v in doc_node.items() if k not in ['id', 'title', 'source_file', 'status', 'created_at']}
+        )
 
         # 2. Extract text
         self._emit("Extracting text from PDF...", 10, {
@@ -1195,12 +1206,8 @@ Find the main title/heading at the top of the document. Return just the title te
             logger.warning(f"Failed to extract document title: {e}")
             actual_title = Path(file_path).stem  # Fallback to filename
 
-        # Update document node with actual title
-        self.db.driver.session(database=self.db.database).run(
-            "MATCH (d:Document {id: $doc_id}) SET d.title = $title",
-            doc_id=doc_id,
-            title=actual_title
-        )
+        # Update document node with actual title using repository
+        self.doc_repo.update_document(doc_id, {'title': actual_title})
 
         self._emit(f"Document title: {actual_title}", 28, {
             'event': 'title_extracted',
@@ -1231,12 +1238,8 @@ Find the main title/heading at the top of the document. Return just the title te
                 'doc_id': doc_id,
                 'error': str(e)
             })
-            # Mark document as failed
-            self.db.driver.session(database=self.db.database).run(
-                "MATCH (d:Document {id: $doc_id}) SET d.status = 'failed', d.error = $error",
-                doc_id=doc_id,
-                error=error_msg
-            )
+            # Mark document as failed using repository
+            self.doc_repo.mark_document_failed(doc_id, error_msg)
             raise
 
         total_claims = len(claims_list)
@@ -1269,23 +1272,30 @@ Find the main title/heading at the top of the document. Return just the title te
             # Extract text from claim dictionary
             claim_text = claim_dict.get('text', str(claim_dict))  # Fallback to string representation if no 'text' key
 
-            # Create minimal "skeleton" node with raw claim text
+            # Create minimal "skeleton" node with raw claim text using repository
+            # Note: create_claim automatically creates the CONTAINS_CLAIM relationship
+            created_claim_id = self.claim_repo.create_claim(
+                text=claim_text,  # Raw text (will be updated with summary later)
+                original_text=claim_text,
+                doc_id=doc_id,
+                claim_type=claim_dict.get('type', 'extracted'),  # Preserve type from extraction
+                confidence=claim_dict.get('confidence', 0.0),  # Preserve initial confidence
+                status='processing',
+                processing_stage='pending',
+                word_count_original=len(claim_text.split())
+            )
+
+            # Skeleton node data for event emission (reconstructed for backward compatibility)
             skeleton_node = {
                 'id': claim_id,
-                'text': claim_text,  # Raw text (will be updated with summary later)
+                'text': claim_text,
                 'original_text': claim_text,
                 'status': 'processing',
                 'processing_stage': 'pending',
-                'claim_type': claim_dict.get('type', 'extracted'),  # Preserve type from extraction
-                'confidence': claim_dict.get('confidence', 0.0),  # Preserve initial confidence
+                'claim_type': claim_dict.get('type', 'extracted'),
+                'confidence': claim_dict.get('confidence', 0.0),
                 'word_count_original': len(claim_text.split())
             }
-
-            # Add to Neo4j immediately
-            self.db.create_node('Claim', skeleton_node)
-
-            # Link to document immediately
-            self.db.create_relationship(doc_id, claim_id, 'CONTAINS_CLAIM', {'order': idx})
 
             # Emit IMMEDIATELY so user sees claim appear in graph
             progress = 35 + (idx / total_claims) * 15  # 35% to 50%
@@ -1376,8 +1386,8 @@ Find the main title/heading at the top of the document. Return just the title te
                 'is_optimal': True  # Will be updated by optimizer later
             }
 
-            # UPDATE Neo4j node (not create - node already exists from skeleton)
-            self.db.update_node_properties(claim_id, processed_data)
+            # UPDATE Neo4j node using repository (not create - node already exists from skeleton)
+            self.claim_repo.update_claim(claim_id, processed_data)
             logger.info(f"✓ Updated claim node with processed data: {claim_id}")
 
             # Emit claim_updated event for frontend to update appearance
@@ -1399,11 +1409,8 @@ Find the main title/heading at the top of the document. Return just the title te
         # optimizer = ClaimSpaceOptimizer()
         # optimizer.optimize_claim_space(self.db)
 
-        # 6. Mark document as complete
-        self.db.driver.session(database=self.db.database).run(
-            "MATCH (d:Document {id: $doc_id}) SET d.status = 'complete'",
-            doc_id=doc_id
-        )
+        # 6. Mark document as complete using repository
+        self.doc_repo.mark_document_complete(doc_id)
 
         self._emit("Document processing complete!", 100, {
             'event': 'processing_complete',

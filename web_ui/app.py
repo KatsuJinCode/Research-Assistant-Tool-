@@ -30,13 +30,20 @@ from research_agent.graph_enrichment import (
 )
 from web_ui.document_processor import LiveDocumentProcessor
 
+# Repository pattern for database access
+from backend.database.repositories import ClaimRepository, DocumentRepository
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'research-assistant-secret-key'
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
-db = Neo4jDatabase()
+db = Neo4jDatabase()  # Keep for backward compatibility during migration
+
+# Initialize repositories
+claim_repo = ClaimRepository()
+doc_repo = DocumentRepository()
 
 
 @app.route('/')
@@ -70,72 +77,14 @@ def get_root_claims():
 
 @app.route('/api/claim/<claim_id>')
 def get_claim_details(claim_id):
-    """Get full details for a specific claim."""
-    query = """
-    MATCH (c:Claim {id: $claim_id})
+    """Get full details for a specific claim using repository."""
+    # Use repository method instead of raw Cypher query
+    claim = claim_repo.get_claim_with_relationships(claim_id)
 
-    // Get child claims
-    OPTIONAL MATCH (c)-[:PARENT_OF]->(child:Claim)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
 
-    // Get supporting claims
-    OPTIONAL MATCH (c)<-[:SUPPORTS]-(supporter:Claim)
-
-    // Get evidence
-    OPTIONAL MATCH (c)<-[r_ev:SUPPORTS|CONTRADICTS]-(e:Evidence)
-
-    // Get source locations
-    OPTIONAL MATCH (c)-[:EXTRACTED_FROM]->(s:Sentence)-[:IN_DOCUMENT]->(d:Document)
-
-    // Get research results
-    OPTIONAL MATCH (res:ResearchResult)-[:INVESTIGATES]->(c)
-    OPTIONAL MATCH (res)-[:PERFORMED_BY]->(a:Agent)
-
-    RETURN c.id as id,
-           c.text as text,
-           c.summary as summary,
-           c.specificity_score as specificity,
-           c.strength as strength,
-           c.compression_ratio as compression_ratio,
-           c.qualifiers_preserved as qualifiers_preserved,
-           collect(DISTINCT {id: child.id, text: child.text, summary: child.summary, specificity: child.specificity_score}) as children,
-           collect(DISTINCT {id: supporter.id, text: supporter.text, summary: supporter.summary}) as supporters,
-           collect(DISTINCT {
-               title: e.title,
-               type: type(r_ev),
-               strength: r_ev.strength,
-               url: e.url
-           }) as evidence,
-           collect(DISTINCT {
-               page: s.page,
-               line: s.start_line,
-               sentence: s.text,
-               document: d.title
-           }) as sources,
-           collect(DISTINCT {
-               agent: a.name,
-               findings: res.findings,
-               confidence: res.confidence,
-               status: res.status
-           }) as research
-    """
-
-    with db.driver.session(database=db.database) as session:
-        result = session.run(query, claim_id=claim_id)
-        record = result.single()
-
-        if not record:
-            return jsonify({'error': 'Claim not found'}), 404
-
-        claim = dict(record)
-
-        # Clean up None values
-        claim['children'] = [c for c in claim['children'] if c.get('id')]
-        claim['supporters'] = [s for s in claim['supporters'] if s.get('id')]
-        claim['evidence'] = [e for e in claim['evidence'] if e.get('title')]
-        claim['sources'] = [s for s in claim['sources'] if s.get('page')]
-        claim['research'] = [r for r in claim['research'] if r.get('agent')]
-
-        return jsonify(claim)
+    return jsonify(claim)
 
 
 @app.route('/api/investigate-claim', methods=['POST'])
@@ -148,14 +97,11 @@ def investigate_claim():
     if not claim_id:
         return jsonify({'error': 'claim_id required'}), 400
 
-    # Get claim
-    query = "MATCH (c:Claim {id: $claim_id}) RETURN c.text as text"
-    with db.driver.session(database=db.database) as session:
-        result = session.run(query, claim_id=claim_id)
-        record = result.single()
-        if not record:
-            return jsonify({'error': 'Claim not found'}), 404
-        claim_text = record['text']
+    # Get claim using repository
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+    claim_text = claim['text']
 
     # Create agent and research result
     agent_tracker = AgentTracker()
