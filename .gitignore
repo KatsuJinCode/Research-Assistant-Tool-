@@ -124,3 +124,7 @@ models/
 
 # Windows null device file (created by error redirects)
 nul
+
+# Agent-Fusion database
+context.duckdb
+context.duckdb.wal
