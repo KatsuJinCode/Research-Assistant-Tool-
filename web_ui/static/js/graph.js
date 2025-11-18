@@ -98,9 +98,18 @@ const GraphRenderer = {
             // This ensures regular claims show up even if not marked as super-claims
             if (doc.all_claims) {
                 doc.all_claims.forEach(claim => {
+                    // Add the node if not already added
                     if (!addedNodes.has(claim.id)) {
                         addClaimRecursively(claim, 0);
                     }
+
+                    // ALWAYS create document→claim link for top-level claims
+                    // (even if the node was already added by super_claims loop)
+                    links.push({
+                        source: docId,
+                        target: claim.id,
+                        type: 'contains'
+                    });
                 });
             }
 
