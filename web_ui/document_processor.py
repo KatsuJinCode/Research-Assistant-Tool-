@@ -570,7 +570,7 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         logger.info(f"✓ AI agent extracted {len(claims)} claims via structured JSON")
         return claims
 
-    def _simplify_claim_with_agent(self, claim_text: str, claim_id: str = None, doc_id: str = None, max_retries: int = 2) -> dict:
+    def _simplify_claim_with_agent(self, claim_text: str, claim_id: str = None, doc_id: str = None, claim_index: int = None, total_claims: int = None, max_retries: int = 2) -> dict:
         """
         Full 4-stage claim processing pipeline: Analysis → Clarification → Simplification → Validation
 
@@ -607,10 +607,17 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         try:
             # STAGE 1: ANALYSIS - Deep understanding
             start_time = time.time()
+
+            # Create claim preview for UI (truncate to 50 chars)
+            claim_preview = claim_text[:50] + '...' if len(claim_text) > 50 else claim_text
+
             self._emit(f"Analyzing claim for deep understanding...", None, {
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD (1-based)
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'analysis',
                 'status': 'in_progress',
                 'message': 'Analyzing claim for deep understanding...',
@@ -628,6 +635,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'analysis',
                 'status': 'complete',
                 'data': {
@@ -643,6 +653,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'clarification',
                 'status': 'in_progress',
                 'message': 'Making implicit meaning explicit...'
@@ -656,6 +669,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'clarification',
                 'status': 'complete',
                 'data': {
@@ -671,6 +687,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'simplification',
                 'status': 'in_progress',
                 'message': 'Generating 3 simplified candidates...'
@@ -687,6 +706,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'simplification',
                 'status': 'complete',
                 'data': {
@@ -703,6 +725,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 'event': 'claim_stage_update',
                 'doc_id': doc_id,
                 'claim_id': claim_id,
+                'claim_index': claim_index,  # NEW FIELD
+                'total_claims': total_claims,  # NEW FIELD
+                'claim_preview': claim_preview,  # NEW FIELD
                 'stage': 'validation',
                 'status': 'in_progress',
                 'message': 'Validating fidelity and assessing quality...'
@@ -731,6 +756,9 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                     'event': 'claim_stage_update',
                     'doc_id': doc_id,
                     'claim_id': claim_id,
+                    'claim_index': claim_index,  # NEW FIELD
+                    'total_claims': total_claims,  # NEW FIELD
+                    'claim_preview': claim_preview,  # NEW FIELD
                     'stage': 'validation',
                     'status': 'complete',
                     'data': {
@@ -1212,11 +1240,25 @@ Find the main title/heading at the top of the document. Return just the title te
             raise
 
         total_subclaims = sum(len(cat.get('sub_claims', [])) for cat in categories)
+
+        # Build claim previews (NEW: for progress tracking UI)
+        claim_previews = []
+        for category in categories:
+            for subclaim in category.get('sub_claims', []):
+                claim_text = subclaim.get('text', '')
+                # Truncate to 50 chars for preview
+                preview = claim_text[:50] + '...' if len(claim_text) > 50 else claim_text
+                claim_previews.append({
+                    'id': None,  # Will be set when claim is created
+                    'preview': preview
+                })
+
         self._emit(f"Extracted {len(categories)} categories with {total_subclaims} specific claims", 50, {
             'event': 'claims_extracted',
             'doc_id': doc_id,
             'category_count': len(categories),
-            'claim_count': total_subclaims
+            'total_claims': total_subclaims,  # NEW FIELD (renamed from claim_count for consistency)
+            'claim_previews': claim_previews  # NEW FIELD
         })
 
         # 4. Add hierarchical claims to graph incrementally with live updates
@@ -1268,7 +1310,9 @@ Find the main title/heading at the top of the document. Return just the title te
                 simplification_result = self._simplify_claim_with_agent(
                     claim_data['text'],
                     claim_id=claim_id,
-                    doc_id=doc_id
+                    doc_id=doc_id,
+                    claim_index=all_claims_processed,  # 1-based claim index
+                    total_claims=total_subclaims
                 )
 
                 claim_node = {
