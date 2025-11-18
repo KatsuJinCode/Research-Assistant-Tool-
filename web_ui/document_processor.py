@@ -1213,21 +1213,16 @@ Find the main title/heading at the top of the document. Return just the title te
             }
         })
 
-        # 3. Extract claims with AI, then organize hierarchically
+        # 3. Extract claims with AI (FLAT structure for MVP - clustering happens later via community detection)
         self._emit("Extracting claims with AI...", 30, {
             'event': 'claim_extraction_started',
             'doc_id': doc_id
         })
 
         try:
-            hierarchical_result, clustering_metrics = self._extract_and_cluster_claims(text)
-            categories = hierarchical_result.get('categories', [])
-
-            # Log which method was used
-            if clustering_metrics.method == 'semantic-embedding':
-                logger.info(f"✓ Used PRIMARY method - Silhouette: {clustering_metrics.silhouette_score:.3f}")
-            else:
-                logger.warning(f"⚠️  Used FALLBACK method - LLM categorization (not optimal)")
+            # Extract flat list of claims (no hierarchy/clustering yet)
+            claims_list = self._extract_flat_claims_with_agent(text)
+            logger.info(f"✓ Extracted {len(claims_list)} claims (flat structure)")
         except Exception as e:
             error_msg = f"Claude Code agent failed to extract claims: {str(e)}"
             logger.error(error_msg)
@@ -1244,81 +1239,41 @@ Find the main title/heading at the top of the document. Return just the title te
             )
             raise
 
-        total_subclaims = sum(len(cat.get('sub_claims', [])) for cat in categories)
+        total_claims = len(claims_list)
 
-        # Build claim previews (NEW: for progress tracking UI)
+        # Build claim previews for progress tracking UI
         claim_previews = []
-        for category in categories:
-            for subclaim in category.get('sub_claims', []):
-                claim_text = subclaim.get('text', '')
-                # Truncate to 50 chars for preview
-                preview = claim_text[:50] + '...' if len(claim_text) > 50 else claim_text
-                claim_previews.append({
-                    'id': None,  # Will be set when claim is created
-                    'preview': preview
-                })
-
-        self._emit(f"Extracted {len(categories)} categories with {total_subclaims} specific claims", 50, {
-            'event': 'claims_extracted',
-            'doc_id': doc_id,
-            'category_count': len(categories),
-            'total_claims': total_subclaims,  # NEW FIELD (renamed from claim_count for consistency)
-            'claim_previews': claim_previews  # NEW FIELD
-        })
-
-        # 4. Add hierarchical claims to graph incrementally with live updates
-        all_claims_processed = 0
-        for cat_idx, category in enumerate(categories):
-            super_claim_text = category.get('super_claim', '')
-            category_desc = category.get('category_description', '')
-            sub_claims = category.get('sub_claims', [])
-
-            # Create super-claim node
-            super_claim_id = str(uuid4())
-            super_claim_node = {
-                'id': super_claim_id,
-                'text': super_claim_text,
-                'summary': super_claim_text,  # Super-claims are already concise
-                'simplified': super_claim_text,
-                'normalized': super_claim_text,
-                'category_description': category_desc,
-                'is_super_claim': True,
-                'is_optimal': True,
-                'quality_score': category.get('quality_score', 0.0)  # Cluster quality (silhouette score)
-            }
-            self.db.create_node('Claim', super_claim_node)
-
-            # Link super-claim to document
-            self.db.create_relationship(
-                doc_id, super_claim_id,
-                'CONTAINS_CLAIM',
-                {'is_super_claim': True}
-            )
-
-            self._emit(f"Created category: {super_claim_text[:50]}...", 50 + (cat_idx / len(categories)) * 10, {
-                'event': 'super_claim_added',
-                'doc_id': doc_id,
-                'super_claim_id': super_claim_id,
-                'super_claim_text': super_claim_text,
-                'node_data': super_claim_node  # Full node data for immediate rendering
+        for claim_text in claims_list:
+            preview = claim_text[:50] + '...' if len(claim_text) > 50 else claim_text
+            claim_previews.append({
+                'id': None,  # Will be set when claim is created
+                'preview': preview
             })
 
-            # Add sub-claims under this super-claim
-            for sub_idx, claim_data in enumerate(sub_claims):
-                all_claims_processed += 1
-                progress = 60 + (all_claims_processed / total_subclaims) * 30  # 60% to 90%
+        self._emit(f"Extracted {total_claims} claims", 50, {
+            'event': 'claims_extracted',
+            'doc_id': doc_id,
+            'total_claims': total_claims,
+            'claim_previews': claim_previews
+        })
 
-                # Create sub-claim node
-                claim_id = str(uuid4())
+        # 4. Process and add each claim IMMEDIATELY to graph (real-time visualization)
+        logger.info(f"Processing {total_claims} claims with real-time graph updates...")
 
-                # Generate intelligent summary using Claude Code CLI (4-stage process)
-                simplification_result = self._simplify_claim_with_agent(
-                    claim_data['text'],
-                    claim_id=claim_id,
-                    doc_id=doc_id,
-                    claim_index=all_claims_processed,  # 1-based claim index
-                    total_claims=total_subclaims
-                )
+        for idx, claim_text in enumerate(claims_list):
+            progress = 50 + ((idx + 1) / total_claims) * 40  # 50% to 90%
+            claim_id = str(uuid4())
+
+            logger.info(f"Processing claim {idx + 1}/{total_claims}: {claim_text[:60]}...")
+
+            # Process claim through 4-stage pipeline (analyze → clarify → simplify → validate)
+            simplification_result = self._simplify_claim_with_agent(
+                claim_text,
+                claim_id=claim_id,
+                doc_id=doc_id,
+                claim_index=idx + 1,  # 1-based for UI display
+                total_claims=total_claims
+            )
 
                 claim_node = {
                     'id': claim_id,
