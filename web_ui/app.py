@@ -222,13 +222,12 @@ def get_full_graph():
         c.id as id,
         c.text as text,
         c.summary as summary,
-        c.normalized as normalized,
-        c.specificity_score as specificity,
-        c.is_super_claim as is_super_claim,
-        c.category_description as category_description,
+        c.status as status,
+        c.disposition as disposition,
         c.quality_score as quality_score,
         c.claim_type as claim_type,
         c.confidence as confidence,
+        coalesce(c.is_super_claim, false) as is_super_claim,
         collect(child.id) as child_ids
     """
 
@@ -281,14 +280,13 @@ def get_full_graph():
                 claim_data = {
                     'id': claim['id'],
                     'text': claim['text'],
-                    'summary': claim['summary'],
-                    'normalized': claim['normalized'],
-                    'specificity': claim['specificity'],
+                    'summary': claim.get('summary'),
+                    'status': claim.get('status', 'complete'),
+                    'disposition': claim.get('disposition', 'child'),
                     'is_super_claim': claim['is_super_claim'],
-                    'category_description': claim['category_description'],
-                    'quality_score': claim['quality_score'],
-                    'claim_type': claim['claim_type'],
-                    'confidence': claim['confidence'],
+                    'quality_score': claim.get('quality_score'),
+                    'claim_type': claim.get('claim_type', 'extracted'),
+                    'confidence': claim.get('confidence', 0.0),
                     'child_ids': [cid for cid in claim['child_ids'] if cid]  # Filter None
                 }
 
