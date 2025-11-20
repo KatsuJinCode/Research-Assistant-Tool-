@@ -272,7 +272,7 @@ class BaseRepository(ABC):
         RETURN count(n) as deleted
         """
 
-        result = self.execute_write_single(query)
-        deleted_count = result.get('deleted', 0) if result else 0
+        results = self.execute_query(query)
+        deleted_count = results[0].get('deleted', 0) if results else 0
         logger.warning(f"Deleted ALL nodes from database: {deleted_count} nodes")
         return deleted_count

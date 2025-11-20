@@ -329,8 +329,8 @@ class DocumentRepository(BaseRepository):
         RETURN 1 as deleted
         """
 
-        result = self.execute_write_single(query, {'doc_id': doc_id})
-        return result is not None
+        result = self.execute_write(query, {'doc_id': doc_id})
+        return result is not None and result > 0
 
     def get_all_documents_simple(self) -> List[Dict[str, Any]]:
         """
@@ -344,7 +344,7 @@ class DocumentRepository(BaseRepository):
         RETURN d.id as id, d.title as title, d.status as status
         """
 
-        return self.execute_read(query)
+        return self.execute_query(query)
 
     def get_all_document_claim_relationships(self) -> List[Dict[str, Any]]:
         """
@@ -358,4 +358,4 @@ class DocumentRepository(BaseRepository):
         RETURN d.id as doc_id, collect(c.id) as claim_ids
         """
 
-        return self.execute_read(query)
+        return self.execute_query(query)

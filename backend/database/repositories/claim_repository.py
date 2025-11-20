@@ -383,7 +383,7 @@ class ClaimRepository(BaseRepository):
         if limit:
             query += f" LIMIT {limit}"
 
-        return self.execute_read(query)
+        return self.execute_query(query)
 
     def get_all_claims_with_children(self) -> List[Dict[str, Any]]:
         """
@@ -408,7 +408,7 @@ class ClaimRepository(BaseRepository):
             collect(child.id) as child_ids
         """
 
-        return self.execute_read(query)
+        return self.execute_query(query)
 
     def get_document_claim_ids(self, doc_id: str) -> List[str]:
         """
@@ -425,8 +425,8 @@ class ClaimRepository(BaseRepository):
         RETURN collect(c.id) as claim_ids
         """
 
-        result = self.execute_read_single(query, {'doc_id': doc_id})
-        return result.get('claim_ids', []) if result else []
+        results = self.execute_query(query, {'doc_id': doc_id})
+        return results[0].get('claim_ids', []) if results else []
 
     def get_claim_evidence(self, claim_id: str) -> List[Dict[str, Any]]:
         """
@@ -447,7 +447,7 @@ class ClaimRepository(BaseRepository):
             e.url as url
         """
 
-        return self.execute_read(query, {'claim_id': claim_id})
+        return self.execute_query(query, {'claim_id': claim_id})
 
     def get_all_claim_evidence_relationships(self) -> List[Dict[str, Any]]:
         """
@@ -468,4 +468,4 @@ class ClaimRepository(BaseRepository):
             }) as evidence_list
         """
 
-        return self.execute_read(query)
+        return self.execute_query(query)
