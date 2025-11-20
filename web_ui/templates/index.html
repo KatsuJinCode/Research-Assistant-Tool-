@@ -460,11 +460,62 @@
             <div id="upload-zone" style="background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%); border: 3px dashed #BA68C8; border-radius: 12px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: all 0.3s;">
                 <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
                 <div style="color: white; font-weight: bold; font-size: 16px; margin-bottom: 5px;">Click to Upload or Drag & Drop</div>
-                <div style="color: #E1BEE7; font-size: 13px; margin-bottom: 5px;">Or paste a URL below</div>
+                <div style="color: #E1BEE7; font-size: 13px; margin-bottom: 5px;">Multiple files supported! Or paste a URL below</div>
                 <div style="color: #BA68C8; font-size: 11px; margin-bottom: 10px;">Supported: PDF, TXT, DOCX</div>
-                <input type="file" id="file-input" accept=".pdf,.txt,.docx" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
+                <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
                 <input type="text" id="url-input" placeholder="https://arxiv.org/..." style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 10px;">
                 <button id="upload-btn" class="btn btn-primary" style="margin-top: 10px; width: 100%; background: white; color: #9C27B0; font-weight: bold;">Process Document</button>
+            </div>
+
+            <!-- Search and Filter Panel -->
+            <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="margin-bottom: 15px; font-size: 16px; color: #64B5F6;">🔍 Search & Filter</h3>
+
+                <!-- Search Input -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="search-input" placeholder="Search claims and documents..." style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 14px;">
+                    <div id="search-results-count" style="margin-top: 5px; font-size: 11px; color: #999;"></div>
+                </div>
+
+                <!-- Filter Toggles -->
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 12px; color: #999; margin-bottom: 8px;">Node Types:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 6px 12px; background: #333; border-radius: 4px; font-size: 12px; transition: all 0.2s;">
+                            <input type="checkbox" id="filter-documents" checked style="margin-right: 6px;">
+                            <span style="color: #9C27B0;">■</span> Documents
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 6px 12px; background: #333; border-radius: 4px; font-size: 12px; transition: all 0.2s;">
+                            <input type="checkbox" id="filter-claims" checked style="margin-right: 6px;">
+                            <span style="color: #2196F3;">■</span> Claims
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 6px 12px; background: #333; border-radius: 4px; font-size: 12px; transition: all 0.2s;">
+                            <input type="checkbox" id="filter-duplicates" checked style="margin-right: 6px;">
+                            <span style="color: #FF6B35;">≈</span> Duplicates
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Quality Filter -->
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 12px; color: #999; margin-bottom: 8px; display: block;">Minimum Quality:</label>
+                    <input type="range" id="quality-filter" min="0" max="100" value="0" step="10" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+                        <span>0%</span>
+                        <span id="quality-filter-value">0%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 8px;">
+                    <button id="clear-filters-btn" style="flex: 1; padding: 8px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                        Clear Filters
+                    </button>
+                    <button id="focus-search-btn" style="flex: 1; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                        Focus Results
+                    </button>
+                </div>
             </div>
 
             <!-- Processing status -->

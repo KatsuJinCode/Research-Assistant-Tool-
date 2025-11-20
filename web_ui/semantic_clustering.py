@@ -302,3 +302,148 @@ def get_clustering_method_status() -> Dict[str, Any]:
             'sklearn': 'pip install scikit-learn'
         }
     }
+
+
+class SemanticDuplicateDetector:
+    """
+    Detects duplicate claims across documents using semantic similarity.
+
+    Uses sentence embeddings to find claims that express the same idea
+    even if worded differently.
+    """
+
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', similarity_threshold: float = 0.85):
+        """
+        Initialize duplicate detector.
+
+        Args:
+            model_name: Sentence transformer model name
+            similarity_threshold: Cosine similarity threshold for duplicates (0-1)
+                                 0.85 = very similar, 0.70 = somewhat similar
+        """
+        if not EMBEDDINGS_AVAILABLE:
+            raise ImportError(
+                "sentence-transformers not installed. Install with: "
+                "pip install sentence-transformers"
+            )
+
+        if not SKLEARN_AVAILABLE:
+            raise ImportError(
+                "scikit-learn not installed. Install with: "
+                "pip install scikit-learn"
+            )
+
+        logger.info(f"Loading duplicate detector model: {model_name}")
+        self.model = SentenceTransformer(model_name)
+        self.similarity_threshold = similarity_threshold
+        logger.info(f"✓ Duplicate detector ready (threshold: {similarity_threshold})")
+
+    def find_duplicates(
+        self,
+        new_claims: List[Dict[str, Any]],
+        existing_claims: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Find duplicates between new claims and existing claims.
+
+        Args:
+            new_claims: List of new claim dicts with 'id', 'text', 'summary'
+            existing_claims: List of existing claim dicts with 'id', 'text', 'summary'
+
+        Returns:
+            List of duplicate matches:
+            [
+                {
+                    'new_claim_id': str,
+                    'existing_claim_id': str,
+                    'similarity_score': float,
+                    'new_text': str,
+                    'existing_text': str,
+                    'match_quality': str  # 'exact', 'very_high', 'high'
+                }
+            ]
+        """
+        if not new_claims or not existing_claims:
+            return []
+
+        logger.info(f"Checking {len(new_claims)} new claims against {len(existing_claims)} existing claims...")
+
+        # Generate embeddings for new claims (use summary if available, else text)
+        new_texts = [c.get('summary') or c.get('text', '') for c in new_claims]
+        new_embeddings = self.model.encode(new_texts, show_progress_bar=False)
+
+        # Generate embeddings for existing claims
+        existing_texts = [c.get('summary') or c.get('text', '') for c in existing_claims]
+        existing_embeddings = self.model.encode(existing_texts, show_progress_bar=False)
+
+        # Calculate cosine similarity matrix
+        from sklearn.metrics.pairwise import cosine_similarity
+        similarity_matrix = cosine_similarity(new_embeddings, existing_embeddings)
+
+        # Find matches above threshold
+        duplicates = []
+        for i, new_claim in enumerate(new_claims):
+            for j, existing_claim in enumerate(existing_claims):
+                similarity = similarity_matrix[i, j]
+
+                if similarity >= self.similarity_threshold:
+                    # Determine match quality
+                    if similarity >= 0.95:
+                        match_quality = 'exact'
+                    elif similarity >= 0.90:
+                        match_quality = 'very_high'
+                    else:
+                        match_quality = 'high'
+
+                    duplicate = {
+                        'new_claim_id': new_claim['id'],
+                        'existing_claim_id': existing_claim['id'],
+                        'similarity_score': float(similarity),
+                        'new_text': new_claim.get('summary') or new_claim.get('text', ''),
+                        'existing_text': existing_claim.get('summary') or existing_claim.get('text', ''),
+                        'match_quality': match_quality,
+                        'existing_doc_id': existing_claim.get('doc_id')
+                    }
+                    duplicates.append(duplicate)
+
+                    logger.info(f"✓ Found {match_quality} duplicate: {similarity:.3f} similarity")
+                    logger.debug(f"  New: {duplicate['new_text'][:60]}...")
+                    logger.debug(f"  Existing: {duplicate['existing_text'][:60]}...")
+
+        logger.info(f"✓ Found {len(duplicates)} duplicate claims")
+        return duplicates
+
+    def detect_duplicates_in_set(
+        self,
+        claims: List[Dict[str, Any]]
+    ) -> List[Tuple[int, int, float]]:
+        """
+        Find duplicates within a single set of claims.
+
+        Args:
+            claims: List of claim dicts with 'text' or 'summary'
+
+        Returns:
+            List of (index_i, index_j, similarity_score) tuples
+            where i < j and similarity >= threshold
+        """
+        if len(claims) < 2:
+            return []
+
+        # Generate embeddings
+        texts = [c.get('summary') or c.get('text', '') for c in claims]
+        embeddings = self.model.encode(texts, show_progress_bar=False)
+
+        # Calculate similarity matrix
+        from sklearn.metrics.pairwise import cosine_similarity
+        similarity_matrix = cosine_similarity(embeddings)
+
+        # Find pairs above threshold (only upper triangle to avoid duplicates)
+        duplicates = []
+        for i in range(len(claims)):
+            for j in range(i + 1, len(claims)):
+                similarity = similarity_matrix[i, j]
+                if similarity >= self.similarity_threshold:
+                    duplicates.append((i, j, float(similarity)))
+
+        return duplicates

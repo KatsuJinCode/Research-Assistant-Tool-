@@ -144,6 +144,28 @@ const App = {
                 console.error('AI Agent failure:', data.data.error);
                 this.processingInProgress = false;
                 alert('AI AGENT FAILURE\n\n' + data.data.error + '\n\nCheck that your AI agent CLI is installed and configured properly.\nSee AGENT_CONFIGURATION.md for setup instructions.');
+            } else if (data.data && data.data.event === 'duplicates_found') {
+                // Duplicate claims detected
+                console.log('Duplicates found:', data.data.duplicates);
+                const duplicates = data.data.duplicates || [];
+
+                // Mark duplicate claims in the graph
+                duplicates.forEach(dup => {
+                    GraphRenderer.markClaimAsDuplicate(
+                        dup.new_claim_id,
+                        dup.existing_claim_id,
+                        dup.similarity_score,
+                        dup.match_quality
+                    );
+                });
+
+                // Show notification to user
+                if (duplicates.length > 0) {
+                    UI.showNotification(
+                        `Found ${duplicates.length} duplicate claim${duplicates.length > 1 ? 's' : ''} from previous documents`,
+                        'info'
+                    );
+                }
             }
         });
 
@@ -307,14 +329,18 @@ const App = {
                 });
             }
 
-            // File upload handler
+            // File upload handler (supports multiple files)
             fileInput.addEventListener('change', (e) => {
-                console.log('File selected:', e.target.files);
-                const file = e.target.files[0];
-                if (file) {
-                    console.log('Processing file:', file.name);
-                    UI.handleFileUpload(file);
-                    // Reset input so same file can be uploaded again
+                console.log('File(s) selected:', e.target.files.length, 'file(s)');
+                const files = e.target.files;
+                if (files.length > 0) {
+                    if (files.length === 1) {
+                        console.log('Processing file:', files[0].name);
+                    } else {
+                        console.log(`Processing ${files.length} files:`, Array.from(files).map(f => f.name));
+                    }
+                    UI.handleFileUpload(files);
+                    // Reset input so same files can be uploaded again
                     fileInput.value = '';
                 }
             });
@@ -340,8 +366,12 @@ const App = {
 
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
-                        console.log('File dropped:', files[0].name);
-                        UI.handleFileUpload(files[0]);
+                        if (files.length === 1) {
+                            console.log('File dropped:', files[0].name);
+                        } else {
+                            console.log(`${files.length} files dropped:`, Array.from(files).map(f => f.name));
+                        }
+                        UI.handleFileUpload(files);
                     }
                 });
             }
@@ -365,6 +395,84 @@ const App = {
         if (depthSlider && depthValue) {
             depthSlider.addEventListener('input', (e) => {
                 depthValue.textContent = e.target.value;
+            });
+        }
+
+        // Search and filter event listeners
+        const searchInput = document.getElementById('search-input');
+        const searchResultsCount = document.getElementById('search-results-count');
+        if (searchInput && searchResultsCount) {
+            // Debounced search
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const query = e.target.value;
+                    const results = GraphRenderer.searchNodes(query);
+                    if (query) {
+                        searchResultsCount.textContent = `${results.matches} of ${results.total} nodes match`;
+                    } else {
+                        searchResultsCount.textContent = '';
+                    }
+                }, 300);
+            });
+        }
+
+        // Filter checkboxes
+        const filterDocs = document.getElementById('filter-documents');
+        const filterClaims = document.getElementById('filter-claims');
+        const filterDuplicates = document.getElementById('filter-duplicates');
+
+        if (filterDocs) {
+            filterDocs.addEventListener('change', (e) => {
+                GraphRenderer.updateFilters({ documents: e.target.checked });
+            });
+        }
+        if (filterClaims) {
+            filterClaims.addEventListener('change', (e) => {
+                GraphRenderer.updateFilters({ claims: e.target.checked });
+            });
+        }
+        if (filterDuplicates) {
+            filterDuplicates.addEventListener('change', (e) => {
+                GraphRenderer.updateFilters({ duplicates: e.target.checked });
+            });
+        }
+
+        // Quality filter slider
+        const qualityFilter = document.getElementById('quality-filter');
+        const qualityFilterValue = document.getElementById('quality-filter-value');
+        if (qualityFilter && qualityFilterValue) {
+            qualityFilter.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                qualityFilterValue.textContent = `${value}%`;
+                GraphRenderer.updateFilters({ minQuality: value });
+            });
+        }
+
+        // Clear filters button
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                // Reset UI elements
+                if (searchInput) searchInput.value = '';
+                if (searchResultsCount) searchResultsCount.textContent = '';
+                if (filterDocs) filterDocs.checked = true;
+                if (filterClaims) filterClaims.checked = true;
+                if (filterDuplicates) filterDuplicates.checked = true;
+                if (qualityFilter) qualityFilter.value = 0;
+                if (qualityFilterValue) qualityFilterValue.textContent = '0%';
+
+                // Clear filters in graph renderer
+                GraphRenderer.clearFilters();
+            });
+        }
+
+        // Focus search results button
+        const focusSearchBtn = document.getElementById('focus-search-btn');
+        if (focusSearchBtn) {
+            focusSearchBtn.addEventListener('click', () => {
+                GraphRenderer.focusFilteredNodes();
             });
         }
 

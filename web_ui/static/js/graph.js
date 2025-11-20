@@ -7,6 +7,14 @@ const GraphRenderer = {
     currentGraphData: { nodes: [], links: [] },
     selectedNodeId: null,  // Track selected node
     hoveredLinkIndices: new Set(),  // Track hovered links
+    searchQuery: '',  // Current search query
+    activeFilters: {
+        documents: true,
+        claims: true,
+        duplicates: true,
+        minQuality: 0
+    },
+    filteredNodes: new Set(),  // IDs of nodes matching current filters
 
     /**
      * Build unified graph from full graph data with arbitrary depth support
@@ -555,6 +563,9 @@ const GraphRenderer = {
         if (type === 'contradicts') {
             return '5,5';  // Dashed line for contradictions
         }
+        if (type === 'duplicate') {
+            return '3,3';  // Dashed line for duplicates
+        }
         return 'none';  // Solid line for everything else
     },
 
@@ -867,6 +878,73 @@ const GraphRenderer = {
     },
 
     /**
+     * Mark a claim node as duplicate of an existing claim
+     */
+    markClaimAsDuplicate(newClaimId, existingClaimId, similarityScore, matchQuality) {
+        console.log(`[markClaimAsDuplicate] ${newClaimId.substring(0,8)} → ${existingClaimId.substring(0,8)} (${similarityScore.toFixed(2)})`);
+
+        // Update node data
+        const newNode = this.currentGraphData.nodes.find(n => n.id === newClaimId);
+        const existingNode = this.currentGraphData.nodes.find(n => n.id === existingClaimId);
+
+        if (newNode) {
+            newNode.isDuplicate = true;
+            newNode.duplicateOf = existingClaimId;
+            newNode.duplicateSimilarity = similarityScore;
+            newNode.matchQuality = matchQuality;
+
+            // Add visual indicator in SVG
+            const svg = d3.select('#graph-svg');
+            const nodeGroup = svg.selectAll('g').filter(d => d && d.id === newClaimId);
+
+            if (!nodeGroup.empty()) {
+                const radius = this.getNodeRadius('sub', newNode);
+
+                // Add dashed orange border to indicate duplicate
+                nodeGroup.insert('circle', ':first-child')
+                    .attr('r', radius + 3)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#FF6B35')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '4,2')
+                    .attr('class', 'duplicate-indicator')
+                    .style('opacity', 0)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 0.8);
+
+                // Add small "=" icon to indicate duplicate
+                nodeGroup.append('text')
+                    .attr('x', radius - 5)
+                    .attr('y', -radius + 8)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '14px')
+                    .attr('font-weight', 'bold')
+                    .attr('fill', '#FF6B35')
+                    .attr('class', 'duplicate-icon')
+                    .text('≈')
+                    .style('opacity', 0)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 1);
+            }
+
+            // Add duplicate link (dashed line connecting to original)
+            if (existingNode) {
+                this.currentGraphData.links.push({
+                    source: newClaimId,
+                    target: existingClaimId,
+                    type: 'duplicate',
+                    similarity: similarityScore
+                });
+
+                // Update simulation with new link
+                this.updateGraphSmooth(this.currentGraphData);
+            }
+        }
+    },
+
+    /**
      * Get node color based on type and data attributes
      * Color encodes confidence and quality
      */
@@ -937,7 +1015,8 @@ const GraphRenderer = {
             'contains': '#9C27B0',      // Purple - document contains claims
             'has_sub': '#2196F3',       // Blue - claim has sub-claims
             'supports': '#4CAF50',      // Green - supports
-            'contradicts': '#F44336'    // Red - contradicts
+            'contradicts': '#F44336',   // Red - contradicts
+            'duplicate': '#FF6B35'      // Orange - duplicate claim
         };
         return colors[type] || '#999';
     },
@@ -958,5 +1037,197 @@ const GraphRenderer = {
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
+    },
+
+    /**
+     * Search nodes by text query
+     */
+    searchNodes(query) {
+        this.searchQuery = query.toLowerCase().trim();
+        console.log(`[searchNodes] Query: "${this.searchQuery}"`);
+
+        if (!this.searchQuery) {
+            // Clear search - show all nodes
+            this.filteredNodes.clear();
+            this.applyFiltersToGraph();
+            return { matches: this.currentGraphData.nodes.length, total: this.currentGraphData.nodes.length };
+        }
+
+        // Search in node text, labels, and full data
+        const matchedNodes = this.currentGraphData.nodes.filter(node => {
+            const label = (node.label || '').toLowerCase();
+            const text = (node.fullData?.text || '').toLowerCase();
+            const summary = (node.fullData?.summary || '').toLowerCase();
+            const original = (node.fullData?.original_text || '').toLowerCase();
+
+            return label.includes(this.searchQuery) ||
+                   text.includes(this.searchQuery) ||
+                   summary.includes(this.searchQuery) ||
+                   original.includes(this.searchQuery);
+        });
+
+        // Store matched node IDs
+        this.filteredNodes = new Set(matchedNodes.map(n => n.id));
+
+        console.log(`[searchNodes] Found ${matchedNodes.length} matches`);
+
+        // Apply visual filtering
+        this.applyFiltersToGraph();
+
+        return { matches: matchedNodes.length, total: this.currentGraphData.nodes.length };
+    },
+
+    /**
+     * Update active filters
+     */
+    updateFilters(filters) {
+        this.activeFilters = { ...this.activeFilters, ...filters };
+        console.log('[updateFilters]', this.activeFilters);
+        this.applyFiltersToGraph();
+    },
+
+    /**
+     * Apply current filters to graph visualization
+     */
+    applyFiltersToGraph() {
+        const svg = d3.select('#graph-svg');
+        const nodes = svg.selectAll('g').filter(d => d && d.id);
+
+        nodes.each(function(d) {
+            const node = d3.select(this);
+            let visible = true;
+
+            // Type filters
+            if (d.type === 'document' && !GraphRenderer.activeFilters.documents) {
+                visible = false;
+            }
+            if ((d.type === 'sub' || d.type === 'super') && !GraphRenderer.activeFilters.claims) {
+                visible = false;
+            }
+            if (d.isDuplicate && !GraphRenderer.activeFilters.duplicates) {
+                visible = false;
+            }
+
+            // Quality filter
+            const quality = d.fullData?.quality_score || d.fullData?.confidence || 0;
+            if (quality < GraphRenderer.activeFilters.minQuality / 100) {
+                visible = false;
+            }
+
+            // Search filter
+            if (GraphRenderer.searchQuery && !GraphRenderer.filteredNodes.has(d.id)) {
+                visible = false;
+            }
+
+            // Apply visibility
+            if (visible) {
+                node.style('opacity', 1)
+                    .style('pointer-events', 'all');
+            } else {
+                node.style('opacity', 0.1)
+                    .style('pointer-events', 'none');
+            }
+        });
+
+        // Also filter links
+        const links = svg.selectAll('line');
+        links.each(function(d) {
+            const link = d3.select(this);
+            const sourceVisible = svg.selectAll('g').filter(n => n && n.id === d.source.id).style('opacity') === '1';
+            const targetVisible = svg.selectAll('g').filter(n => n && n.id === d.target.id).style('opacity') === '1';
+
+            if (sourceVisible && targetVisible) {
+                link.style('opacity', 0.6);
+            } else {
+                link.style('opacity', 0.05);
+            }
+        });
+    },
+
+    /**
+     * Clear all filters and search
+     */
+    clearFilters() {
+        this.searchQuery = '';
+        this.filteredNodes.clear();
+        this.activeFilters = {
+            documents: true,
+            claims: true,
+            duplicates: true,
+            minQuality: 0
+        };
+        this.applyFiltersToGraph();
+        return { matches: this.currentGraphData.nodes.length, total: this.currentGraphData.nodes.length };
+    },
+
+    /**
+     * Focus on filtered nodes (zoom and center)
+     */
+    focusFilteredNodes() {
+        if (this.filteredNodes.size === 0 && !this.searchQuery) {
+            console.log('[focusFilteredNodes] No active filters');
+            return;
+        }
+
+        const svg = d3.select('#graph-svg');
+        const visibleNodes = this.currentGraphData.nodes.filter(n => {
+            if (this.searchQuery && !this.filteredNodes.has(n.id)) return false;
+
+            // Check type filters
+            if (n.type === 'document' && !this.activeFilters.documents) return false;
+            if ((n.type === 'sub' || n.type === 'super') && !this.activeFilters.claims) return false;
+            if (n.isDuplicate && !this.activeFilters.duplicates) return false;
+
+            // Check quality filter
+            const quality = n.fullData?.quality_score || n.fullData?.confidence || 0;
+            if (quality < this.activeFilters.minQuality / 100) return false;
+
+            return true;
+        });
+
+        if (visibleNodes.length === 0) {
+            console.log('[focusFilteredNodes] No visible nodes to focus');
+            return;
+        }
+
+        // Calculate bounding box of visible nodes
+        const xs = visibleNodes.map(n => n.x).filter(x => x !== undefined);
+        const ys = visibleNodes.map(n => n.y).filter(y => y !== undefined);
+
+        if (xs.length === 0 || ys.length === 0) {
+            console.log('[focusFilteredNodes] Nodes not yet positioned');
+            return;
+        }
+
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        const svgWidth = parseInt(svg.style('width'));
+        const svgHeight = parseInt(svg.style('height'));
+
+        // Calculate zoom level (with padding)
+        const padding = 100;
+        const scaleX = (svgWidth - padding) / width;
+        const scaleY = (svgHeight - padding) / height;
+        const scale = Math.min(scaleX, scaleY, 2);  // Cap at 2x zoom
+
+        // Pan and zoom
+        const transform = d3.zoomIdentity
+            .translate(svgWidth / 2, svgHeight / 2)
+            .scale(scale)
+            .translate(-centerX, -centerY);
+
+        svg.transition()
+            .duration(750)
+            .call(d3.zoom().transform, transform);
+
+        console.log(`[focusFilteredNodes] Focused on ${visibleNodes.length} nodes`);
     }
 };

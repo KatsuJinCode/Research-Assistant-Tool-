@@ -445,6 +445,81 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         logger.info(f"✓ Extracted {len(claims)} flat claims for clustering")
         return claims
 
+    def _detect_duplicate_claims(self, new_doc_id: str, new_claim_ids: List[str]) -> List[Dict[str, Any]]:
+        """
+        Detect duplicate claims between newly processed claims and existing claims.
+
+        Args:
+            new_doc_id: ID of newly processed document
+            new_claim_ids: IDs of newly created claims
+
+        Returns:
+            List of duplicate matches with similarity scores
+        """
+        logger.info(f"Detecting duplicates for {len(new_claim_ids)} new claims...")
+
+        # Check if semantic clustering is available
+        if not SEMANTIC_CLUSTERING_AVAILABLE:
+            logger.warning("Semantic clustering not available - skipping duplicate detection")
+            return []
+
+        from web_ui.semantic_clustering import SemanticDuplicateDetector
+
+        try:
+            # Initialize detector (threshold 0.85 = high similarity)
+            detector = SemanticDuplicateDetector(similarity_threshold=0.85)
+
+            # Get newly processed claims from database
+            new_claims = []
+            for claim_id in new_claim_ids:
+                claim_data = self.claim_repo.get_claim_by_id(claim_id)
+                if claim_data:
+                    new_claims.append({
+                        'id': claim_id,
+                        'text': claim_data.get('original_text', claim_data.get('text', '')),
+                        'summary': claim_data.get('summary'),
+                        'doc_id': new_doc_id
+                    })
+
+            # Get all existing claims from OTHER documents (exclude current document)
+            all_docs = self.doc_repo.get_all_documents()
+            existing_claims = []
+
+            for doc in all_docs:
+                doc_id = doc['id']
+                if doc_id != new_doc_id:  # Exclude current document
+                    doc_claims = self.claim_repo.get_claims_by_document(doc_id)
+                    for claim in doc_claims:
+                        existing_claims.append({
+                            'id': claim['id'],
+                            'text': claim.get('original_text', claim.get('text', '')),
+                            'summary': claim.get('summary'),
+                            'doc_id': doc_id
+                        })
+
+            logger.info(f"Checking {len(new_claims)} new claims against {len(existing_claims)} existing claims...")
+
+            if not existing_claims:
+                logger.info("No existing claims to compare against")
+                return []
+
+            # Find duplicates
+            duplicates = detector.find_duplicates(new_claims, existing_claims)
+
+            # Mark duplicate claims in database for UI display
+            for dup in duplicates:
+                self.claim_repo.update_claim(dup['new_claim_id'], {
+                    'has_duplicate': True,
+                    'duplicate_of': dup['existing_claim_id'],
+                    'duplicate_similarity': dup['similarity_score']
+                })
+
+            return duplicates
+
+        except Exception as e:
+            logger.error(f"Duplicate detection failed: {e}", exc_info=True)
+            return []
+
     def _extract_hierarchical_claims_with_agent_llm(self, text: str) -> Dict[str, Any]:
         """
         Use AI agent to extract HIERARCHICAL claims (categories + specific claims).
@@ -1419,8 +1494,29 @@ Find the main title/heading at the top of the document. Return just the title te
             })
             logger.info(f"✓ Emitted claim_updated event")
 
-        # 5. Skip optimization for now (too slow for web interface)
-        self._emit("Skipping claim hierarchy analysis (can run later)", 90, {
+        # 5. Detect duplicate claims across existing documents
+        self._emit("Checking for duplicate claims...", 90, {
+            'event': 'duplicate_detection_started',
+            'doc_id': doc_id
+        })
+
+        try:
+            duplicates = self._detect_duplicate_claims(doc_id, claim_ids)
+            if duplicates:
+                logger.info(f"✓ Found {len(duplicates)} duplicate claims")
+                self._emit(f"Found {len(duplicates)} duplicate claims", 92, {
+                    'event': 'duplicates_found',
+                    'doc_id': doc_id,
+                    'duplicates': duplicates
+                })
+            else:
+                logger.info("✓ No duplicate claims found")
+        except Exception as e:
+            logger.warning(f"Duplicate detection failed: {e}")
+            # Non-critical failure - continue processing
+
+        # 6. Skip optimization for now (too slow for web interface)
+        self._emit("Skipping claim hierarchy analysis (can run later)", 95, {
             'event': 'optimization_skipped',
             'doc_id': doc_id
         })
@@ -1429,7 +1525,7 @@ Find the main title/heading at the top of the document. Return just the title te
         # optimizer = ClaimSpaceOptimizer()
         # optimizer.optimize_claim_space(self.db)
 
-        # 6. Mark document as complete using repository
+        # 7. Mark document as complete using repository
         self.doc_repo.mark_document_complete(doc_id)
 
         self._emit("Document processing complete!", 100, {

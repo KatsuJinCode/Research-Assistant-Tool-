@@ -330,8 +330,10 @@ const UI = {
     /**
      * Handle file upload
      */
-    async handleFileUpload(file) {
-        console.log('handleFileUpload called with:', file);
+    async handleFileUpload(fileOrFiles) {
+        // Support both single file and FileList (multiple files)
+        const files = fileOrFiles instanceof FileList ? Array.from(fileOrFiles) : [fileOrFiles];
+        console.log(`handleFileUpload called with ${files.length} file(s):`, files.map(f => f.name));
 
         const processingPanel = document.getElementById('processing-status');
         if (processingPanel) {
@@ -340,20 +342,42 @@ const UI = {
             console.warn('processing-status element not found');
         }
 
-        this.updateProcessingStatus('Uploading document...', 0);
+        // Upload files sequentially (could be parallel, but sequential is safer)
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileNum = files.length > 1 ? ` (${i+1}/${files.length})` : '';
 
-        try {
-            console.log('Calling API.uploadDocument...');
-            await API.uploadDocument(file);
-            console.log('Upload successful!');
-            this.updateProcessingStatus('Upload successful! Processing started...', 10);
+            this.updateProcessingStatus(`Uploading ${file.name}${fileNum}...`, (i / files.length) * 5);
 
-            // DON'T reload here - wait for WebSocket 'document_processed' event
-            // Processing happens in background thread and may take several minutes
-        } catch (error) {
-            console.error('Upload failed:', error);
-            this.updateProcessingStatus(`Error: ${error.message}`, 0);
-            alert(`Upload failed: ${error.message}`);
+            try {
+                console.log(`Uploading file ${i+1}/${files.length}: ${file.name}`);
+                await API.uploadDocument(file);
+                console.log(`Upload ${i+1}/${files.length} successful!`);
+                this.updateProcessingStatus(`Uploaded ${file.name}${fileNum}! Processing...`, ((i+1) / files.length) * 10);
+
+                // Brief delay between uploads to avoid overwhelming the server
+                if (i < files.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            } catch (error) {
+                console.error(`Upload ${i+1}/${files.length} failed:`, error);
+                const msg = `Failed to upload ${file.name}: ${error.message}`;
+                this.updateProcessingStatus(msg, 0);
+
+                // Ask if user wants to continue with remaining files
+                if (i < files.length - 1) {
+                    const continueUploading = confirm(`${msg}\n\nContinue with remaining ${files.length - i - 1} file(s)?`);
+                    if (!continueUploading) {
+                        break;
+                    }
+                } else {
+                    alert(msg);
+                }
+            }
+        }
+
+        if (files.length > 1) {
+            this.updateProcessingStatus(`Uploaded ${files.length} documents. Processing...`, 10);
         }
     },
 
@@ -373,6 +397,55 @@ const UI = {
             console.error('Clear failed:', error);
             alert(`Failed to clear data: ${error.message}`);
         }
+    },
+
+    /**
+     * Show notification to user
+     * @param {string} message - Notification message
+     * @param {string} type - Notification type ('info', 'success', 'warning', 'error')
+     */
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+
+        // Style notification
+        Object.assign(notification.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '15px 20px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: '10000',
+            maxWidth: '400px',
+            fontSize: '14px',
+            fontWeight: '500',
+            animation: 'slideIn 0.3s ease-out',
+            transition: 'all 0.3s ease'
+        });
+
+        // Set colors based on type
+        const colors = {
+            'info': { bg: '#2196F3', fg: 'white' },
+            'success': { bg: '#4CAF50', fg: 'white' },
+            'warning': { bg: '#FF9800', fg: 'white' },
+            'error': { bg: '#F44336', fg: 'white' }
+        };
+        const color = colors[type] || colors['info'];
+        notification.style.backgroundColor = color.bg;
+        notification.style.color = color.fg;
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(400px)';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
     }
 };
 
