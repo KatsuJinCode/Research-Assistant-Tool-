@@ -612,7 +612,12 @@ const GraphRenderer = {
 
         // Create link if parent exists
         if (parentId) {
-            const linkType = nodeData.type === 'super' ? 'contains' : 'has_sub';
+            // Determine link type based on PARENT type, not child type
+            const parentNode = this.currentGraphData.nodes.find(n => n.id === parentId);
+            const linkType = (parentNode && parentNode.type === 'document') ? 'contains' : 'has_sub';
+
+            console.log(`[addNodeIncremental] Creating ${linkType} link from ${parentNode?.type || 'unknown'} to ${nodeData.type}`);
+
             this.currentGraphData.links.push({
                 source: parentId,
                 target: nodeData.id,
@@ -750,7 +755,8 @@ const GraphRenderer = {
         if (parentId) {
             const parentNode = this.currentGraphData.nodes.find(n => n.id === parentId);
             if (parentNode) {
-                const linkType = nodeData.type === 'super' ? 'contains' : 'has_sub';
+                // Determine link type based on PARENT type, not child type
+                const linkType = (parentNode.type === 'document') ? 'contains' : 'has_sub';
 
                 g.insert('line', ':first-child')
                     .datum(this.currentGraphData.links[this.currentGraphData.links.length - 1])
