@@ -48,12 +48,14 @@ class RepositoryEventEmitter:
         """
         if self._emit_callback:
             try:
+                # CRITICAL: Emit might be called from background thread, so callback
+                # must handle app context (Flask-SocketIO requires it)
                 self._emit_callback('node_created', {
                     'label': label,
                     'id': node_id,
                     'properties': properties
                 })
-                logger.debug(f"Emitted node_created: {label} {node_id}")
+                logger.info(f"Emitted node_created: {label} {node_id}")
             except Exception as e:
                 logger.error(f"Failed to emit node_created: {e}")
 

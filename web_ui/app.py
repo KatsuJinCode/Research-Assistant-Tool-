@@ -43,7 +43,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 db = Neo4jDatabase()  # Keep for backward compatibility during migration
 
 # Register WebSocket event emitter callback for real-time updates
-RepositoryEventEmitter.set_emit_callback(socketio.emit)
+# CRITICAL: Wrap socketio.emit with app context for background thread safety
+def emit_with_context(event, data):
+    """Wrapper to ensure app context when emitting from repositories."""
+    with app.app_context():
+        socketio.emit(event, data)
+
+RepositoryEventEmitter.set_emit_callback(emit_with_context)
 
 # Initialize repositories
 claim_repo = ClaimRepository()
