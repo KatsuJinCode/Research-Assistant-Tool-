@@ -57,7 +57,7 @@ const App = {
             // Handle different events from the nested data.data.event field
             if (data.data && data.data.event === 'document_created') {
                 // Document node created - add incrementally with processing indicator
-                console.log('Document created:', data.data.doc_id);
+                console.log('[app.js] Document created event received:', data.data.doc_id, data.data.node_data);
                 this.processingInProgress = true;
                 if (data.data.node_data) {
                     const nodeData = {
@@ -68,7 +68,10 @@ const App = {
                         processing: true,  // Mark as processing
                         progress: data.progress || 0
                     };
+                    console.log('[app.js] Adding document node to graph:', nodeData);
                     GraphRenderer.addNodeIncremental(nodeData, null);
+                } else {
+                    console.error('[app.js] document_created event missing node_data!', data);
                 }
             // MVP: super_claim_added event disabled - using flat structure
             // Will be re-enabled when community detection is implemented
