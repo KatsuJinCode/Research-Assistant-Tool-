@@ -247,7 +247,7 @@ const GraphRenderer = {
             );
 
         // Node circles with enhanced visual encoding
-        node.append('circle')
+        const nodeCircle = node.append('circle')
             .attr('r', d => this.getNodeRadius(d.type, d))
             .attr('fill', d => this.getNodeColor(d.type, d))
             .attr('stroke', '#fff')
@@ -255,6 +255,42 @@ const GraphRenderer = {
             .attr('class', 'graph-node')
             .style('cursor', 'pointer')
             .style('transition', 'all 0.3s ease');
+
+        // Add processing state overlay (fill effect from bottom-to-top)
+        node.each(function(d) {
+            if (d.processing || d.fresh) {
+                const radius = GraphRenderer.getNodeRadius(d.type, d);
+                const group = d3.select(this);
+
+                // Create clip path for bottom-to-top reveal
+                const clipId = `clip-${d.id.substring(0, 8)}`;
+                const defs = group.append('defs');
+                const clipPath = defs.append('clipPath').attr('id', clipId);
+                clipPath.append('circle').attr('r', radius);
+
+                // Add semi-transparent overlay circle that will animate
+                const processingColor = d.fresh ? '#FFD700' : '#FFA500'; // Gold for new, orange for processing
+                group.append('circle')
+                    .attr('r', radius)
+                    .attr('fill', processingColor)
+                    .attr('opacity', 0.4)
+                    .attr('clip-path', `url(#${clipId})`)
+                    .attr('class', 'processing-overlay');
+
+                // Add processing stage label
+                const stageText = d.processingStage || 'Processing...';
+                group.append('text')
+                    .attr('y', 0)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '10px')
+                    .attr('font-weight', 'bold')
+                    .attr('fill', '#FFD700')
+                    .attr('pointer-events', 'none')
+                    .attr('class', 'processing-stage-label')
+                    .style('text-shadow', '0 0 3px rgba(0,0,0,0.9)')
+                    .text(stageText);
+            }
+        });
 
         // Initialize label positions (offset from nodes to reduce overlap)
         nodes.forEach((d, i) => {
@@ -785,6 +821,28 @@ const GraphRenderer = {
         const node = this.currentGraphData.nodes.find(n => n.id === docId);
         if (node) {
             node.processing = false;
+        }
+    },
+
+    /**
+     * Update processing stage label for a claim
+     */
+    updateProcessingStage(claimId, stage) {
+        console.log(`[updateProcessingStage] ${claimId.substring(0,8)}: ${stage}`);
+
+        // Update in-memory data
+        const node = this.currentGraphData.nodes.find(n => n.id === claimId);
+        if (node) {
+            node.processingStage = stage;
+
+            // Update the stage label in the SVG
+            const svg = d3.select('#graph-svg');
+            const stageLabel = svg.selectAll('g').filter(d => d && d.id === claimId)
+                .select('.processing-stage-label');
+
+            if (!stageLabel.empty()) {
+                stageLabel.text(stage);
+            }
         }
     },
 

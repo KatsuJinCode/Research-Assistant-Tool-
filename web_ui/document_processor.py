@@ -17,6 +17,8 @@ from typing import Callable, Dict, Any, List, Tuple
 from uuid import uuid4
 
 from research_agent.document_processing.pdf_extractor import PDFExtractor
+from research_agent.document_processing.txt_extractor import TXTExtractor
+from research_agent.document_processing.docx_extractor import DOCXExtractor
 from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimizer
 # Intelligent summarization handled by _simplify_claim_with_agent() using Claude Code CLI
 from research_agent.neo4j_database import Neo4jDatabase
@@ -1165,19 +1167,37 @@ Find the main title/heading at the top of the document. Return just the title te
         })
 
         # 2. Extract text
-        self._emit("Extracting text from PDF...", 10, {
+        # Determine file type and use appropriate extractor
+        file_path_obj = Path(file_path)
+        file_ext = file_path_obj.suffix.lower()
+
+        self._emit(f"Extracting text from {file_ext.upper()} file...", 10, {
             'event': 'text_extraction_started',
-            'doc_id': doc_id
+            'doc_id': doc_id,
+            'file_type': file_ext
         })
 
-        extractor = PDFExtractor(column_aware=True, postprocess=True)
-        extraction_result = extractor.extract(Path(file_path))
-        raw_text = extraction_result['full_text']
+        # Select extractor based on file type
+        if file_ext == '.pdf':
+            extractor = PDFExtractor(column_aware=True, postprocess=True)
+            extraction_result = extractor.extract(file_path_obj)
+            raw_text = extraction_result['full_text']
+        elif file_ext == '.txt':
+            extractor = TXTExtractor()
+            extraction_result = extractor.extract(file_path_obj)
+            raw_text = extraction_result['text']
+        elif file_ext == '.docx':
+            extractor = DOCXExtractor()
+            extraction_result = extractor.extract(file_path_obj)
+            raw_text = extraction_result['text']
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
 
         self._emit(f"Extracted {len(raw_text)} characters", 15, {
             'event': 'text_extracted',
             'doc_id': doc_id,
-            'char_count': len(raw_text)
+            'char_count': len(raw_text),
+            'file_type': file_ext
         })
 
         # 2.1. Preprocess text to remove metadata and artifacts

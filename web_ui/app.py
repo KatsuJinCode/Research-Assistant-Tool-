@@ -213,8 +213,11 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    if not file.filename.endswith('.pdf'):
-        return jsonify({'error': 'Only PDF files supported'}), 400
+    # Check if file type is supported
+    allowed_extensions = {'.pdf', '.txt', '.docx'}
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in allowed_extensions:
+        return jsonify({'error': f'Unsupported file type. Allowed: {", ".join(allowed_extensions)}'}), 400
 
     # Save file
     filename = secure_filename(file.filename)

@@ -181,8 +181,16 @@ const App = {
             this.claimStates[claim_id].stages[stage] = { status, ...data.data };
             this.claimStates[claim_id].allData[stage] = data.data;
 
-            // Log progress for debugging
-            if (status === 'complete') {
+            // Update visual processing stage label on the node
+            if (status === 'in_progress') {
+                const stageLabels = {
+                    'analysis': 'Analyzing...',
+                    'clarification': 'Clarifying...',
+                    'simplification': 'Simplifying...',
+                    'validation': 'Validating...'
+                };
+                GraphRenderer.updateProcessingStage(claim_id, stageLabels[stage] || stage);
+            } else if (status === 'complete') {
                 const duration = data.data?.duration_ms;
                 console.log(`✓ ${stage} complete ${duration ? `(${(duration/1000).toFixed(1)}s)` : ''}`);
             }
