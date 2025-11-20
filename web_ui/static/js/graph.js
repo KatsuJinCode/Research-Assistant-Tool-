@@ -555,50 +555,30 @@ const GraphRenderer = {
      * @param {String} parentId - Optional parent node ID to position near
      */
     addNodeIncremental(nodeData, parentId = null) {
-        // If no simulation exists yet, initialize with first node
-        if (!this.simulation || this.currentGraphData.nodes.length === 0) {
-            this.currentGraphData.nodes = [nodeData];
-            this.currentGraphData.links = [];
-
-            const svg = d3.select('#graph-svg');
-            const width = svg.node().getBoundingClientRect().width;
-            const height = svg.node().getBoundingClientRect().height;
-
-            // Position first node at center
-            nodeData.x = width / 2;
-            nodeData.y = height / 2;
-            nodeData.vx = 0;
-            nodeData.vy = 0;
-
-            this.renderGraph([nodeData], []);
-            return;
-        }
+        console.log(`[addNodeIncremental] Adding node: ${nodeData.id} (${nodeData.type}), parent: ${parentId || 'none'}`);
 
         // Check if node already exists
         const existingNode = this.currentGraphData.nodes.find(n => n.id === nodeData.id);
         if (existingNode) {
-            console.log('Node already exists:', nodeData.id);
+            console.log('[addNodeIncremental] Node already exists:', nodeData.id);
             return;
         }
 
         // Position new node near parent or center
-        let startX, startY;
+        const svg = d3.select('#graph-svg');
+        const width = svg.node().getBoundingClientRect().width;
+        const height = svg.node().getBoundingClientRect().height;
+
+        let startX = width / 2;
+        let startY = height / 2;
+
         if (parentId) {
             const parentNode = this.currentGraphData.nodes.find(n => n.id === parentId);
-            if (parentNode) {
+            if (parentNode && parentNode.x !== undefined) {
                 // Position near parent with small random offset
-                startX = parentNode.x + (Math.random() - 0.5) * 50;
-                startY = parentNode.y + (Math.random() - 0.5) * 50;
+                startX = parentNode.x + (Math.random() - 0.5) * 100;
+                startY = parentNode.y + (Math.random() - 0.5) * 100;
             }
-        }
-
-        if (!startX || !startY) {
-            // Default to center if no parent
-            const svg = d3.select('#graph-svg');
-            const width = svg.node().getBoundingClientRect().width;
-            const height = svg.node().getBoundingClientRect().height;
-            startX = width / 2;
-            startY = height / 2;
         }
 
         // Initialize node position
@@ -625,156 +605,10 @@ const GraphRenderer = {
             });
         }
 
-        // Get SVG elements
-        const svg = d3.select('#graph-svg');
-        const g = svg.select('g');
-
-        // Update simulation with gentle forces
-        if (this.simulation) {
-            // Reduce forces temporarily for gentle animation
-            const originalCharge = this.simulation.force('charge').strength();
-            this.simulation.force('charge').strength(-200);  // Gentler repulsion
-
-            this.simulation.nodes(this.currentGraphData.nodes);
-            this.simulation.force('link').links(this.currentGraphData.links);
-            this.simulation.alpha(0.2).restart();  // Gentle restart
-
-            // Restore original force after animation settles
-            setTimeout(() => {
-                if (this.simulation) {
-                    this.simulation.force('charge').strength(originalCharge);
-                }
-            }, 2000);
-        }
-
-        // Add new node element with growth animation
-        const nodeGroup = g.select('g').filter(function() {
-            return this.parentNode === g.node() && d3.select(this).selectAll('circle').size() > 0;
-        });
-
-        const newNodeGroup = g.insert('g', ':first-child')
-            .datum(nodeData)
-            .attr('transform', `translate(${startX},${startY})`)
-            .call(d3.drag()
-                .on('start', (event, d) => this.dragStarted(event, d, this.simulation))
-                .on('drag', (event, d) => this.dragged(event, d))
-                .on('end', (event, d) => this.dragEnded(event, d, this.simulation))
-            );
-
-        // Add circle with growth animation (start tiny)
-        const finalRadius = this.getNodeRadius(nodeData.type, nodeData);
-
-        // Check if this is a skeleton claim (still processing)
-        const isSkeleton = nodeData.status === 'processing';
-        const nodeColor = isSkeleton ? '#9E9E9E' : this.getNodeColor(nodeData.type, nodeData);  // Gray for processing
-        const nodeOpacity = isSkeleton ? 0.6 : 1.0;  // Faded while processing
-
-        const circle = newNodeGroup.append('circle')
-            .attr('r', 0.1)  // Start nearly invisible
-            .attr('fill', nodeColor)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', this.getNodeBorderWidth(nodeData))
-            .attr('class', 'graph-node')
-            .attr('data-node-id', nodeData.id)  // For finding later
-            .style('cursor', 'pointer')
-            .style('opacity', 0)
-            .transition()
-            .duration(800)  // Smooth 800ms growth
-            .ease(d3.easeBackOut)  // Gentle bounce
-            .attr('r', finalRadius)
-            .style('opacity', nodeOpacity);
-
-        // Add circular progress indicator for processing documents
-        if (nodeData.processing && nodeData.type === 'document') {
-            const progressArc = d3.arc()
-                .innerRadius(finalRadius + 2)
-                .outerRadius(finalRadius + 5)
-                .startAngle(0);
-
-            newNodeGroup.append('path')
-                .attr('class', 'progress-arc')
-                .attr('fill', '#4CAF50')
-                .attr('opacity', 0.8)
-                .datum({endAngle: 0})
-                .attr('d', progressArc);
-        }
-
-        // Add pulsing animation for fresh nodes
-        if (nodeData.fresh) {
-            circle.style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
-                .transition()
-                .duration(1500)
-                .ease(d3.easeSinInOut)
-                .style('filter', 'drop-shadow(0 0 3px rgba(76, 175, 80, 0.4))')
-                .transition()
-                .duration(1500)
-                .ease(d3.easeSinInOut)
-                .style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
-                .on('end', function repeat() {
-                    d3.select(this)
-                        .transition()
-                        .duration(1500)
-                        .ease(d3.easeSinInOut)
-                        .style('filter', 'drop-shadow(0 0 3px rgba(76, 175, 80, 0.4))')
-                        .transition()
-                        .duration(1500)
-                        .ease(d3.easeSinInOut)
-                        .style('filter', 'drop-shadow(0 0 8px rgba(76, 175, 80, 0.8))')
-                        .on('end', repeat);
-                });
-        }
-
-        // Add label with fade-in
-        const label = nodeData.fullData?.summary || nodeData.label || '';
-        const displayText = label.length > 35 ? label.substring(0, 35) + '...' : label;
-
-        const newLabel = g.append('text')
-            .datum(nodeData)
-            .attr('data-node-id', nodeData.id)  // For finding later (e.g., title updates)
-            .attr('x', startX)
-            .attr('y', startY + 30)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
-            .attr('fill', '#ffffff')
-            .attr('font-weight', '600')
-            .attr('pointer-events', 'none')
-            .style('text-shadow', '0 0 3px rgba(0,0,0,0.8), 0 0 5px rgba(0,0,0,0.6)')
-            .style('opacity', 0)
-            .text(displayText)
-            .transition()
-            .duration(800)
-            .style('opacity', 1);
-
-        // Initialize label position tracking
-        nodeData.labelX = startX;
-        nodeData.labelY = startY + 30;
-        nodeData.labelVx = 0;
-        nodeData.labelVy = 0;
-
-        // Add link if parent exists (with fade-in)
-        if (parentId) {
-            const parentNode = this.currentGraphData.nodes.find(n => n.id === parentId);
-            if (parentNode) {
-                // Determine link type based on PARENT type, not child type
-                const linkType = (parentNode.type === 'document') ? 'contains' : 'has_sub';
-
-                g.insert('line', ':first-child')
-                    .datum(this.currentGraphData.links[this.currentGraphData.links.length - 1])
-                    .attr('stroke', this.getLinkColor(linkType))
-                    .attr('stroke-width', this.getLinkWidth(linkType))
-                    .attr('stroke-opacity', 0)
-                    .attr('stroke-dasharray', this.getLinkDashArray(linkType))
-                    .attr('x1', parentNode.x)
-                    .attr('y1', parentNode.y)
-                    .attr('x2', startX)
-                    .attr('y2', startY)
-                    .transition()
-                    .duration(800)
-                    .attr('stroke-opacity', 0.6);
-            }
-        }
-
-        console.log('Added node incrementally:', nodeData.id, nodeData.type);
+        // SIMPLE APPROACH: Just re-render the entire graph
+        // This ensures all nodes and links are properly registered with the simulation
+        console.log(`[addNodeIncremental] Re-rendering graph with ${this.currentGraphData.nodes.length} nodes`);
+        this.renderGraph(this.currentGraphData.nodes, this.currentGraphData.links);
     },
 
     /**
