@@ -103,13 +103,21 @@ const GraphRenderer = {
                         addClaimRecursively(claim, 0);
                     }
 
-                    // ALWAYS create document→claim link for top-level claims
-                    // (even if the node was already added by super_claims loop)
-                    links.push({
-                        source: docId,
-                        target: claim.id,
-                        type: 'contains'
-                    });
+                    // ONLY create document→claim link if one doesn't already exist
+                    // (prevents duplicate overlapping links that hide connections)
+                    const linkExists = links.some(link =>
+                        link.source === docId &&
+                        link.target === claim.id &&
+                        link.type === 'contains'
+                    );
+
+                    if (!linkExists) {
+                        links.push({
+                            source: docId,
+                            target: claim.id,
+                            type: 'contains'
+                        });
+                    }
                 });
             }
 
