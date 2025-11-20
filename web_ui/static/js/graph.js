@@ -160,11 +160,38 @@ const GraphRenderer = {
      */
     renderGraph(nodes, links) {
         const svg = d3.select('#graph-svg');
-        svg.selectAll('*').remove();
 
         const width = svg.node().getBoundingClientRect().width;
         const height = svg.node().getBoundingClientRect().height;
 
+        // Check if this is an incremental update (simulation already exists)
+        const isIncrementalUpdate = this.simulation && this.currentGraphData.nodes.length > 0;
+
+        if (isIncrementalUpdate) {
+            console.log('[renderGraph] Incremental update - preserving existing nodes');
+
+            // Preserve existing node positions by copying x, y, vx, vy from currentGraphData
+            const existingPositions = new Map();
+            this.currentGraphData.nodes.forEach(n => {
+                if (n.x !== undefined) {
+                    existingPositions.set(n.id, { x: n.x, y: n.y, vx: n.vx || 0, vy: n.vy || 0 });
+                }
+            });
+
+            // Apply preserved positions to new nodes array
+            nodes.forEach(n => {
+                const pos = existingPositions.get(n.id);
+                if (pos) {
+                    n.x = pos.x;
+                    n.y = pos.y;
+                    n.vx = pos.vx;
+                    n.vy = pos.vy;
+                }
+            });
+        }
+
+        // Clear and rebuild SVG (we have to do this to update visual elements)
+        svg.selectAll('*').remove();
         const g = svg.append('g');
 
         const zoom = d3.zoom()
@@ -194,6 +221,11 @@ const GraphRenderer = {
             .force('charge', d3.forceManyBody().strength(-400))
             .force('center', d3.forceCenter(width / 2, height / 2))
             .force('collision', d3.forceCollide().radius(d => this.getNodeRadius(d.type) + 10));
+
+        // For incremental updates, use gentle animation
+        if (isIncrementalUpdate) {
+            simulation.alpha(0.3).alphaDecay(0.05);  // Gentle animation
+        }
 
         // Store simulation
         this.simulation = simulation;
