@@ -257,3 +257,22 @@ class BaseRepository(ABC):
             logger.info(f"Created {relationship_type} relationship: {from_id} -> {to_id}")
             return True
         return False
+
+    def delete_all_nodes(self) -> int:
+        """
+        Delete all nodes and relationships from the database.
+        USE WITH CAUTION - This clears the entire graph!
+
+        Returns:
+            Number of nodes deleted
+        """
+        query = """
+        MATCH (n)
+        DETACH DELETE n
+        RETURN count(n) as deleted
+        """
+
+        result = self.execute_write_single(query)
+        deleted_count = result.get('deleted', 0) if result else 0
+        logger.warning(f"Deleted ALL nodes from database: {deleted_count} nodes")
+        return deleted_count

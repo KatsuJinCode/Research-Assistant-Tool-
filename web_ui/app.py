@@ -59,23 +59,7 @@ def index():
 @app.route('/api/root-claims')
 def get_root_claims():
     """Get top-level (root) claims."""
-    query = """
-    MATCH (c:Claim)
-    WHERE c.is_optimal = true AND NOT ()-[:PARENT_OF]->(c)
-    RETURN c.id as id,
-           c.text as text,
-           c.summary as summary,
-           c.specificity_score as specificity,
-           c.information_content as uniqueness,
-           c.compression_ratio as compression_ratio,
-           c.qualifiers_preserved as qualifiers_preserved
-    ORDER BY c.specificity_score ASC
-    """
-
-    with db.driver.session(database=db.database) as session:
-        result = session.run(query)
-        claims = [dict(record) for record in result]
-
+    claims = claim_repo.find_root_claims()
     return jsonify(claims)
 
 
@@ -158,55 +142,11 @@ def get_graph_stats():
 def get_full_graph():
     """Get complete hierarchical graph with arbitrary depth support."""
 
-    # Get all documents
-    doc_query = """
-    MATCH (d:Document)
-    RETURN d.id as id, d.title as title, d.status as status
-    """
-
-    # Get all claims with their relationships (supports arbitrary depth)
-    # Note: Using PARENT_OF for hierarchical relationships (matches actual schema)
-    claims_query = """
-    MATCH (c:Claim)
-    OPTIONAL MATCH (c)-[r:PARENT_OF]->(child:Claim)
-    RETURN
-        c.id as id,
-        c.text as text,
-        c.summary as summary,
-        c.status as status,
-        c.disposition as disposition,
-        c.quality_score as quality_score,
-        c.claim_type as claim_type,
-        c.confidence as confidence,
-        coalesce(c.is_super_claim, false) as is_super_claim,
-        collect(child.id) as child_ids
-    """
-
-    # Get document-claim relationships
-    doc_claim_query = """
-    MATCH (d:Document)-[:CONTAINS_CLAIM]->(c:Claim)
-    RETURN d.id as doc_id, collect(c.id) as claim_ids
-    """
-
-    # Get evidence relationships
-    evidence_query = """
-    MATCH (c:Claim)<-[r:SUPPORTS|CONTRADICTS]-(e:Evidence)
-    RETURN
-        c.id as claim_id,
-        collect({
-            id: e.id,
-            title: e.title,
-            type: type(r),
-            url: e.url
-        }) as evidence_list
-    """
-
-    with db.driver.session(database=db.database) as session:
-        # Fetch all data
-        documents = [dict(r) for r in session.run(doc_query)]
-        claims = [dict(r) for r in session.run(claims_query)]
-        doc_claims = [dict(r) for r in session.run(doc_claim_query)]
-        evidence_data = [dict(r) for r in session.run(evidence_query)]
+    # Fetch all data using repositories
+    documents = doc_repo.get_all_documents_simple()
+    claims = claim_repo.get_all_claims_with_children()
+    doc_claims = doc_repo.get_all_document_claim_relationships()
+    evidence_data = claim_repo.get_all_claim_evidence_relationships()
 
     # Build document-claim mapping
     doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
@@ -355,47 +295,28 @@ def handle_disconnect():
 @app.route('/api/delete-document/<doc_id>', methods=['DELETE'])
 def delete_document(doc_id):
     """Delete document and only its owned claims (that would become orphaned)."""
-    query = """
-    // Find document
-    MATCH (d:Document {id: $doc_id})
+    success = doc_repo.delete_document_with_owned_claims(doc_id)
 
-    // Find all claims ONLY connected to this document
-    OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(root:Claim)
-    OPTIONAL MATCH (root)-[:PARENT_OF*]->(child:Claim)
-
-    // Collect all claims to delete
-    WITH d, collect(DISTINCT root) + collect(DISTINCT child) as all_claims
-
-    // Delete only the claims and document (DETACH handles relationships)
-    FOREACH (claim IN all_claims | DETACH DELETE claim)
-    DETACH DELETE d
-
-    RETURN 1 as deleted
-    """
-
-    with db.driver.session(database=db.database) as session:
-        session.run(query, doc_id=doc_id)
-
-    return jsonify({
-        'status': 'deleted',
-        'message': 'Document and owned claims deleted'
-    })
+    if success:
+        return jsonify({
+            'status': 'deleted',
+            'message': 'Document and owned claims deleted'
+        })
+    else:
+        return jsonify({
+            'status': 'not_found',
+            'message': 'Document not found'
+        }), 404
 
 
 @app.route('/api/clear-all', methods=['DELETE'])
 def clear_all():
     """Clear all data from the database."""
-    query = """
-    MATCH (n)
-    DETACH DELETE n
-    """
-
-    with db.driver.session(database=db.database) as session:
-        session.run(query)
+    deleted_count = doc_repo.delete_all_nodes()
 
     return jsonify({
         'status': 'cleared',
-        'message': 'All data cleared from database'
+        'message': f'All data cleared from database ({deleted_count} nodes deleted)'
     })
 
 

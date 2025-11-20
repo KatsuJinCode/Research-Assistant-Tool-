@@ -356,3 +356,116 @@ class ClaimRepository(BaseRepository):
 
         result = self.execute_write(query, {'status': status})
         return result or 0
+
+    def find_root_claims(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Find root claims (optimal claims without parents).
+
+        Args:
+            limit: Maximum number of claims to return
+
+        Returns:
+            List of root claims with metadata
+        """
+        query = """
+        MATCH (c:Claim)
+        WHERE c.is_optimal = true AND NOT ()-[:PARENT_OF]->(c)
+        RETURN c.id as id,
+               c.text as text,
+               c.summary as summary,
+               c.specificity_score as specificity,
+               c.information_content as uniqueness,
+               c.compression_ratio as compression_ratio,
+               c.qualifiers_preserved as qualifiers_preserved
+        ORDER BY c.specificity_score ASC
+        """
+
+        if limit:
+            query += f" LIMIT {limit}"
+
+        return self.execute_read(query)
+
+    def get_all_claims_with_children(self) -> List[Dict[str, Any]]:
+        """
+        Get all claims with their child IDs.
+
+        Returns:
+            List of claims with child_ids array
+        """
+        query = """
+        MATCH (c:Claim)
+        OPTIONAL MATCH (c)-[r:PARENT_OF]->(child:Claim)
+        RETURN
+            c.id as id,
+            c.text as text,
+            c.summary as summary,
+            c.status as status,
+            c.disposition as disposition,
+            c.quality_score as quality_score,
+            c.claim_type as claim_type,
+            c.confidence as confidence,
+            coalesce(c.is_super_claim, false) as is_super_claim,
+            collect(child.id) as child_ids
+        """
+
+        return self.execute_read(query)
+
+    def get_document_claim_ids(self, doc_id: str) -> List[str]:
+        """
+        Get all claim IDs for a document.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            List of claim IDs
+        """
+        query = """
+        MATCH (d:Document {id: $doc_id})-[:CONTAINS_CLAIM]->(c:Claim)
+        RETURN collect(c.id) as claim_ids
+        """
+
+        result = self.execute_read_single(query, {'doc_id': doc_id})
+        return result.get('claim_ids', []) if result else []
+
+    def get_claim_evidence(self, claim_id: str) -> List[Dict[str, Any]]:
+        """
+        Get evidence supporting or contradicting a claim.
+
+        Args:
+            claim_id: Claim ID
+
+        Returns:
+            List of evidence with relationship type
+        """
+        query = """
+        MATCH (c:Claim {id: $claim_id})<-[r:SUPPORTS|CONTRADICTS]-(e:Evidence)
+        RETURN
+            e.id as id,
+            e.title as title,
+            type(r) as relationship_type,
+            e.url as url
+        """
+
+        return self.execute_read(query, {'claim_id': claim_id})
+
+    def get_all_claim_evidence_relationships(self) -> List[Dict[str, Any]]:
+        """
+        Get all claim-evidence relationships.
+
+        Returns:
+            List of {claim_id, evidence_list} mappings
+        """
+        query = """
+        MATCH (c:Claim)<-[r:SUPPORTS|CONTRADICTS]-(e:Evidence)
+        RETURN
+            c.id as claim_id,
+            collect({
+                id: e.id,
+                title: e.title,
+                type: type(r),
+                url: e.url
+            }) as evidence_list
+        """
+
+        return self.execute_read(query)

@@ -300,3 +300,62 @@ class DocumentRepository(BaseRepository):
             'limit': limit
         })
         return [r['d'] for r in results]
+
+    def delete_document_with_owned_claims(self, doc_id: str) -> bool:
+        """
+        Delete document and all claims that would become orphaned.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        query = """
+        // Find document
+        MATCH (d:Document {id: $doc_id})
+
+        // Find all claims ONLY connected to this document
+        OPTIONAL MATCH (d)-[:CONTAINS_CLAIM]->(root:Claim)
+        OPTIONAL MATCH (root)-[:PARENT_OF*]->(child:Claim)
+
+        // Collect all claims to delete
+        WITH d, collect(DISTINCT root) + collect(DISTINCT child) as all_claims
+
+        // Delete only the claims and document (DETACH handles relationships)
+        FOREACH (claim IN all_claims | DETACH DELETE claim)
+        DETACH DELETE d
+
+        RETURN 1 as deleted
+        """
+
+        result = self.execute_write_single(query, {'doc_id': doc_id})
+        return result is not None
+
+    def get_all_documents_simple(self) -> List[Dict[str, Any]]:
+        """
+        Get all documents with basic info (for full-graph endpoint).
+
+        Returns:
+            List of documents with id, title, status
+        """
+        query = """
+        MATCH (d:Document)
+        RETURN d.id as id, d.title as title, d.status as status
+        """
+
+        return self.execute_read(query)
+
+    def get_all_document_claim_relationships(self) -> List[Dict[str, Any]]:
+        """
+        Get all document-claim relationships.
+
+        Returns:
+            List of {doc_id, claim_ids} mappings
+        """
+        query = """
+        MATCH (d:Document)-[:CONTAINS_CLAIM]->(c:Claim)
+        RETURN d.id as doc_id, collect(c.id) as claim_ids
+        """
+
+        return self.execute_read(query)
