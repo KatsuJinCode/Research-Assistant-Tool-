@@ -277,11 +277,15 @@ const GraphRenderer = {
             .attr('pointer-events', 'none')
             .style('text-shadow', '0 0 3px rgba(0,0,0,0.8), 0 0 5px rgba(0,0,0,0.6)')  // Black glow for readability
             .text(d => {
-                // REQUIRE summary - no fallbacks hiding bugs!
+                // Show processing state for claims without summary yet
                 const summary = d.fullData?.summary;
                 if (!summary && d.type !== 'document') {
-                    console.error('MISSING SUMMARY for claim:', d.id, d.fullData);
-                    return '[NO SUMMARY - BUG!]';
+                    // Check if claim is still being processed
+                    if (d.processing || d.fresh) {
+                        return 'Awaiting summarization...';
+                    }
+                    console.warn('Claim missing summary:', d.id);
+                    return 'Processing...';
                 }
                 const displayText = summary || d.label;  // Documents use label (title)
                 return displayText.length > 35 ? displayText.substring(0, 35) + '...' : displayText;

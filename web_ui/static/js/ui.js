@@ -28,64 +28,76 @@ const UI = {
             const nodeSize = this.calculateNodeSize(childCount);
             const specificityLabel = this.getSpecificityLabel(specificity);
 
-            // Build metrics dashboard
+            // Get real values from claim data
+            const qualityScore = claim.quality_score || 0;
+            const timestamp = claim.created_at || claim.timestamp || 'Unknown';
+            const formattedTime = timestamp !== 'Unknown' ? new Date(timestamp).toLocaleString() : 'Unknown';
+            const investigationValue = claim.investigation_priority || claim.investigation_value || 'Not assessed';
+
+            // Build clean detail panel
             let detailsHTML = `
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">${claim.text || 'Claim'}</h3>
+                    <!-- Summary (only shown once, at top) -->
+                    <h3 style="margin-bottom: 15px; line-height: 1.4;">${claim.summary || claim.text || 'Claim'}</h3>
 
-                    <!-- Visual Metrics Dashboard -->
+                    <!-- Metrics Dashboard (User-Friendly) -->
                     <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Visual Metrics</h4>
+                        <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Assessment</h4>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <!-- Confidence (Border Thickness) -->
+                            <!-- Confidence -->
                             <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3;">
                                 <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Confidence</div>
                                 <div style="font-size: 20px; font-weight: bold; color: #333;">${(confidence * 100).toFixed(0)}%</div>
                                 <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    Border: ${(2 + confidence * 3).toFixed(1)}px thick
+                                    How certain we are this claim is accurate
                                 </div>
                             </div>
 
-                            <!-- Size (Descendant Count) -->
+                            <!-- Quality Score -->
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Quality Score</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(qualityScore * 100).toFixed(0)}%</div>
+                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
+                                    Overall quality and clarity of the claim
+                                </div>
+                            </div>
+
+                            <!-- Sub-Claims -->
                             <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #9C27B0;">
                                 <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Sub-Claims</div>
                                 <div style="font-size: 20px; font-weight: bold; color: #333;">${childCount}</div>
                                 <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    Node size: ${nodeSize}
+                                    More specific claims derived from this one
                                 </div>
                             </div>
 
-                            <!-- Color Brightness (Quality) -->
-                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Quality Score</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(confidence * 100).toFixed(0)}%</div>
-                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    Brightness: ${(60 + confidence * 40).toFixed(0)}%
-                                </div>
-                            </div>
-
-                            <!-- Evidence Count -->
+                            <!-- Evidence -->
                             <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #FF9800;">
                                 <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Evidence</div>
                                 <div style="font-size: 20px; font-weight: bold; color: #333;">${evidenceCount}</div>
                                 <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    <span style="color: #4CAF50;">✓ ${supportingEvidence}</span> /
-                                    <span style="color: #F44336;">✗ ${contradictingEvidence}</span>
+                                    <span style="color: #4CAF50;">✓ ${supportingEvidence} support</span> /
+                                    <span style="color: #F44336;">✗ ${contradictingEvidence} contradict</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Summary -->
-                    ${claim.summary ? `<p><strong>Summary:</strong> ${claim.summary}</p>` : ''}
-
-                    <!-- Specificity -->
-                    ${claim.specificity ? `
-                        <p><strong>Specificity:</strong> ${claim.specificity.toFixed(2)}
-                        <span style="font-size: 11px; color: #888;">(${specificityLabel})</span>
-                        </p>
+                    <!-- Full Original Text -->
+                    ${claim.text && claim.text !== claim.summary ? `
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #ff9800;">
+                            <strong style="color: #856404;">Original Text:</strong>
+                            <div style="margin-top: 6px; color: #856404; font-size: 14px;">${claim.text}</div>
+                        </div>
                     ` : ''}
+
+                    <!-- Metadata -->
+                    <div style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                        <div style="margin-bottom: 5px;"><strong>Created:</strong> ${formattedTime}</div>
+                        <div style="margin-bottom: 5px;"><strong>Investigation Priority:</strong> ${investigationValue}</div>
+                        ${claim.disposition ? `<div><strong>Disposition:</strong> ${claim.disposition}</div>` : ''}
+                    </div>
                 </div>
             `;
 
