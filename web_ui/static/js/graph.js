@@ -164,31 +164,10 @@ const GraphRenderer = {
         const width = svg.node().getBoundingClientRect().width;
         const height = svg.node().getBoundingClientRect().height;
 
-        // Check if this is an incremental update (simulation already exists)
+        // Check if this is an incremental update (simulation already exists and running)
         const isIncrementalUpdate = this.simulation && this.currentGraphData.nodes.length > 0;
 
-        if (isIncrementalUpdate) {
-            console.log('[renderGraph] Incremental update - preserving existing nodes');
-
-            // Preserve existing node positions by copying x, y, vx, vy from currentGraphData
-            const existingPositions = new Map();
-            this.currentGraphData.nodes.forEach(n => {
-                if (n.x !== undefined) {
-                    existingPositions.set(n.id, { x: n.x, y: n.y, vx: n.vx || 0, vy: n.vy || 0 });
-                }
-            });
-
-            // Apply preserved positions to new nodes array
-            nodes.forEach(n => {
-                const pos = existingPositions.get(n.id);
-                if (pos) {
-                    n.x = pos.x;
-                    n.y = pos.y;
-                    n.vx = pos.vx;
-                    n.vy = pos.vy;
-                }
-            });
-        }
+        console.log(`[renderGraph] ${isIncrementalUpdate ? 'Incremental update' : 'Initial render'} - ${nodes.length} nodes, ${links.length} links`);
 
         // Clear and rebuild SVG (we have to do this to update visual elements)
         svg.selectAll('*').remove();
@@ -216,19 +195,35 @@ const GraphRenderer = {
                 return 150;
             });
 
-        const simulation = d3.forceSimulation(nodes)
-            .force('link', linkForce)
-            .force('charge', d3.forceManyBody().strength(-400))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collision', d3.forceCollide().radius(d => this.getNodeRadius(d.type) + 10));
-
-        // For incremental updates, use gentle animation
         if (isIncrementalUpdate) {
-            simulation.alpha(0.3).alphaDecay(0.05);  // Gentle animation
-        }
+            // INCREMENTAL: Update existing simulation with new nodes/links
+            console.log('[renderGraph] Updating existing simulation...');
 
-        // Store simulation
-        this.simulation = simulation;
+            // Update the simulation's nodes array
+            this.simulation.nodes(nodes);
+
+            // Update the link force with new links
+            this.simulation.force('link').links(links);
+
+            // Gently restart the simulation to incorporate new nodes
+            this.simulation.alpha(0.3).alphaDecay(0.05).restart();
+
+            console.log('[renderGraph] Simulation updated and restarted');
+        } else {
+            // INITIAL: Create new simulation
+            console.log('[renderGraph] Creating new simulation...');
+
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', linkForce)
+                .force('charge', d3.forceManyBody().strength(-400))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => this.getNodeRadius(d.type) + 10));
+
+            // Store simulation
+            this.simulation = simulation;
+
+            console.log('[renderGraph] New simulation created');
+        }
 
         // Render links with varying styles
         const link = g.append('g')
@@ -246,9 +241,9 @@ const GraphRenderer = {
             .data(nodes)
             .enter().append('g')
             .call(d3.drag()
-                .on('start', (event, d) => this.dragStarted(event, d, simulation))
+                .on('start', (event, d) => this.dragStarted(event, d, this.simulation))
                 .on('drag', (event, d) => this.dragged(event, d))
-                .on('end', (event, d) => this.dragEnded(event, d, simulation))
+                .on('end', (event, d) => this.dragEnded(event, d, this.simulation))
             );
 
         // Node circles with enhanced visual encoding
@@ -393,7 +388,7 @@ const GraphRenderer = {
         });
 
         // Enhanced tick function with label collision avoidance
-        simulation.on('tick', () => {
+        this.simulation.on('tick', () => {
             // Apply label repulsion forces
             this.applyLabelCollisionForces(nodes);
 
@@ -618,6 +613,8 @@ const GraphRenderer = {
         nodeData.y = startY;
         nodeData.vx = 0;
         nodeData.vy = 0;
+
+        console.log(`[addNodeIncremental] Initialized position: (${startX}, ${startY})`);
 
         // Add to current graph data
         this.currentGraphData.nodes.push(nodeData);
