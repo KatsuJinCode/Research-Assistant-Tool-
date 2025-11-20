@@ -16,9 +16,12 @@ const GraphRenderer = {
         const links = [];
         const addedNodes = new Set();
 
+        console.log('[buildUnifiedGraph] Processing', graphData.length, 'documents');
+
         graphData.forEach(doc => {
             // Add document node
             const docId = doc.doc_id;
+            console.log('[buildUnifiedGraph] Adding document node:', docId, doc.doc_title);
             if (!addedNodes.has(docId)) {
                 nodes.push({
                     id: docId,
@@ -27,6 +30,7 @@ const GraphRenderer = {
                     fullData: doc
                 });
                 addedNodes.add(docId);
+                console.log('[buildUnifiedGraph] Document node added to nodes array');
             }
 
             // Build claim map for easy lookup
@@ -146,6 +150,8 @@ const GraphRenderer = {
             }
         });
 
+        console.log('[buildUnifiedGraph] Final graph:', nodes.length, 'nodes,', links.length, 'links');
+        console.log('[buildUnifiedGraph] Node types:', nodes.map(n => `${n.type}:${n.id.substring(0,8)}`));
         return { nodes, links };
     },
 
@@ -997,10 +1003,10 @@ const GraphRenderer = {
      */
     getLinkColor(type) {
         const colors = {
-            'contains': '#888',
-            'has_sub': '#666',
-            'supports': '#4CAF50',
-            'contradicts': '#F44336'
+            'contains': '#9C27B0',      // Purple - document contains claims
+            'has_sub': '#2196F3',       // Blue - claim has sub-claims
+            'supports': '#4CAF50',      // Green - supports
+            'contradicts': '#F44336'    // Red - contradicts
         };
         return colors[type] || '#999';
     },
