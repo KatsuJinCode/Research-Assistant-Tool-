@@ -36,6 +36,7 @@ from web_ui.document_processor import LiveDocumentProcessor
 # Repository pattern for database access
 from backend.database.repositories import ClaimRepository, DocumentRepository
 from backend.database.event_emitter import RepositoryEventEmitter
+from backend.database.neo4j_client import Neo4jClient
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'research-assistant-secret-key'
@@ -65,6 +66,15 @@ RepositoryEventEmitter.set_emit_callback(emit_with_context)
 # Initialize repositories
 claim_repo = ClaimRepository()
 doc_repo = DocumentRepository()
+
+# Get Neo4j client and database manager for multi-database support
+neo4j_client = Neo4jClient()
+try:
+    db_manager = neo4j_client.database_manager
+    logger.info(f"DatabaseManager initialized. Active database: {neo4j_client.active_database}")
+except Exception as e:
+    logger.warning(f"DatabaseManager not available: {e}")
+    db_manager = None
 
 
 def process_queue_worker():

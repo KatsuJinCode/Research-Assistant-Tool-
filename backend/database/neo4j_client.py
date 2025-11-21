@@ -1,8 +1,9 @@
 """
-Neo4j Client Singleton
+Neo4j Client Singleton with Multi-Database Support
 
 Manages Neo4j database connection lifecycle with singleton pattern.
 Ensures only one connection per process for optimal resource usage.
+Supports Neo4j multi-database feature for project isolation.
 """
 
 import os
@@ -18,14 +19,20 @@ logger = logging.getLogger(__name__)
 
 class Neo4jClient:
     """
-    Singleton Neo4j database client.
+    Singleton Neo4j database client with multi-database support.
 
     Manages database driver lifecycle and provides connection access.
     Thread-safe singleton implementation.
+
+    Multi-Database Support:
+    - Each project can have its own database for complete isolation
+    - Switch databases by calling set_active_database(database_name)
+    - All operations use the active database by default
     """
 
     _instance: Optional['Neo4jClient'] = None
     _driver = None
+    _database_manager = None
 
     def __new__(cls):
         """Ensure only one instance exists."""
@@ -35,7 +42,7 @@ class Neo4jClient:
         return cls._instance
 
     def _initialize(self):
-        """Initialize Neo4j driver connection."""
+        """Initialize Neo4j driver connection and database manager."""
         try:
             from neo4j import GraphDatabase
         except ImportError:
@@ -63,6 +70,15 @@ class Neo4jClient:
             logger.error(f"Failed to verify Neo4j connectivity: {e}")
             raise
 
+        # Initialize database manager for multi-database support
+        try:
+            from .database_manager import DatabaseManager
+            self._database_manager = DatabaseManager(self._driver)
+            logger.info("DatabaseManager initialized for multi-database support")
+        except Exception as e:
+            logger.warning(f"Failed to initialize DatabaseManager: {e}")
+            self._database_manager = None
+
     @property
     def driver(self):
         """Get the Neo4j driver instance."""
@@ -70,17 +86,52 @@ class Neo4jClient:
             raise RuntimeError("Neo4j driver not initialized")
         return self._driver
 
-    def get_session(self, **kwargs):
+    @property
+    def database_manager(self):
+        """Get the DatabaseManager instance."""
+        if self._database_manager is None:
+            raise RuntimeError("DatabaseManager not initialized")
+        return self._database_manager
+
+    @property
+    def active_database(self) -> str:
+        """Get the currently active database name."""
+        if self._database_manager:
+            return self._database_manager.active_database
+        return self.database
+
+    def set_active_database(self, database_name: str):
+        """
+        Set the active database for subsequent operations.
+
+        Args:
+            database_name: Name of the database to activate
+        """
+        if self._database_manager:
+            self._database_manager.set_active_database(database_name)
+            logger.info(f"Active database set to: {database_name}")
+        else:
+            logger.warning("DatabaseManager not available, cannot switch database")
+
+    def get_session(self, database: Optional[str] = None, **kwargs):
         """
         Create a new database session.
 
         Args:
+            database: Optional database name (uses active database if not specified)
             **kwargs: Additional session parameters
 
         Returns:
             Neo4j session object
         """
-        return self.driver.session(database=self.database, **kwargs)
+        if self._database_manager:
+            # Use DatabaseManager for multi-database support
+            db = database or self._database_manager.active_database
+        else:
+            # Fallback to default database
+            db = database or self.database
+
+        return self.driver.session(database=db, **kwargs)
 
     def close(self):
         """Close the database driver."""
