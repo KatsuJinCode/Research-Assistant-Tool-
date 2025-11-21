@@ -2608,6 +2608,368 @@ Respond naturally as a helpful research assistant. Keep your response under 200 
         return jsonify({'error': str(e)}), 500
 
 
+# ====================== PROJECT MANAGEMENT API ======================
+
+@app.route('/api/projects', methods=['GET'])
+def list_projects():
+    """List all projects with their statistics."""
+    try:
+        logger.info("[API] Fetching all projects")
+
+        query = """
+        MATCH (p:Project)
+        OPTIONAL MATCH (n {project_id: p.id})
+        WHERE NOT n:Project
+        WITH p, count(n) as node_count
+        RETURN p.id as id,
+               p.name as name,
+               p.description as description,
+               p.color as color,
+               p.is_active as is_active,
+               p.created_at as created_at,
+               p.updated_at as updated_at,
+               node_count
+        ORDER BY p.is_active DESC, p.created_at DESC
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {})
+        )
+
+        projects = []
+        for record in result:
+            projects.append({
+                'id': record['id'],
+                'name': record['name'],
+                'description': record['description'],
+                'color': record['color'],
+                'is_active': record['is_active'],
+                'created_at': str(record['created_at']) if record['created_at'] else None,
+                'updated_at': str(record['updated_at']) if record['updated_at'] else None,
+                'node_count': record['node_count']
+            })
+
+        logger.info(f"[API] Found {len(projects)} projects")
+        return jsonify({'projects': projects})
+
+    except Exception as e:
+        logger.error(f"[API] Error listing projects: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects', methods=['POST'])
+def create_project():
+    """Create a new project."""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+        color = data.get('color', '#2196F3')
+
+        if not name:
+            return jsonify({'error': 'Project name is required'}), 400
+
+        # Generate project ID from name
+        import re
+        project_id = re.sub(r'[^a-z0-9_-]', '_', name.lower())
+
+        logger.info(f"[API] Creating project: {name} (ID: {project_id})")
+
+        # Create project node
+        query = """
+        MERGE (p:Project {id: $project_id})
+        ON CREATE SET
+            p.name = $name,
+            p.description = $description,
+            p.color = $color,
+            p.created_at = datetime(),
+            p.updated_at = datetime(),
+            p.is_active = false
+        ON MATCH SET
+            p.name = $name,
+            p.description = $description,
+            p.color = $color,
+            p.updated_at = datetime()
+        RETURN p
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {
+                'project_id': project_id,
+                'name': name,
+                'description': description,
+                'color': color
+            })
+        )
+
+        if result:
+            project = dict(result[0]['p'])
+            project['created_at'] = str(project.get('created_at'))
+            project['updated_at'] = str(project.get('updated_at'))
+
+            logger.info(f"[API] Project created: {project_id}")
+            return jsonify({
+                'success': True,
+                'project': project
+            })
+        else:
+            return jsonify({'error': 'Failed to create project'}), 500
+
+    except Exception as e:
+        logger.error(f"[API] Error creating project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>', methods=['PUT'])
+def update_project(project_id):
+    """Update project properties."""
+    try:
+        data = request.json
+        logger.info(f"[API] Updating project {project_id}")
+
+        # Build update query
+        updates = []
+        params = {'project_id': project_id}
+
+        if 'name' in data:
+            updates.append('p.name = $name')
+            params['name'] = data['name']
+
+        if 'description' in data:
+            updates.append('p.description = $description')
+            params['description'] = data['description']
+
+        if 'color' in data:
+            updates.append('p.color = $color')
+            params['color'] = data['color']
+
+        # Always update timestamp
+        updates.append('p.updated_at = datetime()')
+
+        if not updates:
+            return jsonify({'error': 'No valid fields to update'}), 400
+
+        query = f"""
+        MATCH (p:Project {{id: $project_id}})
+        SET {', '.join(updates)}
+        RETURN p
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, params)
+        )
+
+        if not result:
+            return jsonify({'error': 'Project not found'}), 404
+
+        project = dict(result[0]['p'])
+        project['created_at'] = str(project.get('created_at'))
+        project['updated_at'] = str(project.get('updated_at'))
+
+        logger.info(f"[API] Project updated: {project_id}")
+        return jsonify({
+            'success': True,
+            'project': project
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error updating project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>', methods=['DELETE'])
+def delete_project(project_id):
+    """Delete a project (cannot delete default project or active project)."""
+    try:
+        if project_id == 'default':
+            return jsonify({'error': 'Cannot delete default project'}), 400
+
+        logger.info(f"[API] Deleting project {project_id}")
+
+        # Check if project is active
+        check_query = """
+        MATCH (p:Project {id: $project_id})
+        RETURN p.is_active as is_active
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(check_query, {'project_id': project_id})
+        )
+
+        if not result:
+            return jsonify({'error': 'Project not found'}), 404
+
+        if result[0]['is_active']:
+            return jsonify({'error': 'Cannot delete active project. Switch to another project first.'}), 400
+
+        # Move all nodes in this project to default project
+        move_query = """
+        MATCH (n {project_id: $project_id})
+        WHERE NOT n:Project
+        SET n.project_id = 'default'
+        RETURN count(n) as moved_count
+        """
+
+        move_result = with_app_context(
+            lambda: claim_repo.execute_query(move_query, {'project_id': project_id})
+        )
+
+        moved_count = move_result[0]['moved_count'] if move_result else 0
+
+        # Delete project node
+        delete_query = """
+        MATCH (p:Project {id: $project_id})
+        DELETE p
+        """
+
+        with_app_context(
+            lambda: claim_repo.execute_query(delete_query, {'project_id': project_id})
+        )
+
+        logger.info(f"[API] Project deleted: {project_id}, moved {moved_count} nodes to default")
+        return jsonify({
+            'success': True,
+            'moved_nodes': moved_count
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error deleting project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/switch', methods=['POST'])
+def switch_project(project_id):
+    """Switch to a different project (sets it as active)."""
+    try:
+        logger.info(f"[API] Switching to project {project_id}")
+
+        # Set all projects inactive, then set the target project active
+        query = """
+        MATCH (p:Project)
+        SET p.is_active = (p.id = $project_id)
+        WITH p
+        WHERE p.id = $project_id
+        RETURN p
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {'project_id': project_id})
+        )
+
+        if not result:
+            return jsonify({'error': 'Project not found'}), 404
+
+        project = dict(result[0]['p'])
+        project['created_at'] = str(project.get('created_at'))
+        project['updated_at'] = str(project.get('updated_at'))
+
+        # Emit project switched event
+        socketio.emit('project_switched', {
+            'project_id': project_id,
+            'project_name': project.get('name')
+        })
+
+        logger.info(f"[API] Switched to project: {project_id}")
+        return jsonify({
+            'success': True,
+            'project': project
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error switching project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/stats', methods=['GET'])
+def get_project_stats(project_id):
+    """Get detailed statistics for a project."""
+    try:
+        logger.info(f"[API] Fetching stats for project {project_id}")
+
+        query = """
+        MATCH (p:Project {id: $project_id})
+        OPTIONAL MATCH (doc:Document {project_id: $project_id})
+        OPTIONAL MATCH (claim:Claim {project_id: $project_id})
+        OPTIONAL MATCH (evidence:Evidence {project_id: $project_id})
+        RETURN p.name as name,
+               count(DISTINCT doc) as document_count,
+               count(DISTINCT claim) as claim_count,
+               count(DISTINCT evidence) as evidence_count
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {'project_id': project_id})
+        )
+
+        if not result:
+            return jsonify({'error': 'Project not found'}), 404
+
+        stats = result[0]
+
+        logger.info(f"[API] Stats for {project_id}: {dict(stats)}")
+        return jsonify({
+            'project_id': project_id,
+            'name': stats['name'],
+            'document_count': stats['document_count'],
+            'claim_count': stats['claim_count'],
+            'evidence_count': stats['evidence_count']
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error fetching project stats: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/active', methods=['GET'])
+def get_active_project():
+    """Get the currently active project."""
+    try:
+        logger.info("[API] Fetching active project")
+
+        query = """
+        MATCH (p:Project {is_active: true})
+        RETURN p
+        LIMIT 1
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {})
+        )
+
+        if not result:
+            # No active project, return default
+            query = """
+            MATCH (p:Project {id: 'default'})
+            SET p.is_active = true
+            RETURN p
+            """
+            result = with_app_context(
+                lambda: claim_repo.execute_query(query, {})
+            )
+
+        if result:
+            project = dict(result[0]['p'])
+            project['created_at'] = str(project.get('created_at'))
+            project['updated_at'] = str(project.get('updated_at'))
+
+            return jsonify({'project': project})
+        else:
+            return jsonify({'error': 'No active project found'}), 404
+
+    except Exception as e:
+        logger.error(f"[API] Error fetching active project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+# ====================== NODE DETAILS API ======================
+
 @app.route('/api/nodes/<node_id>/full-details', methods=['GET'])
 def get_node_full_details(node_id):
     """Get comprehensive node details including relationships, history, and metadata."""
