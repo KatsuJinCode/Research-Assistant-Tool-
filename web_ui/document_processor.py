@@ -376,6 +376,25 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                 logger.info(f"  Silhouette score: {metrics.silhouette_score:.3f} (>0.5 is good)")
                 logger.info(f"  Davies-Bouldin score: {metrics.davies_bouldin_score:.3f} (lower is better)")
 
+                # Emit MECE validation to UI if available
+                if validation_results:
+                    logger.info(f"  MECE Score: {validation_results['mece_score']:.3f} - {validation_results['grade']}")
+                    self._emit(
+                        f"MECE validation: {validation_results['grade']} (score: {validation_results['mece_score']:.3f})",
+                        None,
+                        {
+                            'event': 'mece_validation',
+                            'score': validation_results['mece_score'],
+                            'grade': validation_results['grade'],
+                            'passed': validation_results['passed'],
+                            'details': {
+                                'exclusivity': validation_results['mutual_exclusivity'],
+                                'comprehensiveness': validation_results['comprehensiveness'],
+                                'quality': validation_results['cluster_quality']
+                            }
+                        }
+                    )
+
                 return hierarchical_structure, metrics
 
             except Exception as e:
