@@ -67,6 +67,12 @@ pip install -q -r requirements-test.txt
 pip install -q -r requirements-neo4j.txt
 ```
 
+**New Dependencies (2025-01):**
+- `python-igraph>=0.11.0` - High-performance graph library for community detection
+- `leidenalg>=0.10.0` - Leiden algorithm for MECE clustering (replaces arbitrary thresholds)
+
+These enable graph-based MECE clustering instead of arbitrary similarity thresholds.
+
 Tell user: *"Setting up the Research Verification Agent System (2-3 minutes)..."*
 
 ### Step 3: Install and Start Neo4j (REQUIRED - Not Optional!)
@@ -189,6 +195,12 @@ python run_tests.py critical
 - `README.md` - Project overview
 - `STATUS.md` - Technical details
 - `PROJECT_INIT.md` - Detailed setup guide
+- `MECE_ARCHITECTURE.md` - MECE/GraphRAG architecture overview ⭐ NEW
+- `MECE_IMPLEMENTATION_GUIDE.md` - 4-phase implementation plan ⭐ NEW
+- `TRANSITION_NOTES.md` - Migration from old to new approach ⭐ NEW
+- `docs/LEIDEN_ALGORITHM_TECHNICAL_GUIDE.md` - Complete algorithm spec ⭐ NEW
+- `docs/LEIDEN_INTEGRATION_GUIDE.md` - Integration guide ⭐ NEW
+- `docs/EMBEDDING_MODELS_RESEARCH_2024-2025.md` - Embeddings research ⭐ NEW
 
 ---
 
@@ -214,6 +226,67 @@ User Request (plain language)
         ↓
 Results (plain language)
 ```
+
+---
+
+## 📐 MECE Architecture & Graph-Based Clustering (2025-01)
+
+### Critical Architecture Change
+
+**OLD (WRONG)**: Arbitrary similarity thresholds
+- 70% threshold for "related"
+- 85% threshold for "duplicate"
+- ❌ Non-semantic, requires manual tuning per domain
+
+**NEW (CORRECT)**: Graph-based MECE clustering
+- Use Leiden community detection algorithm
+- No arbitrary thresholds - structure emerges from data
+- Mathematically principled (modularity optimization)
+- Scales from 10 documents to 10,000 documents
+
+### Chunk Size Update
+
+**Context Window Analysis:**
+- Claude Sonnet 4.5: 200K tokens = ~800K characters
+- OLD: 7,000 chars (~1.5 pages) - only used 1% of context
+- NEW: 400,000 chars (~100 pages) - uses 50% for document content
+- Result: 300-page document goes from 120 chunks to 4 chunks
+
+### MECE Directive in Extraction
+
+Claims extraction now includes explicit MECE requirements:
+1. **Mutually Exclusive**: Each claim = ONE distinct idea
+2. **Comprehensively Exhaustive**: Extract EVERY substantive claim
+3. Extract 20-50 claims per chunk (up from 10-20)
+
+### Research Documentation
+
+Comprehensive research completed (50K+ words across 7 documents):
+
+**Implementation Guides:**
+- `MECE_IMPLEMENTATION_GUIDE.md` - 4-phase implementation plan with code
+- `MECE_ARCHITECTURE.md` - Architecture overview and design decisions
+- `TRANSITION_NOTES.md` - Migration from old to new approach
+
+**Technical References:**
+- `docs/LEIDEN_ALGORITHM_TECHNICAL_GUIDE.md` - Complete algorithm specification (53KB)
+- `docs/LEIDEN_INTEGRATION_GUIDE.md` - Integration with existing codebase (25KB)
+- `docs/LEIDEN_QUICK_REFERENCE.md` - Quick lookup reference
+- `docs/EMBEDDING_MODELS_RESEARCH_2024-2025.md` - State-of-the-art embeddings (60+ pages)
+
+**Research Findings:**
+- `MECE_RESEARCH_FINDINGS.md` - Complete MECE clustering analysis (15K words)
+- `MECE_RESEARCH_SUMMARY.md` - Executive summary
+
+### Next Phase: Implementation
+
+Ready to implement graph-based MECE clustering following `MECE_IMPLEMENTATION_GUIDE.md`:
+1. **Phase 1**: Add MECE validation module (START HERE)
+2. **Phase 2**: Enhance coverage detection
+3. **Phase 3**: Implement Leiden algorithm
+4. **Phase 4**: Add MECE dashboard
+
+See implementation guide for complete working code and step-by-step instructions.
 
 ---
 
