@@ -1210,6 +1210,39 @@
             panel.classList.toggle('collapsed');
             toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
         }
+
+        // Investigate claim function for detail panel buttons
+        function investigateClaim(type) {
+            // Get selected claim ID from graph renderer
+            if (!GraphRenderer.selectedNodeIds || GraphRenderer.selectedNodeIds.size === 0) {
+                alert('No claim selected. Please select a claim first.');
+                return;
+            }
+
+            const selectedNodes = Array.from(GraphRenderer.selectedNodeIds);
+            const selectedClaimId = selectedNodes[0]; // Use first selected node
+
+            // Make API call to start investigation
+            fetch('/api/investigate-claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    claim_id: selectedClaimId,
+                    type: type
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error starting investigation: ' + result.error);
+                } else {
+                    alert(`Investigation started!\n\nType: ${type}\nClaim: ${selectedClaimId}\n\nCheck the Background Agents panel to monitor progress.`);
+                }
+            })
+            .catch(err => {
+                alert('Error starting investigation: ' + err.message);
+            });
+        }
     </script>
 </body>
 </html>
