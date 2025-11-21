@@ -37,6 +37,11 @@ const Chat = {
             '**Try:** Type `/help` for slash commands, or just tell me what you need!'
         );
 
+        // Poll for selection changes and update context chips
+        setInterval(() => {
+            this.updateContextChips();
+        }, 500); // Check every 500ms
+
         console.log('[Chat] ✓ Chat initialized');
     },
 
@@ -180,6 +185,85 @@ const Chat = {
             total_links: GraphRenderer.currentGraphData?.links?.length || 0,
             search_query: GraphRenderer.searchQuery || ''
         };
+    },
+
+    /**
+     * Update context chips display based on selected nodes
+     */
+    updateContextChips() {
+        const contextArea = document.getElementById('chat-context-area');
+        const chipsContainer = document.getElementById('chat-context-chips');
+
+        if (!contextArea || !chipsContainer) return;
+
+        const selectedNodes = Array.from(GraphRenderer.selectedNodeIds || []);
+
+        if (selectedNodes.length === 0) {
+            contextArea.style.display = 'none';
+            chipsContainer.innerHTML = '';
+            return;
+        }
+
+        // Show context area
+        contextArea.style.display = 'block';
+
+        // Get node data
+        const nodes = GraphRenderer.currentGraphData?.nodes || [];
+        const nodeMap = new Map(nodes.map(n => [n.id, n]));
+
+        // Create chips
+        let chipsHTML = '';
+        selectedNodes.forEach(nodeId => {
+            const node = nodeMap.get(nodeId);
+            if (!node) return;
+
+            const nodeType = node.type || 'unknown';
+            const nodeLabel = node.label || node.id.substring(0, 20);
+
+            // Color based on type
+            let chipColor = '#666';
+            if (nodeType === 'claim') chipColor = '#4CAF50';
+            else if (nodeType === 'document') chipColor = '#2196F3';
+            else if (nodeType === 'evidence') chipColor = '#FF9800';
+
+            chipsHTML += `
+                <div class="context-chip" data-node-id="${nodeId}" style="
+                    background: ${chipColor};
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 12px;
+                    font-size: 11px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    cursor: pointer;
+                ">
+                    <span>${nodeType.toUpperCase()}: ${this.escapeHtml(nodeLabel)}</span>
+                    <span onclick="Chat.removeContextNode('${nodeId}')" style="
+                        cursor: pointer;
+                        font-weight: bold;
+                        opacity: 0.7;
+                        hover: opacity: 1;
+                    ">✕</span>
+                </div>
+            `;
+        });
+
+        chipsContainer.innerHTML = chipsHTML;
+    },
+
+    /**
+     * Remove node from context
+     */
+    removeContextNode(nodeId) {
+        // Deselect in graph
+        if (GraphRenderer.selectedNodeIds) {
+            GraphRenderer.selectedNodeIds.delete(nodeId);
+            GraphRenderer.renderGraph(GraphRenderer.currentGraphData);
+        }
+
+        // Update chips
+        this.updateContextChips();
     },
 
     /**

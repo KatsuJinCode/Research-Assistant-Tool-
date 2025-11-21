@@ -922,6 +922,10 @@
         </div>
         <div class="chat-body">
             <div id="chat-messages"></div>
+            <div id="chat-context-area" style="display: none; padding: 8px 12px; border-top: 1px solid #444; background: rgba(0,0,0,0.3);">
+                <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Context:</div>
+                <div id="chat-context-chips" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+            </div>
             <div class="chat-input-area">
                 <input type="text" id="chat-input" placeholder="Ask me anything about your research..." />
                 <button id="chat-send-btn">Send</button>
