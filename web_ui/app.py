@@ -407,6 +407,233 @@ def get_graph_stats():
     })
 
 
+# ============================================================================
+# SEMANTIC SIMILARITY ENDPOINTS - Stage 1 Auto-Linking
+# ============================================================================
+
+@app.route('/api/claim/<claim_id>/similar-evidence')
+def find_similar_evidence(claim_id):
+    """
+    Find evidence nodes semantically similar to a claim.
+
+    Query params:
+        threshold: Minimum similarity score (default: 0.7)
+        limit: Max number of results (default: 10)
+    """
+    try:
+        from research_agent.semantic_similarity import get_embedding_manager
+
+        threshold = float(request.args.get('threshold', 0.7))
+        limit = int(request.args.get('limit', 10))
+
+        embedding_manager = get_embedding_manager(db)
+        similar_evidence = embedding_manager.find_similar_evidence_for_claim(
+            claim_id=claim_id,
+            threshold=threshold,
+            limit=limit
+        )
+
+        return jsonify({
+            'claim_id': claim_id,
+            'threshold': threshold,
+            'count': len(similar_evidence),
+            'evidence': similar_evidence
+        })
+
+    except Exception as e:
+        logger.error(f"Error finding similar evidence: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/embeddings/generate-all', methods=['POST'])
+def generate_all_embeddings():
+    """
+    Generate embeddings for all claims and evidence nodes that don't have them yet.
+    This is a batch operation that may take time.
+    """
+    try:
+        from research_agent.semantic_similarity import get_embedding_manager
+
+        embedding_manager = get_embedding_manager(db)
+
+        # Get all claims without embeddings
+        claims_query = """
+        MATCH (c:Claim)
+        WHERE c.embedding IS NULL
+        RETURN c.id as id, c.text as text
+        """
+        claims = db.execute_query(claims_query)
+
+        # Get all evidence without embeddings
+        evidence_query = """
+        MATCH (e:Evidence)
+        WHERE e.embedding IS NULL
+        RETURN e.id as id, e.text as text
+        """
+        evidence = db.execute_query(evidence_query)
+
+        # Generate embeddings
+        claims_processed = 0
+        claims_failed = 0
+
+        for claim in claims:
+            success = embedding_manager.store_claim_embedding(claim['id'], claim['text'])
+            if success:
+                claims_processed += 1
+            else:
+                claims_failed += 1
+
+        evidence_processed = 0
+        evidence_failed = 0
+
+        for ev in evidence:
+            success = embedding_manager.store_evidence_embedding(ev['id'], ev['text'])
+            if success:
+                evidence_processed += 1
+            else:
+                evidence_failed += 1
+
+        return jsonify({
+            'success': True,
+            'claims': {
+                'total': len(claims),
+                'processed': claims_processed,
+                'failed': claims_failed
+            },
+            'evidence': {
+                'total': len(evidence),
+                'processed': evidence_processed,
+                'failed': evidence_failed
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error generating embeddings: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auto-link-evidence', methods=['POST'])
+def auto_link_evidence():
+    """
+    Automatically link evidence to claims based on semantic similarity.
+    Creates SUPPORTED_BY relationships with similarity metadata.
+
+    Request body:
+        threshold: Minimum similarity score (default: 0.7)
+        auto_approve: If true, create links automatically. If false, create pending approvals.
+    """
+    try:
+        from research_agent.semantic_similarity import get_embedding_manager, get_similarity_engine
+
+        data = request.json or {}
+        threshold = float(data.get('threshold', 0.7))
+        auto_approve = data.get('auto_approve', False)
+
+        # Get all claims and evidence
+        claims_query = """
+        MATCH (c:Claim)
+        WHERE c.embedding IS NOT NULL
+        RETURN c.id as id, c.text as text, c.embedding as embedding
+        """
+        claims = db.execute_query(claims_query)
+
+        evidence_query = """
+        MATCH (e:Evidence)
+        WHERE e.embedding IS NOT NULL
+        RETURN e.id as id, e.text as text, e.embedding as embedding
+        """
+        evidence = db.execute_query(evidence_query)
+
+        if not claims or not evidence:
+            return jsonify({
+                'success': False,
+                'error': 'No claims or evidence with embeddings found',
+                'claims_count': len(claims) if claims else 0,
+                'evidence_count': len(evidence) if evidence else 0
+            })
+
+        # Find similar pairs
+        engine = get_similarity_engine()
+        links_created = 0
+        links_pending = 0
+
+        for claim in claims:
+            claim_id = claim['id']
+            claim_embedding = engine.list_to_embedding(claim['embedding'])
+
+            for ev in evidence:
+                ev_id = ev['id']
+                ev_embedding = engine.list_to_embedding(ev['embedding'])
+
+                similarity = engine.calculate_similarity(claim_embedding, ev_embedding)
+
+                if similarity >= threshold:
+                    # Create relationship
+                    if auto_approve:
+                        link_query = """
+                        MATCH (c:Claim {id: $claim_id})
+                        MATCH (e:Evidence {id: $evidence_id})
+                        MERGE (c)-[r:SUPPORTED_BY {
+                            auto_linked: true,
+                            semantic_similarity: $similarity,
+                            link_strength: $similarity,
+                            created_at: datetime()
+                        }]->(e)
+                        RETURN r
+                        """
+                        result = db.execute_query(link_query, {
+                            'claim_id': claim_id,
+                            'evidence_id': ev_id,
+                            'similarity': similarity
+                        })
+
+                        if result:
+                            links_created += 1
+                    else:
+                        # Create pending link for review
+                        pending_query = """
+                        CREATE (p:PendingLink {
+                            id: $link_id,
+                            claim_id: $claim_id,
+                            evidence_id: $evidence_id,
+                            similarity: $similarity,
+                            status: 'pending_review',
+                            created_at: datetime()
+                        })
+                        RETURN p.id as id
+                        """
+                        result = db.execute_query(pending_query, {
+                            'link_id': f'link_{hashlib.sha256(f"{claim_id}_{ev_id}".encode()).hexdigest()[:16]}',
+                            'claim_id': claim_id,
+                            'evidence_id': ev_id,
+                            'similarity': similarity
+                        })
+
+                        if result:
+                            links_pending += 1
+
+        # Emit update
+        with app.app_context():
+            socketio.emit('graph_updated', {'reason': 'auto_linking'})
+
+        return jsonify({
+            'success': True,
+            'threshold': threshold,
+            'auto_approve': auto_approve,
+            'links_created': links_created,
+            'links_pending': links_pending,
+            'claims_processed': len(claims),
+            'evidence_processed': len(evidence)
+        })
+
+    except Exception as e:
+        logger.error(f"Error auto-linking evidence: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/full-graph')
 def get_full_graph():
     """Get complete hierarchical graph with arbitrary depth support."""

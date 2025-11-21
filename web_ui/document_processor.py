@@ -1777,4 +1777,50 @@ Find the main title/heading at the top of the document. Return just the title te
         else:
             logger.info("⚠️  MECE clustering not available - install: pip install leidenalg python-igraph")
 
+        # 9. Generate semantic embeddings for all claims (Stage 1 Auto-Linking)
+        try:
+            logger.info("🔗 Generating semantic embeddings for claims...")
+            self._emit("Generating embeddings for semantic similarity...", None, {
+                'event': 'embedding_generation_started',
+                'doc_id': doc_id
+            })
+
+            from research_agent.semantic_similarity import get_embedding_manager
+
+            embedding_manager = get_embedding_manager(self.db)
+
+            # Generate embeddings for all claims created from this document
+            embeddings_generated = 0
+            embeddings_failed = 0
+
+            for claim_id in claim_ids:
+                # Get claim text
+                claim_query = """
+                MATCH (c:Claim {id: $claim_id})
+                RETURN c.text as text
+                """
+                result = self.db.execute_query(claim_query, {'claim_id': claim_id})
+
+                if result and len(result) > 0:
+                    claim_text = result[0]['text']
+                    success = embedding_manager.store_claim_embedding(claim_id, claim_text)
+
+                    if success:
+                        embeddings_generated += 1
+                    else:
+                        embeddings_failed += 1
+
+            logger.info(f"✓ Generated {embeddings_generated} embeddings ({embeddings_failed} failed)")
+
+            self._emit(f"Generated {embeddings_generated} embeddings", None, {
+                'event': 'embedding_generation_complete',
+                'doc_id': doc_id,
+                'generated': embeddings_generated,
+                'failed': embeddings_failed
+            })
+
+        except Exception as e:
+            logger.warning(f"Embedding generation failed (non-critical): {e}")
+            # Non-critical - don't fail the entire processing
+
         return doc_id
