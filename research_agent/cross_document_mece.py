@@ -137,7 +137,7 @@ class CrossDocumentMECEOrchestrator:
     async def _fetch_all_claims(self) -> List[Dict[str, Any]]:
         """Fetch all claims from database."""
         # Get all documents (repositories are sync, not async)
-        documents = self.doc_repo.find_all_documents()
+        documents = self.doc_repo.get_all_documents()
 
         all_claims = []
         for doc in documents:

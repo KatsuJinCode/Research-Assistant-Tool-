@@ -316,47 +316,50 @@ const GraphRenderer = {
             }
         });
 
-        // Initialize label positions (offset from nodes to reduce overlap)
-        nodes.forEach((d, i) => {
-            d.labelX = d.x || 0;
-            d.labelY = (d.y || 0) + 30;  // Start labels below nodes
-            d.labelVx = 0;
-            d.labelVy = 0;
+        // Create clip paths for each node to mask labels
+        const defs = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+
+        nodes.forEach(d => {
+            const clipId = `label-clip-${d.id.substring(0, 8)}`;
+            d.clipPathId = clipId;
+
+            // Remove existing clip path if it exists
+            defs.select(`#${clipId}`).remove();
+
+            // Create new clip path
+            const clipPath = defs.append('clipPath').attr('id', clipId);
+            clipPath.append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', this.getNodeRadius(d.type, d) - 3);  // Slightly smaller to keep text inside
         });
 
-        // Add text labels as separate elements with better contrast
+        // Add text labels with clipping (attached to nodes)
         const labels = g.append('g')
             .selectAll('text')
             .data(nodes)
             .enter().append('text')
-            .attr('data-node-id', d => d.id)  // For finding later (e.g., title updates)
+            .attr('data-node-id', d => d.id)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
-            .attr('fill', '#ffffff')  // White text for high contrast
+            .attr('dominant-baseline', 'middle')  // Center vertically
+            .attr('font-size', '11px')
+            .attr('fill', '#ffffff')
             .attr('font-weight', '600')
             .attr('pointer-events', 'none')
-            .style('text-shadow', '0 0 3px rgba(0,0,0,0.8), 0 0 5px rgba(0,0,0,0.6)')  // Black glow for readability
+            .attr('clip-path', d => `url(#${d.clipPathId})`)  // Apply clipping
+            .style('text-shadow', '0 0 3px rgba(0,0,0,0.9)')
             .text(d => {
-                // Show processing state for claims without summary yet
                 const summary = d.fullData?.summary;
                 if (!summary && d.type !== 'document') {
-                    // Check if claim is still being processed
                     if (d.processing || d.fresh) {
-                        return 'Awaiting summarization...';
+                        return 'Processing...';
                     }
                     console.warn('Claim missing summary:', d.id);
                     return 'Processing...';
                 }
-                const displayText = summary || d.label;  // Documents use label (title)
-                return displayText.length > 35 ? displayText.substring(0, 35) + '...' : displayText;
+                const displayText = summary || d.label;
+                return displayText.length > 25 ? displayText.substring(0, 25) + '...' : displayText;
             });
-
-        // Calculate label bounding boxes
-        labels.each(function(d) {
-            const bbox = this.getBBox();
-            d.labelWidth = bbox.width;
-            d.labelHeight = bbox.height;
-        });
 
         // Add hover effects to nodes
         node.on('mouseover', (event, d) => {
@@ -419,6 +422,11 @@ const GraphRenderer = {
                 .attr('stroke-width', n => this.selectedNodeIds.has(n.id) ? 5 : this.getNodeBorderWidth(n))
                 .style('filter', n => this.selectedNodeIds.has(n.id) ? 'drop-shadow(0 0 8px #FFD700)' : 'none');
 
+            // Toggle label clipping for selected nodes (overflow when selected)
+            labels
+                .attr('clip-path', n => this.selectedNodeIds.has(n.id) ? 'none' : `url(#${n.clipPathId})`)
+                .attr('font-size', n => this.selectedNodeIds.has(n.id) ? '12px' : '11px');
+
             // Highlight connected links for all selected nodes
             link
                 .style('stroke-opacity', l => {
@@ -464,14 +472,15 @@ const GraphRenderer = {
             link
                 .style('stroke-opacity', 0.6)
                 .style('stroke-width', l => this.getLinkWidth(l.type));
+            // Reset label clipping
+            labels
+                .attr('clip-path', d => `url(#${d.clipPathId})`)
+                .attr('font-size', '11px');
             this.hideComparisonPanel();
         });
 
-        // Enhanced tick function with label collision avoidance
+        // Simplified tick function - labels attached to nodes
         this.simulation.on('tick', () => {
-            // Apply label repulsion forces
-            this.applyLabelCollisionForces(nodes);
-
             // Update link positions
             link
                 .attr('x1', d => d.source.x)
@@ -482,19 +491,10 @@ const GraphRenderer = {
             // Update node positions
             node.attr('transform', d => `translate(${d.x},${d.y})`);
 
-            // Update label positions with elastic behavior
+            // Update label positions (centered on nodes)
             labels
-                .attr('x', d => {
-                    // Labels prefer to be near their node but will move to avoid overlap
-                    d.labelX += d.labelVx;
-                    d.labelVx *= 0.85;  // Damping
-                    return d.labelX;
-                })
-                .attr('y', d => {
-                    d.labelY += d.labelVy;
-                    d.labelVy *= 0.85;  // Damping
-                    return d.labelY;
-                });
+                .attr('x', d => d.x)
+                .attr('y', d => d.y);
         });
 
         // Store current graph data
@@ -530,49 +530,6 @@ const GraphRenderer = {
         nodes.forEach(node => {
             node.descendantCount = countDescendants(node.id);
         });
-    },
-
-    /**
-     * Apply repulsion forces between overlapping labels
-     */
-    applyLabelCollisionForces(nodes) {
-        const REPULSION_STRENGTH = 0.5;
-        const ANCHOR_STRENGTH = 0.05;
-
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                const a = nodes[i];
-                const b = nodes[j];
-
-                // Check if labels overlap
-                const dx = b.labelX - a.labelX;
-                const dy = b.labelY - a.labelY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                const minDistance = (a.labelWidth + b.labelWidth) / 2 + 10;  // 10px padding
-
-                if (distance < minDistance && distance > 0) {
-                    // Labels overlap - apply repulsion
-                    const force = (minDistance - distance) / distance * REPULSION_STRENGTH;
-                    const fx = dx * force;
-                    const fy = dy * force;
-
-                    a.labelVx -= fx;
-                    a.labelVy -= fy;
-                    b.labelVx += fx;
-                    b.labelVy += fy;
-                }
-            }
-
-            // Pull labels back toward their nodes (elastic anchor)
-            const node = nodes[i];
-            const targetY = node.y + 30;  // Prefer position below node
-            const anchorDx = node.x - node.labelX;
-            const anchorDy = targetY - node.labelY;
-
-            node.labelVx += anchorDx * ANCHOR_STRENGTH;
-            node.labelVy += anchorDy * ANCHOR_STRENGTH;
-        }
     },
 
     /**
