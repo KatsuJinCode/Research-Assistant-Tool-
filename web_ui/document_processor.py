@@ -405,31 +405,43 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 
         This is step 1 - gets raw claims for later clustering.
         Handles large documents by chunking intelligently.
-        """
-        # If text is small enough, process in one shot
-        CHUNK_SIZE = 7000  # Leave room for prompt overhead
 
-        if len(text) <= CHUNK_SIZE:
+        Context Window Analysis:
+        - Claude Sonnet 4.5: 200K tokens = ~800K characters (theoretical)
+        - Usable for document: ~500K chars (leaves room for prompt + response)
+        - Most documents (even 100+ pages) fit in 1-2 chunks, not 100+!
+        """
+        # Context window config
+        CLAUDE_SONNET_CONTEXT = 200_000  # tokens
+        CHARS_PER_TOKEN = 4  # conservative estimate
+        MAX_CHARS = 400_000  # ~100K tokens for document, rest for prompt/response
+
+        # Most documents fit in ONE pass!
+        if len(text) <= MAX_CHARS:
+            logger.info(f"Document ({len(text):,} chars) fits in single context window")
             return self._extract_claims_from_chunk(text, chunk_num=1, total_chunks=1)
 
-        # Large document - chunk it intelligently
-        logger.info(f"Large document ({len(text)} chars) - using chunked extraction")
+        # Large document - chunk it with generous size
+        logger.info(f"Large document ({len(text):,} chars) - using chunked extraction")
+        logger.info(f"Context window: {MAX_CHARS:,} chars (~100 pages per chunk)")
 
-        # Split into chunks with overlap to avoid missing claims at boundaries
-        OVERLAP = 500
+        # Split into chunks with substantial overlap
+        CHUNK_SIZE = 400_000  # ~100 pages
+        OVERLAP = 50_000  # ~12 pages overlap to avoid boundary issues
+
         chunks = []
         pos = 0
 
         while pos < len(text):
             end = min(pos + CHUNK_SIZE, len(text))
 
-            # Try to break at sentence boundary if not at end
+            # Try to break at paragraph boundary if not at end
             if end < len(text):
-                # Look for last period/newline in last 200 chars
-                search_start = max(end - 200, pos)
-                last_period = text.rfind('.', search_start, end)
-                last_newline = text.rfind('\n', search_start, end)
-                break_point = max(last_period, last_newline)
+                # Look for last double newline (paragraph) in last 5000 chars
+                search_start = max(end - 5000, pos)
+                last_paragraph = text.rfind('\n\n', search_start, end)
+                last_period = text.rfind('.\n', search_start, end)
+                break_point = max(last_paragraph, last_period)
 
                 if break_point > pos:
                     end = break_point + 1
@@ -437,19 +449,19 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
             chunks.append(text[pos:end])
             pos = end - OVERLAP if end < len(text) else end
 
-        logger.info(f"Split into {len(chunks)} chunks for processing")
+        logger.info(f"Split into {len(chunks)} chunks (avg {len(text)//len(chunks):,} chars each)")
 
         # Extract claims from each chunk
         all_claims = []
         for i, chunk in enumerate(chunks):
-            self._emit(f"Extracting claims from section {i+1}/{len(chunks)}...",
+            self._emit(f"Extracting claims from section {i+1}/{len(chunks)} ({len(chunk):,} chars)...",
                       30 + (i / len(chunks)) * 10,
                       {'event': 'chunk_extraction', 'chunk': i+1, 'total': len(chunks)})
 
             chunk_claims = self._extract_claims_from_chunk(chunk, chunk_num=i+1, total_chunks=len(chunks))
             all_claims.extend(chunk_claims)
 
-            logger.info(f"  Chunk {i+1}/{len(chunks)}: {len(chunk_claims)} claims")
+            logger.info(f"  Chunk {i+1}/{len(chunks)}: {len(chunk_claims)} claims from {len(chunk):,} chars")
 
         # Deduplicate across chunks using simple text similarity
         deduplicated = self._deduplicate_claims(all_claims)
@@ -487,12 +499,23 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 TEXT:
 {text}
 
-For each ACTUAL RESEARCH CLAIM (not metadata):
-1. Extract exact claim text
-2. Classify type (factual, methodological, causal, interpretive)
-3. Rate confidence (0.0-1.0)
+CRITICAL MECE (Mutually Exclusive, Comprehensively Exhaustive) Requirements:
 
-Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY research claims."""
+1. MUTUALLY EXCLUSIVE: Each claim should represent ONE distinct idea
+   - No overlap in scope between claims
+   - If two claims seem related, extract their common parent claim AND specific child claims separately
+
+2. COMPREHENSIVELY EXHAUSTIVE: Extract EVERY substantive claim
+   - Don't skip "obvious" or "minor" claims
+   - Include factual, methodological, causal, AND interpretive claims
+   - Preserve the document's complete logical structure
+
+3. For each claim:
+   - Extract exact claim text (preserve qualifiers: may, might, can, all, some)
+   - Classify type: factual, methodological, causal, or interpretive
+   - Rate confidence (0.0-1.0)
+
+Extract 20-50 claims to ensure comprehensive coverage. Quality over speed - we want ALL substantive content."""
 
         result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "flat-claim-extraction")
         claims = result.get('claims', [])
