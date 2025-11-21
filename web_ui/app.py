@@ -482,6 +482,264 @@ def handle_disconnect():
     print('Client disconnected')
 
 
+# Chat message history (in-memory for now, will move to database)
+chat_history = []
+
+
+@socketio.on('chat_message')
+def handle_chat_message(data):
+    """
+    Process user chat message through AI agent.
+
+    Expected data format:
+    {
+        'message': str,
+        'timestamp': str,
+        'context': {
+            'selected_nodes': list,
+            'total_nodes': int,
+            'total_links': int,
+            'search_query': str
+        }
+    }
+    """
+    user_message = data.get('message', '').strip()
+    graph_context = data.get('context', {})
+    timestamp = data.get('timestamp')
+
+    if not user_message:
+        emit('chat_response', {
+            'message': 'I didn\'t receive a message. Please try again.',
+            'actions': [],
+            'timestamp': timestamp
+        })
+        return
+
+    # Store user message in history
+    chat_history.append({
+        'sender': 'user',
+        'message': user_message,
+        'timestamp': timestamp,
+        'context': graph_context
+    })
+
+    logger.info(f"[CHAT] User: {user_message}")
+    logger.info(f"[CHAT] Context: {graph_context}")
+
+    # Process message and generate response
+    response_data = process_chat_message(user_message, graph_context)
+
+    # Store AI response in history
+    chat_history.append({
+        'sender': 'ai',
+        'message': response_data['message'],
+        'timestamp': response_data['timestamp'],
+        'actions': response_data.get('actions', [])
+    })
+
+    logger.info(f"[CHAT] AI: {response_data['message']}")
+
+    # Send response back to client
+    emit('chat_response', response_data)
+
+
+def process_chat_message(message, context):
+    """
+    Process chat message and determine appropriate response.
+
+    This function will be enhanced to integrate with agent orchestration.
+    For now, it provides intelligent responses based on message content.
+    """
+    from datetime import datetime
+
+    message_lower = message.lower()
+    response_text = ""
+    actions = []
+
+    # Command parsing (slash commands)
+    if message.startswith('/'):
+        return handle_chat_command(message, context)
+
+    # Upload-related queries
+    if any(word in message_lower for word in ['upload', 'add document', 'add file', 'process document']):
+        response_text = (
+            "I can help you upload documents! You can:\n\n"
+            "• Drag and drop files directly onto the upload zone\n"
+            "• Click the upload zone to browse for files\n"
+            "• Supported formats: PDF, TXT, DOCX\n\n"
+            "Would you like me to highlight the upload area for you?"
+        )
+        actions.append({'type': 'highlight_upload'})
+
+    # Claim investigation
+    elif any(word in message_lower for word in ['investigate', 'research', 'find evidence']):
+        if context.get('selected_nodes'):
+            selected_count = len(context['selected_nodes'])
+            response_text = (
+                f"I see you have {selected_count} node(s) selected. "
+                f"To investigate a claim, click on it in the graph to view details, "
+                f"then use the 'Find Supporting Evidence' or 'Find Contradicting Evidence' buttons."
+            )
+        else:
+            response_text = (
+                "To investigate a claim, first click on a claim node in the graph. "
+                "Then you'll see options to find supporting or contradicting evidence."
+            )
+
+    # Graph navigation help
+    elif any(word in message_lower for word in ['navigate', 'find', 'search', 'filter']):
+        response_text = (
+            f"Your graph currently has {context.get('total_nodes', 0)} nodes. "
+            f"You can:\n\n"
+            f"• Use the search bar to filter by text\n"
+            f"• Toggle node type filters (Documents, Claims, Evidence)\n"
+            f"• Click nodes to see details\n"
+            f"• Drag nodes to rearrange\n"
+            f"• Scroll to zoom in/out"
+        )
+
+    # Clustering
+    elif any(word in message_lower for word in ['cluster', 'organize', 'group']):
+        response_text = (
+            "I can help organize your claims! Clustering happens automatically when:\n\n"
+            "• You upload a new document\n"
+            "• Processing completes\n\n"
+            "You can also manually trigger clustering using the 'Refresh Clustering' button "
+            "in the stats bar. This will group similar claims across documents."
+        )
+
+    # Confidence/quality questions
+    elif any(word in message_lower for word in ['confidence', 'score', 'rating', 'quality']):
+        response_text = (
+            "Claim confidence scores are calculated based on:\n\n"
+            "• Supporting evidence found\n"
+            "• Contradicting evidence\n"
+            "• Quality of sources\n\n"
+            "You can override these scores manually by:\n"
+            "1. Clicking on a claim\n"
+            "2. Using the confidence override slider\n"
+            "3. Clicking 'Apply Override'\n\n"
+            "Your adjustments will be marked with a gold ✓ indicator."
+        )
+
+    # Graph statistics
+    elif any(word in message_lower for word in ['how many', 'count', 'stats', 'statistics']):
+        response_text = (
+            f"**Current Graph Statistics:**\n\n"
+            f"• Total nodes: {context.get('total_nodes', 0)}\n"
+            f"• Total links: {context.get('total_links', 0)}\n"
+            f"• Selected: {len(context.get('selected_nodes', []))}\n\n"
+            f"Use the stats bar at the top for more detailed breakdowns."
+        )
+
+    # General help
+    elif any(word in message_lower for word in ['help', 'what can you do', 'how do']):
+        response_text = (
+            "I'm your research assistant! Here's what I can help with:\n\n"
+            "**📄 Document Processing:**\n"
+            "• Upload and analyze documents (PDF, TXT, DOCX)\n"
+            "• Extract claims automatically\n"
+            "• Organize claims into hierarchies\n\n"
+            "**🔍 Research & Investigation:**\n"
+            "• Find supporting evidence for claims\n"
+            "• Find contradicting evidence\n"
+            "• Track research progress\n\n"
+            "**📊 Graph Management:**\n"
+            "• Navigate and search your knowledge graph\n"
+            "• Adjust claim confidence scores\n"
+            "• Remove invalid evidence\n"
+            "• Cluster related claims\n\n"
+            "Just ask me anything or tell me what you'd like to do!"
+        )
+
+    # Default response
+    else:
+        response_text = (
+            f"I understand you said: \"{message}\"\n\n"
+            f"I'm still learning! Currently I can help with:\n"
+            f"• Uploading documents\n"
+            f"• Investigating claims\n"
+            f"• Navigating the graph\n"
+            f"• Understanding confidence scores\n\n"
+            f"Try asking 'help' for more details, or tell me specifically what you'd like to do."
+        )
+
+    return {
+        'message': response_text,
+        'actions': actions,
+        'timestamp': datetime.now().isoformat()
+    }
+
+
+def handle_chat_command(command, context):
+    """
+    Handle slash commands like /upload, /investigate, /help.
+    """
+    from datetime import datetime
+
+    parts = command.split()
+    cmd = parts[0].lower()
+    args = parts[1:] if len(parts) > 1 else []
+
+    if cmd == '/help':
+        return {
+            'message': (
+                "**Available Commands:**\n\n"
+                "`/help` - Show this help message\n"
+                "`/upload` - Open upload dialog\n"
+                "`/investigate` - Start claim investigation\n"
+                "`/cluster` - Trigger clustering\n"
+                "`/stats` - Show graph statistics\n"
+                "`/clear` - Clear chat history\n\n"
+                "More commands coming soon!"
+            ),
+            'actions': [],
+            'timestamp': datetime.now().isoformat()
+        }
+
+    elif cmd == '/upload':
+        return {
+            'message': "Opening upload area...",
+            'actions': [{'type': 'highlight_upload'}],
+            'timestamp': datetime.now().isoformat()
+        }
+
+    elif cmd == '/cluster':
+        return {
+            'message': "Triggering clustering... This may take a moment.",
+            'actions': [{'type': 'reload_graph'}],
+            'timestamp': datetime.now().isoformat()
+        }
+
+    elif cmd == '/stats':
+        return {
+            'message': (
+                f"**Graph Statistics:**\n\n"
+                f"• Nodes: {context.get('total_nodes', 0)}\n"
+                f"• Links: {context.get('total_links', 0)}\n"
+                f"• Selected: {len(context.get('selected_nodes', []))}"
+            ),
+            'actions': [],
+            'timestamp': datetime.now().isoformat()
+        }
+
+    elif cmd == '/clear':
+        global chat_history
+        chat_history = []
+        return {
+            'message': "Chat history cleared! How can I help you?",
+            'actions': [],
+            'timestamp': datetime.now().isoformat()
+        }
+
+    else:
+        return {
+            'message': f"Unknown command: {cmd}\n\nType `/help` to see available commands.",
+            'actions': [],
+            'timestamp': datetime.now().isoformat()
+        }
+
+
 @app.route('/api/delete-document/<doc_id>', methods=['DELETE'])
 def delete_document(doc_id):
     """Delete document and only its owned claims (that would become orphaned)."""
