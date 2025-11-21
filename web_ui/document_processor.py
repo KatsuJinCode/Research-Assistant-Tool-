@@ -24,6 +24,14 @@ from research_agent.claim_analysis.claim_space_optimizer import ClaimSpaceOptimi
 from research_agent.neo4j_database import Neo4jDatabase
 from web_ui.agent_config import get_agent_adapter
 
+# Cross-document MECE clustering (automatic after document processing)
+try:
+    from research_agent.cross_document_mece import run_cross_document_clustering, check_mece_availability
+    MECE_CLUSTERING_AVAILABLE = check_mece_availability()
+except ImportError as e:
+    logger.warning(f"MECE cross-document clustering not available: {e}")
+    MECE_CLUSTERING_AVAILABLE = False
+
 # Import semantic clustering (PRIMARY method)
 try:
     from web_ui.semantic_clustering import (
@@ -1735,5 +1743,38 @@ Find the main title/heading at the top of the document. Return just the title te
             'event': 'processing_complete',
             'doc_id': doc_id
         })
+
+        # 8. Trigger automatic cross-document MECE clustering
+        if MECE_CLUSTERING_AVAILABLE:
+            try:
+                logger.info("🔗 Triggering automatic cross-document MECE clustering...")
+                self._emit("Running cross-document clustering...", None, {
+                    'event': 'auto_clustering_started',
+                    'doc_id': doc_id
+                })
+
+                import asyncio
+                # Run clustering asynchronously (non-blocking)
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(run_cross_document_clustering())
+                    logger.info(f"✓ Auto-clustering complete: {len(result.get('super_claims', []))} super-claims from {len(result.get('clusters', []))} communities")
+
+                    self._emit(f"Created {len(result.get('super_claims', []))} super-claims", None, {
+                        'event': 'auto_clustering_complete',
+                        'doc_id': doc_id,
+                        'super_claims': len(result.get('super_claims', [])),
+                        'clusters': len(result.get('clusters', [])),
+                        'modularity': result.get('metrics', {}).get('modularity', 0),
+                        'total_claims': result.get('stats', {}).get('total_claims', 0)
+                    })
+                finally:
+                    loop.close()
+            except Exception as e:
+                logger.warning(f"Auto-clustering failed (non-critical): {e}")
+                # Non-critical - don't fail the entire processing
+        else:
+            logger.info("⚠️  MECE clustering not available - install: pip install leidenalg python-igraph")
 
         return doc_id

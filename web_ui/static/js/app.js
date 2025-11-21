@@ -125,6 +125,32 @@ const App = {
                     GraphRenderer.clearFreshFlags();
                 }, 2000);
                 this.loadStats();
+            } else if (data.data && data.data.event === 'auto_clustering_started') {
+                // Automatic cross-document clustering started
+                console.log('🔗 Auto-clustering started');
+                UI.updateProcessingStatus('Running cross-document clustering...', null);
+            } else if (data.data && data.data.event === 'auto_clustering_complete') {
+                // Automatic clustering completed
+                console.log('✓ Auto-clustering complete:', data.data);
+                const superClaims = data.data.super_claims || 0;
+                const clusters = data.data.clusters || 0;
+                const modularity = (data.data.modularity || 0).toFixed(3);
+
+                UI.updateProcessingStatus(
+                    `✓ Created ${superClaims} super-claims from ${clusters} communities (modularity: ${modularity})`,
+                    null
+                );
+
+                // Reload graph to show new super-claims
+                this.loadGraph();
+                this.loadStats();
+
+                // Show notification
+                UI.showNotification(
+                    `Auto-clustering complete: ${superClaims} super-claims created`,
+                    'success',
+                    5000
+                );
             } else if (data.data && data.data.event === 'claim_updated') {
                 // Claim finished processing - update its appearance
                 console.log('Claim updated:', data.data.claim_id, data.data.updates);
