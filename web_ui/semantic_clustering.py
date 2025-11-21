@@ -17,6 +17,18 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+# Import MECE validator
+try:
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from research_agent.claim_analysis.mece_validator import validate_mece_clustering
+    MECE_VALIDATOR_AVAILABLE = True
+    logger.info("✓ MECE validator available")
+except ImportError as e:
+    MECE_VALIDATOR_AVAILABLE = False
+    logger.warning(f"✗ MECE validator NOT available: {e}")
+
 # Try to import sentence-transformers
 try:
     from sentence_transformers import SentenceTransformer
@@ -94,7 +106,7 @@ class SemanticClaimClusterer:
         claims: List[Dict[str, Any]],
         min_clusters: int = 3,
         max_clusters: int = 10
-    ) -> Tuple[List[ClusterResult], ClusteringMetrics]:
+    ) -> Tuple[List[ClusterResult], ClusteringMetrics, Optional[Dict[str, Any]]]:
         """
         Cluster claims using semantic embeddings.
 
@@ -189,7 +201,24 @@ class SemanticClaimClusterer:
             cluster_results.append(cluster_result)
 
         logger.info(f"✓ Created {len(cluster_results)} semantic clusters")
-        return cluster_results, metrics
+
+        # MECE Validation (Phase 1 - added 2025-01)
+        validation_results = None
+        if MECE_VALIDATOR_AVAILABLE:
+            try:
+                logger.info(f"  [VALIDATION] Checking MECE compliance...")
+                validation_results = validate_mece_clustering(
+                    cluster_results,
+                    claims,
+                    embeddings,
+                    cluster_labels
+                )
+                logger.info(f"  ✓ MECE Score: {validation_results['mece_score']:.3f} - {validation_results['grade']}")
+            except Exception as e:
+                logger.warning(f"  ✗ MECE validation failed: {e}")
+                validation_results = None
+
+        return cluster_results, metrics, validation_results
 
     def _find_optimal_k(
         self,

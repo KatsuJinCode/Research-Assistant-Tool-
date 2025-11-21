@@ -347,7 +347,7 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 
             try:
                 clusterer = SemanticClaimClusterer()
-                cluster_results, metrics = clusterer.cluster_claims(flat_claims)
+                cluster_results, metrics, validation_results = clusterer.cluster_claims(flat_claims)
 
                 # Convert to hierarchical structure
                 categories = []
@@ -360,6 +360,17 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                     })
 
                 hierarchical_structure = {'categories': categories}
+
+                # Add MECE validation results if available
+                if validation_results:
+                    hierarchical_structure['mece_validation'] = {
+                        'score': validation_results['mece_score'],
+                        'grade': validation_results['grade'],
+                        'passed': validation_results['passed'],
+                        'exclusivity': validation_results['mutual_exclusivity'],
+                        'comprehensiveness': validation_results['comprehensiveness'],
+                        'quality': validation_results['cluster_quality']
+                    }
 
                 logger.info(f"✓ Semantic clustering succeeded - {metrics.n_clusters} optimal clusters")
                 logger.info(f"  Silhouette score: {metrics.silhouette_score:.3f} (>0.5 is good)")

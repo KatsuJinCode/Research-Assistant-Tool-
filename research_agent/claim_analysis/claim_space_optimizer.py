@@ -17,7 +17,7 @@ Uses information-theoretic principles and semantic embeddings to ensure:
 
 import re
 import numpy as np
-from typing import List, Dict, Set, Tuple, Optional
+from typing import List, Dict, Set, Tuple, Optional, Any
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
@@ -428,6 +428,47 @@ class ClaimSpaceOptimizer:
 
         return dict(hierarchy)
 
+    def validate_coverage(self) -> Dict[str, Any]:
+        """
+        Validate that optimization doesn't lose claims.
+
+        Part of MECE comprehensiveness validation (Phase 2 - added 2025-01).
+
+        Returns:
+            {
+                'total_claims': int,
+                'covered_claims': int,
+                'missing_claims': List[str],
+                'coverage_ratio': float,
+                'passed': bool
+            }
+        """
+        all_claim_ids = set(self.claims.keys())
+        covered_claim_ids = set()
+
+        # Claims in optimal set
+        optimal_set = self.compute_optimal_spanning_set()
+        covered_claim_ids.update(optimal_set)
+
+        # Claims subsumed by others (still covered, just redundant)
+        for claim_id, node in self.claims.items():
+            if node.is_redundant and node.subsumed_by:
+                covered_claim_ids.add(claim_id)  # Count as covered
+
+        missing_ids = all_claim_ids - covered_claim_ids
+        missing_claims = [self.claims[cid].text[:50] for cid in missing_ids]
+
+        coverage_ratio = len(covered_claim_ids) / len(all_claim_ids) if len(all_claim_ids) > 0 else 1.0
+        passed = coverage_ratio >= 0.95
+
+        return {
+            'total_claims': len(all_claim_ids),
+            'covered_claims': len(covered_claim_ids),
+            'missing_claims': missing_claims,
+            'coverage_ratio': coverage_ratio,
+            'passed': passed
+        }
+
     def optimize(self) -> Dict[str, any]:
         """
         Run complete optimization pipeline.
@@ -460,7 +501,17 @@ class ClaimSpaceOptimizer:
         print("Step 4: Building hierarchical structure...")
         hierarchy = self.build_hierarchy()
 
-        # Step 5: Collect results
+        # Step 5: Validate coverage (MECE Phase 2 - added 2025-01)
+        print("Step 5: Validating coverage...")
+        coverage_validation = self.validate_coverage()
+
+        if not coverage_validation['passed']:
+            print(f"  WARNING: Low coverage ratio: {coverage_validation['coverage_ratio']:.2%}")
+            print(f"  Missing {len(coverage_validation['missing_claims'])} claims")
+        else:
+            print(f"  ✓ Coverage validation passed: {coverage_validation['coverage_ratio']:.2%}")
+
+        # Step 6: Collect results
         redundant_claims = {
             claim_id for claim_id, node in self.claims.items()
             if node.is_redundant
@@ -479,7 +530,8 @@ class ClaimSpaceOptimizer:
             'relationship_distribution': dict(relationship_counts),
             'hierarchy_depth': self._calculate_hierarchy_depth(hierarchy),
             'avg_specificity': np.mean([n.specificity_score for n in self.claims.values()]),
-            'avg_information_content': np.mean([n.information_content for n in self.claims.values()])
+            'avg_information_content': np.mean([n.information_content for n in self.claims.values()]),
+            'coverage_validation': coverage_validation  # MECE Phase 2 - added 2025-01
         }
 
         print(f"\nOptimization complete!")
