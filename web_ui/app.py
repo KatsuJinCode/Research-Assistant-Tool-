@@ -84,6 +84,15 @@ def process_queue_worker():
 
             logger.info(f"[QUEUE] Starting processing: {filename}")
 
+            # Create agent transcript for provenance tracking
+            from research_agent.transcript_manager import get_transcript_manager
+            transcript_manager = get_transcript_manager()
+            agent_id = transcript_manager.create_agent(
+                'document_processor',
+                f'Processing document: {filename}'
+            )
+            transcript_manager.log(agent_id, 'info', f'Started processing: {filename}')
+
             # Emit queue status
             with app.app_context():
                 socketio.emit('queue_update', {
@@ -97,6 +106,12 @@ def process_queue_worker():
                         logger.info(f"[PROGRESS {progress:.0f}%] {message}")
                     else:
                         logger.info(f"{message}")
+                    # Log to transcript
+                    level = 'error' if 'error' in message.lower() or '❌' in message else \
+                           'warning' if 'warning' in message.lower() or '⚠️' in message else \
+                           'success' if '✓' in message or '✅' in message else 'info'
+                    transcript_manager.log(agent_id, level, message, data)
+
                     socketio.sleep(0)
                     with app.app_context():
                         socketio.emit('processing_update', {
@@ -105,19 +120,23 @@ def process_queue_worker():
                             'data': data
                         })
 
-                processor = LiveDocumentProcessor(progress_callback=progress_callback)
+                processor = LiveDocumentProcessor(progress_callback=progress_callback, agent_id=agent_id)
                 doc_id = processor.process_document_live(filepath)
 
                 logger.info(f"[QUEUE] Completed: {filename} -> {doc_id}")
+                transcript_manager.complete_agent(agent_id, {'document_id': doc_id, 'filename': filename})
 
                 with app.app_context():
-                    socketio.emit('document_processed', {'document_id': doc_id})
+                    socketio.emit('document_processed', {'document_id': doc_id, 'agent_id': agent_id})
 
             except Exception as e:
-                logger.error(f"[QUEUE] Error processing {filename}: {e}")
+                error_msg = f"Error processing {filename}: {str(e)}"
+                logger.error(f"[QUEUE] {error_msg}")
                 logger.error(traceback.format_exc())
+                transcript_manager.fail_agent(agent_id, error_msg)
+
                 with app.app_context():
-                    socketio.emit('processing_error', {'error': str(e), 'filename': filename})
+                    socketio.emit('processing_error', {'error': str(e), 'filename': filename, 'agent_id': agent_id})
 
             finally:
                 processing_queue.task_done()

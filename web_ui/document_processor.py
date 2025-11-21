@@ -51,14 +51,16 @@ logger = logging.getLogger(__name__)
 class LiveDocumentProcessor:
     """Process documents with real-time progress updates."""
 
-    def __init__(self, progress_callback: Callable[[str, float, Dict], None] = None):
+    def __init__(self, progress_callback: Callable[[str, float, Dict], None] = None, agent_id: str = None):
         """
-        Initialize processor.
+        Initialize processor with provenance tracking.
 
         Args:
             progress_callback: Function called with (status_message, progress_percent, data)
+            agent_id: Agent transcript ID for provenance tracking (optional)
         """
         self.progress_callback = progress_callback or self._default_callback
+        self.agent_id = agent_id  # Store for provenance tracking
         self.db = Neo4jDatabase()  # Keep for backward compatibility during migration
 
         # Repository pattern for new code
@@ -1587,7 +1589,10 @@ Find the main title/heading at the top of the document. Return just the title te
                 confidence=claim_dict.get('confidence', 0.0),  # Preserve initial confidence
                 status='processing',
                 processing_stage='pending',
-                word_count_original=len(claim_text.split())
+                word_count_original=len(claim_text.split()),
+                # Provenance tracking
+                created_by='document_processor',
+                created_by_agent_id=self.agent_id  # Links to agent transcript for full provenance
             )
             claim_ids.append(claim_id)
 
