@@ -17,39 +17,213 @@
             color: #e0e0e0;
         }
 
-        #header {
-            background: #2196F3;
+        /* ===== UNIFIED HEADER SYSTEM ===== */
+        #unified-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
             color: white;
-            padding: 20px;
-            text-align: center;
+            padding: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 100;
         }
 
-        #stats {
-            background: #2a2a2a;
-            padding: 15px;
+        /* Header Top Row - Title and Project */
+        .header-top {
             display: flex;
-            justify-content: space-around;
-            border-bottom: 2px solid #333;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.1);
         }
 
-        .stat {
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .header-brand p {
+            font-size: 11px;
+            opacity: 0.85;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .project-selector {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .project-selector:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Header Bottom Row - Stats and Actions */
+        .header-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            gap: 20px;
+        }
+
+        /* Stat Cards Container */
+        .stats-container {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Individual Stat Cards - Clickable */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 20px;
+            min-width: 120px;
             text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card:active {
+            transform: translateY(0px);
+        }
+
+        /* Stat Card Glow Effect on Hover */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
         .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2196F3;
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
         }
 
         .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Action Buttons Container */
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
             font-size: 12px;
-            color: #999;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .header-btn.btn-danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .header-btn.btn-danger:hover {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.7);
+        }
+
+        .header-btn.btn-success {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .header-btn.btn-success:hover {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.7);
+        }
+
+        .header-btn.btn-purple {
+            background: rgba(156, 39, 176, 0.3);
+            border-color: rgba(156, 39, 176, 0.5);
+        }
+
+        .header-btn.btn-purple:hover {
+            background: rgba(156, 39, 176, 0.5);
+            border-color: rgba(156, 39, 176, 0.7);
+        }
+
+        /* Old header/stats styles - will be removed but kept for safety */
+        #header {
+            display: none;
+        }
+
+        #stats {
+            display: none;
         }
 
         #container {
             display: flex;
-            height: calc(100vh - 140px);
+            height: calc(100vh - 120px);
         }
 
         #sidebar {
@@ -585,32 +759,56 @@
     </style>
 </head>
 <body>
-    <div id="header">
-        <h1>🔍 Research Graph Navigator</h1>
-        <p>Interactive Claim Exploration & Investigation</p>
-    </div>
+    <!-- Unified Header System -->
+    <div id="unified-header">
+        <!-- Top Row: Brand and Project -->
+        <div class="header-top">
+            <div class="header-brand">
+                <div>
+                    <h1>🔍 Research Graph Navigator</h1>
+                    <p>Interactive Claim Exploration & Investigation</p>
+                </div>
+            </div>
+            <div class="project-selector" id="project-selector" onclick="HeaderManager.openProjectSelector()">
+                <span id="current-project-name">Default Project</span>
+                <span style="opacity: 0.6;">▼</span>
+            </div>
+        </div>
 
-    <div id="stats">
-        <div class="stat">
-            <div class="stat-value" id="stat-nodes">-</div>
-            <div class="stat-label">Total Nodes</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value" id="stat-claims">-</div>
-            <div class="stat-label">Claims</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value" id="stat-evidence">-</div>
-            <div class="stat-label">Evidence</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value" id="stat-research">-</div>
-            <div class="stat-label">Research Results</div>
-        </div>
-        <div class="stat">
-            <button id="run-clustering-btn" style="background: #00BCD4; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; margin-right: 8px;">🔗 Refresh Clustering</button>
-            <button id="settings-btn" style="background: #9C27B0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; margin-right: 8px;" onclick="openSettings()">⚙️ Settings</button>
-            <button id="clear-all-btn" style="background: #d32f2f; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Clear All Data</button>
+        <!-- Bottom Row: Stats and Actions -->
+        <div class="header-bottom">
+            <!-- Clickable Stat Cards -->
+            <div class="stats-container">
+                <div class="stat-card" id="stat-card-documents" onclick="HeaderManager.navigateToStat('documents')" title="Click to view all documents">
+                    <div class="stat-value" id="stat-nodes">-</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat-card" id="stat-card-claims" onclick="HeaderManager.navigateToStat('claims')" title="Click to view all claims">
+                    <div class="stat-value" id="stat-claims">-</div>
+                    <div class="stat-label">Claims</div>
+                </div>
+                <div class="stat-card" id="stat-card-evidence" onclick="HeaderManager.navigateToStat('evidence')" title="Click to view evidence links">
+                    <div class="stat-value" id="stat-evidence">-</div>
+                    <div class="stat-label">Evidence</div>
+                </div>
+                <div class="stat-card" id="stat-card-pending" onclick="HeaderManager.navigateToStat('pending')" title="Click to view pending documents">
+                    <div class="stat-value" id="stat-research">-</div>
+                    <div class="stat-label">Pending Docs</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="header-actions">
+                <button class="header-btn btn-success" id="run-clustering-btn" title="Refresh claim clustering">
+                    🔗 Cluster
+                </button>
+                <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
+                    ⚙️ Settings
+                </button>
+                <button class="header-btn btn-danger" id="clear-all-btn" title="Clear all data">
+                    🗑️ Clear
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1485,5 +1683,8 @@
             loadGlobalSettings();
         });
     </script>
+
+    <!-- Header Manager Module -->
+    <script src="{{ url_for('static', filename='js/header_manager.js') }}"></script>
 </body>
 </html>
