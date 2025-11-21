@@ -328,6 +328,38 @@ const UI = {
     },
 
     /**
+     * Update queue status display
+     */
+    updateQueueStatus(processing, queueSize) {
+        const queuePanel = document.getElementById('queue-status');
+        const queueCount = document.getElementById('queue-count');
+        const queueProcessing = document.getElementById('queue-processing');
+
+        if (!queuePanel || !queueCount || !queueProcessing) {
+            console.warn('Queue status elements not found');
+            return;
+        }
+
+        // Show/hide queue panel
+        if (queueSize > 0 || processing) {
+            queuePanel.style.display = 'block';
+        } else {
+            queuePanel.style.display = 'none';
+        }
+
+        // Update queue count
+        const plural = queueSize === 1 ? '' : 's';
+        queueCount.textContent = `${queueSize} document${plural} waiting`;
+
+        // Update currently processing file
+        if (processing) {
+            queueProcessing.textContent = `Processing: ${processing}`;
+        } else {
+            queueProcessing.textContent = '';
+        }
+    },
+
+    /**
      * Handle file upload
      */
     async handleFileUpload(fileOrFiles) {

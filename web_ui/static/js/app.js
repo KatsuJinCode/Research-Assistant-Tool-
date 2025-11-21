@@ -181,6 +181,11 @@ const App = {
             this.loadStats();
         });
 
+        this.socket.on('queue_update', (data) => {
+            console.log('Queue update:', data);
+            UI.updateQueueStatus(data.processing, data.queue_size);
+        });
+
         // NEW: Claim stage update events for live 4-stage pipeline visualization
         this.socket.on('claim_stage_update', (data) => {
             const { claim_id, stage, status } = data;

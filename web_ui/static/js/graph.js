@@ -156,6 +156,21 @@ const GraphRenderer = {
                     });
                 });
             }
+
+            // Add semantic relationship links (cross-document claim connections)
+            if (doc.semantic_links && Array.isArray(doc.semantic_links)) {
+                doc.semantic_links.forEach(link => {
+                    // Only add if both nodes exist
+                    if (addedNodes.has(link.source_id) && addedNodes.has(link.target_id)) {
+                        links.push({
+                            source: link.source_id,
+                            target: link.target_id,
+                            type: 'semantic_similar',
+                            similarity: link.similarity_score
+                        });
+                    }
+                });
+            }
         });
 
         console.log('[buildUnifiedGraph] Final graph:', nodes.length, 'nodes,', links.length, 'links');
@@ -565,6 +580,9 @@ const GraphRenderer = {
         }
         if (type === 'duplicate') {
             return '3,3';  // Dashed line for duplicates
+        }
+        if (type === 'semantic_similar') {
+            return '2,2';  // Dotted line for semantic similarity
         }
         return 'none';  // Solid line for everything else
     },
@@ -1082,7 +1100,8 @@ const GraphRenderer = {
             'has_sub': '#2196F3',       // Blue - claim has sub-claims
             'supports': '#4CAF50',      // Green - supports
             'contradicts': '#F44336',   // Red - contradicts
-            'duplicate': '#FF6B35'      // Orange - duplicate claim
+            'duplicate': '#FF6B35',     // Orange - duplicate claim
+            'semantic_similar': '#9C27B0'  // Purple - semantically similar across documents
         };
         return colors[type] || '#999';
     },

@@ -404,7 +404,63 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
         Extract flat list of claims (no categorization yet).
 
         This is step 1 - gets raw claims for later clustering.
+        Handles large documents by chunking intelligently.
         """
+        # If text is small enough, process in one shot
+        CHUNK_SIZE = 7000  # Leave room for prompt overhead
+
+        if len(text) <= CHUNK_SIZE:
+            return self._extract_claims_from_chunk(text, chunk_num=1, total_chunks=1)
+
+        # Large document - chunk it intelligently
+        logger.info(f"Large document ({len(text)} chars) - using chunked extraction")
+
+        # Split into chunks with overlap to avoid missing claims at boundaries
+        OVERLAP = 500
+        chunks = []
+        pos = 0
+
+        while pos < len(text):
+            end = min(pos + CHUNK_SIZE, len(text))
+
+            # Try to break at sentence boundary if not at end
+            if end < len(text):
+                # Look for last period/newline in last 200 chars
+                search_start = max(end - 200, pos)
+                last_period = text.rfind('.', search_start, end)
+                last_newline = text.rfind('\n', search_start, end)
+                break_point = max(last_period, last_newline)
+
+                if break_point > pos:
+                    end = break_point + 1
+
+            chunks.append(text[pos:end])
+            pos = end - OVERLAP if end < len(text) else end
+
+        logger.info(f"Split into {len(chunks)} chunks for processing")
+
+        # Extract claims from each chunk
+        all_claims = []
+        for i, chunk in enumerate(chunks):
+            self._emit(f"Extracting claims from section {i+1}/{len(chunks)}...",
+                      30 + (i / len(chunks)) * 10,
+                      {'event': 'chunk_extraction', 'chunk': i+1, 'total': len(chunks)})
+
+            chunk_claims = self._extract_claims_from_chunk(chunk, chunk_num=i+1, total_chunks=len(chunks))
+            all_claims.extend(chunk_claims)
+
+            logger.info(f"  Chunk {i+1}/{len(chunks)}: {len(chunk_claims)} claims")
+
+        # Deduplicate across chunks using simple text similarity
+        deduplicated = self._deduplicate_claims(all_claims)
+
+        logger.info(f"✓ Extracted {len(all_claims)} claims from {len(chunks)} chunks")
+        logger.info(f"✓ After deduplication: {len(deduplicated)} unique claims")
+
+        return deduplicated
+
+    def _extract_claims_from_chunk(self, text: str, chunk_num: int, total_chunks: int) -> List[Dict[str, Any]]:
+        """Extract claims from a single text chunk."""
         expected_schema = {
             "type": "object",
             "properties": {
@@ -424,10 +480,12 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
             "required": ["claims"]
         }
 
-        agent_prompt = f"""Extract research claims from this text. Ignore copyright, metadata, headers/footers.
+        chunk_context = f" (section {chunk_num}/{total_chunks})" if total_chunks > 1 else ""
+
+        agent_prompt = f"""Extract research claims from this text{chunk_context}. Ignore copyright, metadata, headers/footers.
 
 TEXT:
-{text[:8000]}
+{text}
 
 For each ACTUAL RESEARCH CLAIM (not metadata):
 1. Extract exact claim text
@@ -442,12 +500,54 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         if not isinstance(claims, list):
             raise RuntimeError(f"Expected list, got {type(claims)}")
 
-        logger.info(f"✓ Extracted {len(claims)} flat claims for clustering")
         return claims
+
+    def _deduplicate_claims(self, claims: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Remove duplicate claims using simple text similarity.
+
+        This is a lightweight deduplication for chunk overlaps.
+        Full semantic deduplication happens later in _detect_duplicate_claims().
+        """
+        if len(claims) <= 1:
+            return claims
+
+        unique_claims = []
+        seen_texts = set()
+
+        for claim in claims:
+            text = claim.get('text', '').strip().lower()
+
+            # Skip empty claims
+            if not text:
+                continue
+
+            # Exact duplicate check
+            if text in seen_texts:
+                continue
+
+            # Fuzzy duplicate check (>90% similar)
+            is_duplicate = False
+            for seen in seen_texts:
+                # Simple character-level similarity
+                if len(text) > 0 and len(seen) > 0:
+                    common = sum(1 for a, b in zip(text, seen) if a == b)
+                    similarity = common / max(len(text), len(seen))
+                    if similarity > 0.9:
+                        is_duplicate = True
+                        break
+
+            if not is_duplicate:
+                unique_claims.append(claim)
+                seen_texts.add(text)
+
+        return unique_claims
 
     def _detect_duplicate_claims(self, new_doc_id: str, new_claim_ids: List[str]) -> List[Dict[str, Any]]:
         """
         Detect duplicate claims between newly processed claims and existing claims.
+
+        Also creates semantic relationship links for visualization.
 
         Args:
             new_doc_id: ID of newly processed document
@@ -466,7 +566,7 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
         from web_ui.semantic_clustering import SemanticDuplicateDetector
 
         try:
-            # Initialize detector (threshold 0.85 = high similarity)
+            # Initialize detector (threshold 0.85 = high similarity for DUPLICATES)
             detector = SemanticDuplicateDetector(similarity_threshold=0.85)
 
             # Get newly processed claims from database
@@ -503,7 +603,7 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                 logger.info("No existing claims to compare against")
                 return []
 
-            # Find duplicates
+            # Find duplicates (high threshold)
             duplicates = detector.find_duplicates(new_claims, existing_claims)
 
             # Mark duplicate claims in database for UI display
@@ -514,11 +614,61 @@ Extract 10-20 claims. Preserve qualifiers (may, might, can, all, some). ONLY res
                     'duplicate_similarity': dup['similarity_score']
                 })
 
+            # ALSO: Create semantic relationship links (lower threshold for RELATED claims)
+            self._create_semantic_links(new_claims, existing_claims)
+
             return duplicates
 
         except Exception as e:
             logger.error(f"Duplicate detection failed: {e}", exc_info=True)
             return []
+
+    def _create_semantic_links(self, new_claims: List[Dict], existing_claims: List[Dict]):
+        """
+        Create cross-document semantic relationship links for visualization.
+
+        Uses lower threshold (0.70) to show related claims, not just duplicates (0.85).
+        Creates RELATED_TO relationships in Neo4j for graph visualization.
+        """
+        if not SEMANTIC_CLUSTERING_AVAILABLE:
+            return
+
+        from web_ui.semantic_clustering import SemanticDuplicateDetector
+
+        try:
+            # Lower threshold for "related" vs "duplicate"
+            detector = SemanticDuplicateDetector(similarity_threshold=0.70)
+
+            # Find all related claims (not just duplicates)
+            related_pairs = detector.find_duplicates(new_claims, existing_claims)
+
+            logger.info(f"Found {len(related_pairs)} semantic relationships to create")
+
+            # Create RELATED_TO relationships in Neo4j
+            for pair in related_pairs:
+                # Skip if different documents (cross-document linking)
+                claim1_id = pair['new_claim_id']
+                claim2_id = pair['existing_claim_id']
+                similarity = pair['similarity_score']
+
+                # Create bidirectional relationship
+                self.claim_repo.create_semantic_relationship(
+                    claim1_id,
+                    claim2_id,
+                    similarity_score=similarity,
+                    relationship_type='SEMANTICALLY_SIMILAR'
+                )
+
+                logger.debug(f"  Linked {claim1_id[:8]} <-> {claim2_id[:8]} (similarity: {similarity:.3f})")
+
+            # Emit event for frontend to display links
+            self._emit(f"Created {len(related_pairs)} cross-document links", 95, {
+                'event': 'semantic_links_created',
+                'link_count': len(related_pairs)
+            })
+
+        except Exception as e:
+            logger.warning(f"Semantic linking failed: {e}", exc_info=True)
 
     def _extract_hierarchical_claims_with_agent_llm(self, text: str) -> Dict[str, Any]:
         """

@@ -469,3 +469,59 @@ class ClaimRepository(BaseRepository):
         """
 
         return self.execute_query(query)
+
+    def create_semantic_relationship(
+        self,
+        claim1_id: str,
+        claim2_id: str,
+        similarity_score: float,
+        relationship_type: str = 'SEMANTICALLY_SIMILAR'
+    ) -> bool:
+        """
+        Create a semantic similarity relationship between two claims.
+
+        Creates bidirectional link for cross-document visualization.
+
+        Args:
+            claim1_id: First claim ID
+            claim2_id: Second claim ID
+            similarity_score: Semantic similarity score (0.0-1.0)
+            relationship_type: Type of semantic relationship
+
+        Returns:
+            True if created successfully
+        """
+        query = """
+        MATCH (c1:Claim {id: $claim1_id})
+        MATCH (c2:Claim {id: $claim2_id})
+        MERGE (c1)-[r:SEMANTICALLY_SIMILAR]->(c2)
+        SET r.similarity_score = $similarity_score,
+            r.created_at = datetime()
+        RETURN r
+        """
+
+        params = {
+            'claim1_id': claim1_id,
+            'claim2_id': claim2_id,
+            'similarity_score': similarity_score
+        }
+
+        result = self.execute_query(query, params)
+        return len(result) > 0
+
+    def get_all_semantic_relationships(self) -> List[Dict[str, Any]]:
+        """
+        Get all semantic similarity relationships between claims.
+
+        Returns:
+            List of {source_id, target_id, similarity_score} relationships
+        """
+        query = """
+        MATCH (c1:Claim)-[r:SEMANTICALLY_SIMILAR]->(c2:Claim)
+        RETURN
+            c1.id as source_id,
+            c2.id as target_id,
+            r.similarity_score as similarity_score
+        """
+
+        return self.execute_query(query)

@@ -42,6 +42,14 @@ app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
 db = Neo4jDatabase()  # Keep for backward compatibility during migration
 
+# Document processing queue - FIFO queue to prevent interruption
+import queue
+import threading
+
+processing_queue = queue.Queue()
+processing_lock = threading.Lock()
+is_processing = False
+
 # Register WebSocket event emitter callback for real-time updates
 # CRITICAL: Wrap socketio.emit with app context for background thread safety
 def emit_with_context(event, data):
@@ -54,6 +62,86 @@ RepositoryEventEmitter.set_emit_callback(emit_with_context)
 # Initialize repositories
 claim_repo = ClaimRepository()
 doc_repo = DocumentRepository()
+
+
+def process_queue_worker():
+    """Background worker that processes documents from queue one at a time."""
+    global is_processing
+
+    while True:
+        try:
+            # Block until an item is available
+            queue_item = processing_queue.get(block=True)
+
+            if queue_item is None:  # Poison pill to stop worker
+                break
+
+            filepath, filename = queue_item
+
+            with processing_lock:
+                is_processing = True
+
+            logger.info(f"[QUEUE] Starting processing: {filename}")
+
+            # Emit queue status
+            with app.app_context():
+                socketio.emit('queue_update', {
+                    'processing': filename,
+                    'queue_size': processing_queue.qsize()
+                })
+
+            try:
+                def progress_callback(message, progress, data):
+                    if progress is not None:
+                        logger.info(f"[PROGRESS {progress:.0f}%] {message}")
+                    else:
+                        logger.info(f"{message}")
+                    socketio.sleep(0)
+                    with app.app_context():
+                        socketio.emit('processing_update', {
+                            'message': message,
+                            'progress': progress,
+                            'data': data
+                        })
+
+                processor = LiveDocumentProcessor(progress_callback=progress_callback)
+                doc_id = processor.process_document_live(filepath)
+
+                logger.info(f"[QUEUE] Completed: {filename} -> {doc_id}")
+
+                with app.app_context():
+                    socketio.emit('document_processed', {'document_id': doc_id})
+
+            except Exception as e:
+                logger.error(f"[QUEUE] Error processing {filename}: {e}")
+                logger.error(traceback.format_exc())
+                with app.app_context():
+                    socketio.emit('processing_error', {'error': str(e), 'filename': filename})
+
+            finally:
+                processing_queue.task_done()
+
+                # Check if queue is empty
+                with processing_lock:
+                    if processing_queue.empty():
+                        is_processing = False
+
+                # Emit updated queue status
+                with app.app_context():
+                    socketio.emit('queue_update', {
+                        'processing': None,
+                        'queue_size': processing_queue.qsize()
+                    })
+
+        except Exception as e:
+            logger.error(f"[QUEUE WORKER] Fatal error: {e}")
+            logger.error(traceback.format_exc())
+
+
+# Start queue worker thread on app startup
+queue_worker_thread = threading.Thread(target=process_queue_worker, daemon=True)
+queue_worker_thread.start()
+logger.info("[QUEUE] Worker thread started")
 
 
 @app.route('/')
@@ -153,6 +241,7 @@ def get_full_graph():
     claims = claim_repo.get_all_claims_with_children()
     doc_claims = doc_repo.get_all_document_claim_relationships()
     evidence_data = claim_repo.get_all_claim_evidence_relationships()
+    semantic_links = claim_repo.get_all_semantic_relationships()
 
     # Build document-claim mapping
     doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
@@ -197,7 +286,8 @@ def get_full_graph():
             'doc_status': doc['status'],
             'super_claims': super_claims,
             'all_claims': all_claims,  # New: all claims regardless of depth
-            'evidence': evidence_map
+            'evidence': evidence_map,
+            'semantic_links': semantic_links  # Cross-document semantic relationships
         })
 
     return jsonify(response)
@@ -224,51 +314,23 @@ def upload_document():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Start processing in background task (must use socketio.start_background_task for eventlet compatibility)
-    def process_with_updates(filepath):
-        try:
-            def progress_callback(message, progress, data):
-                # Handle progress being None (for stage events that don't have overall progress)
-                if progress is not None:
-                    logger.info(f"[PROGRESS {progress:.0f}%] {message}")
-                else:
-                    logger.info(f"{message}")
-                socketio.sleep(0)  # Yield to eventlet event loop before emitting
-                # CRITICAL: socketio.emit() from background thread requires app context
-                with app.app_context():
-                    socketio.emit('processing_update', {
-                        'message': message,
-                        'progress': progress,
-                        'data': data
-                    })  # No room/to parameter = broadcast to all
-                socketio.sleep(0)  # Yield again after emitting to allow event delivery
-                if progress is not None:
-                    logger.debug(f"Emitted processing_update: {progress:.0f}%")
-                else:
-                    logger.debug(f"Emitted processing_update: {message}")
+    # Add to processing queue instead of starting immediately
+    processing_queue.put((filepath, filename))
+    queue_position = processing_queue.qsize()
 
-            logger.info(f"Starting background processing for: {filepath}")
-            processor = LiveDocumentProcessor(progress_callback)
-            doc_id = processor.process_document(filepath)
-            logger.info(f"Background processing completed: {doc_id}")
+    logger.info(f"[QUEUE] Added to queue: {filename} (position: {queue_position})")
 
-            # Emit completion (also needs app context)
-            with app.app_context():
-                socketio.emit('document_processed', {'document_id': doc_id})
-
-        except Exception as e:
-            logger.error(f"BACKGROUND THREAD ERROR: {e}")
-            logger.error(traceback.format_exc())
-            with app.app_context():
-                socketio.emit('processing_error', {'error': str(e)})
-
-    # CRITICAL: Use socketio.start_background_task() instead of threading.Thread()
-    # This ensures the task runs in the eventlet greenthread context where Socket.IO events work
-    socketio.start_background_task(process_with_updates, filepath)
+    # Emit queue update
+    with app.app_context():
+        socketio.emit('queue_update', {
+            'processing': None if not is_processing else 'unknown',
+            'queue_size': queue_position
+        })
 
     return jsonify({
-        'status': 'processing_started',
-        'filename': filename
+        'status': 'queued',
+        'filename': filename,
+        'queue_position': queue_position
     })
 
 
