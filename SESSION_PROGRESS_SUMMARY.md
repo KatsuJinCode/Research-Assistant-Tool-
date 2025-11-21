@@ -1,14 +1,73 @@
 # Session Progress Summary
 ## Unified Interface & Document Discovery Pipeline
 
-**Date**: 2025-01-20
-**Session Focus**: Transform chat from guide to executor, implement document approval workflow
-**Total Commits**: 9
-**Lines Changed**: ~1,500+
+**Current Session Date**: 2025-11-20
+**Session Focus**: UI polish, chat command completion, investigation button fixes
+**Session Commits**: 5
+**Cumulative Commits**: 14
+**Lines Changed This Session**: ~400+
+
+**Previous Session Date**: 2025-01-20
+**Previous Focus**: Transform chat from guide to executor, implement document approval workflow
+**Previous Commits**: 9
+**Previous Lines Changed**: ~1,500+
 
 ---
 
-## ✅ **COMPLETED FEATURES**
+## 🆕 **TODAY'S SESSION (2025-11-20)**
+
+### Completed UI & Functionality Improvements
+
+#### 1. **Context Chips in Chat** (Commit: b6c0698)
+- Visual display of selected nodes in chat input area
+- Color-coded chips: Green (claims), Blue (documents), Orange (evidence)
+- Clickable X button to deselect nodes
+- Real-time polling updates (500ms interval)
+- Automatic hide when no selections
+
+#### 2. **Search Filter UI Enhancement** (Commit: b6c0698)
+- Added text labels: "Docs", "Claims", "Dupes"
+- Comprehensive tooltips explaining search types:
+  - Documents: "text matching on titles and content"
+  - Claims: "semantic similarity using embeddings"
+  - Duplicates: "MECE clustering algorithm"
+- Improved visual clarity and user understanding
+
+#### 3. **Agent Launcher Panel Removal** (Commit: bf87735)
+- Removed non-functional Agent Launcher HTML and CSS
+- Consolidated functionality into AI Assistant chat
+- Updated chat welcome message with all agent types:
+  - ArXiv search, Citation finding, Fact checking
+- Cleaner UI, single unified interface
+
+#### 4. **Investigation Buttons Fixed** (Commit: 8a7b9a0)
+- Added missing `investigateClaim()` JavaScript function
+- Uses `GraphRenderer.selectedNodeIds` for claim detection
+- Proper API integration with `/api/investigate-claim`
+- User-friendly alerts showing investigation status
+- Directs users to Background Agents panel
+
+#### 5. **Chat Document Approval Commands** (Commit: d797e5a)
+**Most significant addition** - Full approval workflow via chat:
+
+**Commands Added:**
+- `show pending documents` - Lists all awaiting approval (numbered list)
+- `approve document 1` - Approve by number
+- `approve document ID abc123` - Approve by ID
+- `approve all` - Batch approve all pending
+- `reject document 1` - Reject specific document
+
+**Features:**
+- Automatic processing queue management
+- WebSocket real-time updates (`document_approved`, `document_rejected`)
+- File deletion on rejection
+- Comprehensive error handling
+- User-friendly numbered list display
+- Integration with existing document approval backend
+
+---
+
+## ✅ **PREVIOUS SESSION COMPLETED FEATURES**
 
 ### 1. **Chat Direct Action Execution** (Commits: ccfe798)
 **What**: Chat can now EXECUTE actions, not just guide users to buttons
