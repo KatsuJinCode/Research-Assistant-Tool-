@@ -16,12 +16,25 @@ const Chat = {
         this.setupEventListeners();
 
         // Send welcome message
-        this.addMessage('ai', 'Hello! I\'m your research assistant. I can help you:\n\n' +
-            '• Upload and process documents\n' +
-            '• Investigate claims\n' +
-            '• Navigate your research graph\n' +
-            '• Answer questions about your data\n\n' +
-            'What would you like to do?'
+        this.addMessage('ai',
+            '👋 **Welcome to your Research Assistant!**\n\n' +
+            'I can help you manage your research graph through natural conversation:\n\n' +
+            '**📄 Documents:**\n' +
+            '• Upload and process PDFs, TXT, DOCX\n' +
+            '• Track processing progress\n\n' +
+            '**🎯 Claims:**\n' +
+            '• Add claims: "Add claim \\"Your text here\\""\n' +
+            '• Adjust confidence scores manually\n' +
+            '• Remove invalid evidence\n\n' +
+            '**🔍 Research:**\n' +
+            '• Select claim + "investigate this"\n' +
+            '• "Find supporting evidence"\n' +
+            '• "Find contradicting evidence"\n\n' +
+            '**⚙️ Monitoring:**\n' +
+            '• "What agents are running?"\n' +
+            '• Check processing queue status\n' +
+            '• View graph statistics\n\n' +
+            '**Try:** Type `/help` for slash commands, or just tell me what you need!'
         );
 
         console.log('[Chat] ✓ Chat initialized');

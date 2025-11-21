@@ -846,14 +846,28 @@ def handle_chat_command(command, context):
     if cmd == '/help':
         return {
             'message': (
-                "**Available Commands:**\n\n"
+                "**📋 Slash Commands:**\n\n"
                 "`/help` - Show this help message\n"
-                "`/upload` - Open upload dialog\n"
-                "`/investigate` - Start claim investigation\n"
-                "`/cluster` - Trigger clustering\n"
+                "`/upload` - Highlight upload area\n"
+                "`/cluster` - Trigger MECE clustering\n"
                 "`/stats` - Show graph statistics\n"
                 "`/clear` - Clear chat history\n\n"
-                "More commands coming soon!"
+                "**💬 Natural Language:**\n\n"
+                "**Claims:**\n"
+                "• Add claim \"Your claim here\"\n"
+                "• Show me claim [partial text]\n\n"
+                "**Research:**\n"
+                "• Investigate this claim\n"
+                "• Find supporting evidence\n"
+                "• Find contradicting evidence\n\n"
+                "**Monitoring:**\n"
+                "• What agents are running?\n"
+                "• What's in the queue?\n"
+                "• Show me the stats\n\n"
+                "**Navigation:**\n"
+                "• Help me find [topic]\n"
+                "• How do I [task]?\n\n"
+                "Just talk naturally - I understand context from your graph!"
             ),
             'actions': [],
             'timestamp': datetime.now().isoformat()
