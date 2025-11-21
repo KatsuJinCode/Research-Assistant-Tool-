@@ -326,8 +326,8 @@ const ProjectManager = {
         // Confirm deletion
         const confirmed = confirm(
             `Are you sure you want to delete project "${projectName}"?\n\n` +
-            `All nodes in this project will be moved to the Default Project.\n\n` +
-            `This action cannot be undone.`
+            `This will permanently delete the project's Neo4j database and ALL its data.\n\n` +
+            `This action cannot be undone!`
         );
 
         if (!confirmed) return;
@@ -341,7 +341,7 @@ const ProjectManager = {
 
             if (data.success) {
                 UI.showNotification(
-                    `Project "${projectName}" deleted. ${data.moved_nodes} nodes moved to Default Project.`,
+                    data.message || `Project "${projectName}" deleted successfully`,
                     'success'
                 );
 

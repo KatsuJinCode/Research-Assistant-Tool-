@@ -2619,45 +2619,67 @@ Respond naturally as a helpful research assistant. Keep your response under 200 
 
 
 # ====================== PROJECT MANAGEMENT API ======================
+# Multi-Database Architecture: Each project = separate Neo4j database
 
 @app.route('/api/projects', methods=['GET'])
 def list_projects():
-    """List all projects with their statistics."""
+    """
+    List all projects with their statistics.
+
+    Projects are stored as metadata in system database (neo4j).
+    Each project has its own separate Neo4j database for complete isolation.
+    """
     try:
         logger.info("[API] Fetching all projects")
 
+        if not db_manager:
+            return jsonify({'error': 'DatabaseManager not available'}), 500
+
+        # Query project metadata from system database
         query = """
         MATCH (p:Project)
-        OPTIONAL MATCH (n {project_id: p.id})
-        WHERE NOT n:Project
-        WITH p, count(n) as node_count
         RETURN p.id as id,
                p.name as name,
                p.description as description,
                p.color as color,
+               p.database_name as database_name,
                p.is_active as is_active,
                p.created_at as created_at,
-               p.updated_at as updated_at,
-               node_count
+               p.updated_at as updated_at
         ORDER BY p.is_active DESC, p.created_at DESC
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, {})
-        )
+        # Query system database for project list
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query)
+            projects = []
 
-        projects = []
-        for record in result:
-            projects.append({
-                'id': record['id'],
-                'name': record['name'],
-                'description': record['description'],
-                'color': record['color'],
-                'is_active': record['is_active'],
-                'created_at': str(record['created_at']) if record['created_at'] else None,
-                'updated_at': str(record['updated_at']) if record['updated_at'] else None,
-                'node_count': record['node_count']
-            })
+            for record in result:
+                database_name = record['database_name']
+
+                # Get stats from the project's actual database
+                try:
+                    if db_manager.database_exists(database_name):
+                        stats = db_manager.get_database_stats(database_name)
+                        node_count = stats.get('total_nodes', 0)
+                    else:
+                        node_count = 0
+                        logger.warning(f"Database {database_name} doesn't exist for project {record['id']}")
+                except Exception as e:
+                    logger.warning(f"Error getting stats for {database_name}: {e}")
+                    node_count = 0
+
+                projects.append({
+                    'id': record['id'],
+                    'name': record['name'],
+                    'description': record['description'],
+                    'color': record['color'],
+                    'database_name': database_name,
+                    'is_active': record['is_active'],
+                    'created_at': str(record['created_at']) if record['created_at'] else None,
+                    'updated_at': str(record['updated_at']) if record['updated_at'] else None,
+                    'node_count': node_count
+                })
 
         logger.info(f"[API] Found {len(projects)} projects")
         return jsonify({'projects': projects})
@@ -2670,7 +2692,15 @@ def list_projects():
 
 @app.route('/api/projects', methods=['POST'])
 def create_project():
-    """Create a new project."""
+    """
+    Create a new project with its own isolated Neo4j database.
+
+    Steps:
+    1. Generate database name from project name
+    2. Create actual Neo4j database
+    3. Initialize database schema (indexes, constraints)
+    4. Store project metadata in system database
+    """
     try:
         data = request.json
         name = data.get('name', '').strip()
@@ -2680,61 +2710,91 @@ def create_project():
         if not name:
             return jsonify({'error': 'Project name is required'}), 400
 
-        # Generate project ID from name
+        if not db_manager:
+            return jsonify({'error': 'DatabaseManager not available'}), 500
+
+        # Generate project ID and database name
         import re
+        import uuid
         project_id = re.sub(r'[^a-z0-9_-]', '_', name.lower())
+        database_name = db_manager.sanitize_database_name(name)
 
-        logger.info(f"[API] Creating project: {name} (ID: {project_id})")
+        # Check if database name already exists
+        if db_manager.database_exists(database_name):
+            return jsonify({'error': f'A project with similar name already exists (database: {database_name})'}), 400
 
-        # Create project node
+        logger.info(f"[API] Creating project: {name} (ID: {project_id}, DB: {database_name})")
+
+        # Step 1: Create the actual Neo4j database
+        success = db_manager.create_database(database_name, wait=True)
+        if not success:
+            return jsonify({'error': 'Failed to create database'}), 500
+
+        logger.info(f"[API] Database created: {database_name}")
+
+        # Step 2: Initialize database schema (indexes, constraints)
+        db_manager.initialize_database_schema(database_name)
+        logger.info(f"[API] Database schema initialized for {database_name}")
+
+        # Step 3: Store project metadata in system database
         query = """
-        MERGE (p:Project {id: $project_id})
-        ON CREATE SET
-            p.name = $name,
-            p.description = $description,
-            p.color = $color,
-            p.created_at = datetime(),
-            p.updated_at = datetime(),
-            p.is_active = false
-        ON MATCH SET
-            p.name = $name,
-            p.description = $description,
-            p.color = $color,
-            p.updated_at = datetime()
+        CREATE (p:Project {
+            id: $project_id,
+            name: $name,
+            description: $description,
+            color: $color,
+            database_name: $database_name,
+            is_active: false,
+            created_at: datetime(),
+            updated_at: datetime()
+        })
         RETURN p
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, {
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query, {
                 'project_id': project_id,
                 'name': name,
                 'description': description,
-                'color': color
+                'color': color,
+                'database_name': database_name
             })
-        )
 
-        if result:
-            project = dict(result[0]['p'])
-            project['created_at'] = str(project.get('created_at'))
-            project['updated_at'] = str(project.get('updated_at'))
+            record = result.single()
+            if record:
+                project = dict(record['p'])
+                project['created_at'] = str(project.get('created_at'))
+                project['updated_at'] = str(project.get('updated_at'))
 
-            logger.info(f"[API] Project created: {project_id}")
-            return jsonify({
-                'success': True,
-                'project': project
-            })
-        else:
-            return jsonify({'error': 'Failed to create project'}), 500
+                logger.info(f"[API] Project metadata saved: {project_id}")
+                return jsonify({
+                    'success': True,
+                    'project': project
+                })
+            else:
+                # Rollback: delete the database if metadata creation failed
+                logger.error("Failed to save project metadata, rolling back database creation")
+                db_manager.drop_database(database_name)
+                return jsonify({'error': 'Failed to create project metadata'}), 500
 
     except Exception as e:
         logger.error(f"[API] Error creating project: {e}")
         logger.error(traceback.format_exc())
+
+        # Attempt cleanup on error
+        try:
+            if 'database_name' in locals() and db_manager:
+                db_manager.drop_database(database_name)
+                logger.info(f"Cleaned up failed database: {database_name}")
+        except:
+            pass
+
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/projects/<project_id>', methods=['PUT'])
 def update_project(project_id):
-    """Update project properties."""
+    """Update project metadata in system database."""
     try:
         data = request.json
         logger.info(f"[API] Updating project {project_id}")
@@ -2761,22 +2821,23 @@ def update_project(project_id):
         if not updates:
             return jsonify({'error': 'No valid fields to update'}), 400
 
+        # Update metadata in system database
         query = f"""
         MATCH (p:Project {{id: $project_id}})
         SET {', '.join(updates)}
         RETURN p
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, params)
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query, params)
+            record = result.single()
 
-        if not result:
-            return jsonify({'error': 'Project not found'}), 404
+            if not record:
+                return jsonify({'error': 'Project not found'}), 404
 
-        project = dict(result[0]['p'])
-        project['created_at'] = str(project.get('created_at'))
-        project['updated_at'] = str(project.get('updated_at'))
+            project = dict(record['p'])
+            project['created_at'] = str(project.get('created_at'))
+            project['updated_at'] = str(project.get('updated_at'))
 
         logger.info(f"[API] Project updated: {project_id}")
         return jsonify({
@@ -2792,57 +2853,64 @@ def update_project(project_id):
 
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 def delete_project(project_id):
-    """Delete a project (cannot delete default project or active project)."""
+    """Delete a project - drops the entire Neo4j database and removes metadata."""
     try:
         if project_id == 'default':
             return jsonify({'error': 'Cannot delete default project'}), 400
 
         logger.info(f"[API] Deleting project {project_id}")
 
-        # Check if project is active
+        # Get project details from system database
         check_query = """
         MATCH (p:Project {id: $project_id})
-        RETURN p.is_active as is_active
+        RETURN p.is_active as is_active, p.database_name as database_name, p.name as name
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(check_query, {'project_id': project_id})
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(check_query, {'project_id': project_id})
+            record = result.single()
 
-        if not result:
-            return jsonify({'error': 'Project not found'}), 404
+            if not record:
+                return jsonify({'error': 'Project not found'}), 404
 
-        if result[0]['is_active']:
-            return jsonify({'error': 'Cannot delete active project. Switch to another project first.'}), 400
+            is_active = record['is_active']
+            database_name = record['database_name']
+            project_name = record['name']
 
-        # Move all nodes in this project to default project
-        move_query = """
-        MATCH (n {project_id: $project_id})
-        WHERE NOT n:Project
-        SET n.project_id = 'default'
-        RETURN count(n) as moved_count
-        """
+        # Cannot delete active project
+        if is_active:
+            return jsonify({
+                'error': 'Cannot delete active project. Switch to another project first.'
+            }), 400
 
-        move_result = with_app_context(
-            lambda: claim_repo.execute_query(move_query, {'project_id': project_id})
-        )
+        # Cannot delete system database
+        if database_name in db_manager.RESERVED_NAMES:
+            return jsonify({
+                'error': f'Cannot delete reserved database: {database_name}'
+            }), 400
 
-        moved_count = move_result[0]['moved_count'] if move_result else 0
+        # Step 1: Drop the actual Neo4j database
+        logger.info(f"[API] Dropping database: {database_name}")
+        drop_success = db_manager.drop_database(database_name)
 
-        # Delete project node
+        if not drop_success:
+            return jsonify({
+                'error': f'Failed to drop database: {database_name}'
+            }), 500
+
+        # Step 2: Remove project metadata from system database
         delete_query = """
         MATCH (p:Project {id: $project_id})
         DELETE p
         """
 
-        with_app_context(
-            lambda: claim_repo.execute_query(delete_query, {'project_id': project_id})
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            session.run(delete_query, {'project_id': project_id})
 
-        logger.info(f"[API] Project deleted: {project_id}, moved {moved_count} nodes to default")
+        logger.info(f"[API] Project deleted: {project_name} (database: {database_name})")
         return jsonify({
             'success': True,
-            'moved_nodes': moved_count
+            'message': f'Project "{project_name}" and all its data have been permanently deleted'
         })
 
     except Exception as e:
@@ -2853,12 +2921,36 @@ def delete_project(project_id):
 
 @app.route('/api/projects/<project_id>/switch', methods=['POST'])
 def switch_project(project_id):
-    """Switch to a different project (sets it as active)."""
+    """Switch to a different project - changes active database."""
     try:
         logger.info(f"[API] Switching to project {project_id}")
 
-        # Set all projects inactive, then set the target project active
-        query = """
+        # Step 1: Get project details from system database
+        get_query = """
+        MATCH (p:Project {id: $project_id})
+        RETURN p.database_name as database_name, p.name as name, p
+        """
+
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(get_query, {'project_id': project_id})
+            record = result.single()
+
+            if not record:
+                return jsonify({'error': 'Project not found'}), 404
+
+            database_name = record['database_name']
+            project_name = record['name']
+            project_node = record['p']
+
+        # Step 2: Verify the database exists
+        if not db_manager.database_exists(database_name):
+            logger.error(f"[API] Database {database_name} does not exist for project {project_id}")
+            return jsonify({
+                'error': f'Project database not found: {database_name}'
+            }), 500
+
+        # Step 3: Update is_active flags in system database
+        update_query = """
         MATCH (p:Project)
         SET p.is_active = (p.id = $project_id)
         WITH p
@@ -2866,24 +2958,26 @@ def switch_project(project_id):
         RETURN p
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, {'project_id': project_id})
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(update_query, {'project_id': project_id})
+            record = result.single()
 
-        if not result:
-            return jsonify({'error': 'Project not found'}), 404
+            project = dict(record['p'])
+            project['created_at'] = str(project.get('created_at'))
+            project['updated_at'] = str(project.get('updated_at'))
 
-        project = dict(result[0]['p'])
-        project['created_at'] = str(project.get('created_at'))
-        project['updated_at'] = str(project.get('updated_at'))
+        # Step 4: Actually switch the active database in Neo4j client
+        neo4j_client.set_active_database(database_name)
+        logger.info(f"[API] Active database switched to: {database_name}")
 
-        # Emit project switched event
+        # Step 5: Emit project switched event for WebSocket clients
         socketio.emit('project_switched', {
             'project_id': project_id,
-            'project_name': project.get('name')
+            'project_name': project_name,
+            'database_name': database_name
         })
 
-        logger.info(f"[API] Switched to project: {project_id}")
+        logger.info(f"[API] Switched to project: {project_name} (database: {database_name})")
         return jsonify({
             'success': True,
             'project': project
@@ -2897,37 +2991,50 @@ def switch_project(project_id):
 
 @app.route('/api/projects/<project_id>/stats', methods=['GET'])
 def get_project_stats(project_id):
-    """Get detailed statistics for a project."""
+    """Get detailed statistics for a project from its database."""
     try:
         logger.info(f"[API] Fetching stats for project {project_id}")
 
+        # Get project details from system database
         query = """
         MATCH (p:Project {id: $project_id})
-        OPTIONAL MATCH (doc:Document {project_id: $project_id})
-        OPTIONAL MATCH (claim:Claim {project_id: $project_id})
-        OPTIONAL MATCH (evidence:Evidence {project_id: $project_id})
-        RETURN p.name as name,
-               count(DISTINCT doc) as document_count,
-               count(DISTINCT claim) as claim_count,
-               count(DISTINCT evidence) as evidence_count
+        RETURN p.name as name, p.database_name as database_name
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, {'project_id': project_id})
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query, {'project_id': project_id})
+            record = result.single()
 
-        if not result:
-            return jsonify({'error': 'Project not found'}), 404
+            if not record:
+                return jsonify({'error': 'Project not found'}), 404
 
-        stats = result[0]
+            project_name = record['name']
+            database_name = record['database_name']
 
-        logger.info(f"[API] Stats for {project_id}: {dict(stats)}")
+        # Get statistics from the project's actual database
+        if db_manager.database_exists(database_name):
+            stats = db_manager.get_database_stats(database_name)
+        else:
+            logger.warning(f"[API] Database {database_name} does not exist, returning zero stats")
+            stats = {
+                'total_nodes': 0,
+                'total_relationships': 0,
+                'document_count': 0,
+                'claim_count': 0,
+                'evidence_count': 0,
+                'label_counts': {}
+            }
+
+        logger.info(f"[API] Stats for {project_id}: {stats}")
         return jsonify({
             'project_id': project_id,
-            'name': stats['name'],
+            'name': project_name,
+            'total_nodes': stats['total_nodes'],
+            'total_relationships': stats['total_relationships'],
             'document_count': stats['document_count'],
             'claim_count': stats['claim_count'],
-            'evidence_count': stats['evidence_count']
+            'evidence_count': stats['evidence_count'],
+            'label_counts': stats.get('label_counts', {})
         })
 
     except Exception as e:
@@ -2938,39 +3045,47 @@ def get_project_stats(project_id):
 
 @app.route('/api/projects/active', methods=['GET'])
 def get_active_project():
-    """Get the currently active project."""
+    """Get the currently active project from system database."""
     try:
         logger.info("[API] Fetching active project")
 
+        # Query system database for active project
         query = """
         MATCH (p:Project {is_active: true})
         RETURN p
         LIMIT 1
         """
 
-        result = with_app_context(
-            lambda: claim_repo.execute_query(query, {})
-        )
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query, {})
+            record = result.single()
 
-        if not result:
-            # No active project, return default
-            query = """
-            MATCH (p:Project {id: 'default'})
-            SET p.is_active = true
-            RETURN p
-            """
-            result = with_app_context(
-                lambda: claim_repo.execute_query(query, {})
-            )
+            if not record:
+                # No active project, activate default project
+                logger.info("[API] No active project found, activating default")
+                activate_query = """
+                MATCH (p:Project {id: 'default'})
+                SET p.is_active = true
+                RETURN p
+                """
+                result = session.run(activate_query, {})
+                record = result.single()
 
-        if result:
-            project = dict(result[0]['p'])
-            project['created_at'] = str(project.get('created_at'))
-            project['updated_at'] = str(project.get('updated_at'))
+            if record:
+                project = dict(record['p'])
+                project['created_at'] = str(project.get('created_at'))
+                project['updated_at'] = str(project.get('updated_at'))
 
-            return jsonify({'project': project})
-        else:
-            return jsonify({'error': 'No active project found'}), 404
+                # Ensure Neo4j client is using the correct active database
+                database_name = project.get('database_name', db_manager.SYSTEM_DATABASE)
+                if neo4j_client.active_database != database_name:
+                    logger.info(f"[API] Syncing active database to: {database_name}")
+                    neo4j_client.set_active_database(database_name)
+
+                return jsonify({'project': project})
+            else:
+                logger.error("[API] No default project found in system database")
+                return jsonify({'error': 'No active project found'}), 404
 
     except Exception as e:
         logger.error(f"[API] Error fetching active project: {e}")
