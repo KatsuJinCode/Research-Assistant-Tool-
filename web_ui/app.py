@@ -1578,6 +1578,120 @@ def process_chat_message(message, context):
             logger.error(traceback.format_exc())
             response_text = f"❌ Error during auto-linking: {str(e)}\n\nCheck the console for details."
 
+    # Document discovery commands
+    elif any(phrase in message_lower for phrase in ['search arxiv', 'find papers', 'search pubmed', 'search for papers', 'find documents', 'discover papers']):
+        try:
+            # Extract query from message
+            query = None
+            for trigger in ['search arxiv for', 'find papers about', 'search pubmed for', 'search for papers about', 'find documents about', 'discover papers about']:
+                if trigger in message_lower:
+                    query = message_lower.split(trigger, 1)[1].strip()
+                    break
+
+            if not query:
+                # Try extracting from quoted text
+                import re
+                quote_match = re.search(r'["\']([^"\']+)["\']', message)
+                if quote_match:
+                    query = quote_match.group(1)
+
+            if not query:
+                response_text = (
+                    "Please specify what to search for. Examples:\n\n"
+                    "• \"Search arXiv for vaccine efficacy\"\n"
+                    "• \"Find papers about 'machine learning interpretability'\"\n"
+                    "• \"Search PubMed for COVID-19 treatments\""
+                )
+            else:
+                # Determine sources from message
+                sources = []
+                if 'arxiv' in message_lower:
+                    sources.append('arxiv')
+                if 'pubmed' in message_lower:
+                    sources.append('pubmed')
+                if not sources:
+                    sources = ['arxiv', 'pubmed']  # Default to both
+
+                response_text = f"🔍 Starting document search...\n\n"
+                response_text += f"**Query:** {query}\n"
+                response_text += f"**Sources:** {', '.join(sources).upper()}\n\n"
+                response_text += "The document finder agent is running in the background. "
+                response_text += "Check the **Background Agents** panel to monitor progress.\n\n"
+                response_text += "Found documents will be added to the approval queue automatically."
+
+                # Start background agent
+                from research_agent.document_finder_agent import DocumentFinderAgent
+                import threading
+
+                def run_finder():
+                    try:
+                        agent = DocumentFinderAgent(
+                            query=query,
+                            output_dir="./uploads/discovered_papers"
+                        )
+                        agent.set_sources(sources)
+                        agent.set_max_results(10)
+
+                        # Set progress callback to emit WebSocket events
+                        def progress_callback(message, data=None):
+                            with app.app_context():
+                                socketio.emit('agent_progress', {
+                                    'agent': 'document_finder',
+                                    'message': message,
+                                    'data': data or {}
+                                })
+
+                        agent.set_progress_callback(progress_callback)
+
+                        # Run search and download
+                        results = agent.search_and_download()
+
+                        # Add found papers to approval queue
+                        if 'papers' in results:
+                            for paper in results['papers']:
+                                if 'local_path' in paper:
+                                    # Add to pending documents
+                                    pending_doc = {
+                                        'id': f"pending_{paper['source']}_{paper.get('arxiv_id', paper.get('pmid', 'unknown'))}",
+                                        'filename': os.path.basename(paper['local_path']),
+                                        'filepath': paper['local_path'],
+                                        'title': paper['title'],
+                                        'authors': ', '.join(paper.get('authors', [])[:3]),
+                                        'source': paper['source'],
+                                        'added_at': datetime.now().isoformat(),
+                                        'status': 'pending'
+                                    }
+                                    pending_documents[pending_doc['id']] = pending_doc
+
+                        # Emit completion event
+                        with app.app_context():
+                            socketio.emit('agent_complete', {
+                                'agent': 'document_finder',
+                                'query': query,
+                                'results': results,
+                                'message': f"✅ Found {results.get('downloaded', 0)} papers. Added to approval queue."
+                            })
+
+                    except Exception as e:
+                        logger.error(f"Document finder agent error: {e}")
+                        logger.error(traceback.format_exc())
+                        with app.app_context():
+                            socketio.emit('agent_error', {
+                                'agent': 'document_finder',
+                                'error': str(e)
+                            })
+
+                # Start in background thread
+                thread = threading.Thread(target=run_finder, daemon=True)
+                thread.start()
+
+                actions.append({'type': 'highlight_element', 'selector': '#agent-monitor-panel'})
+
+        except Exception as e:
+            logger.error(f"Error starting document finder: {e}")
+            logger.error(traceback.format_exc())
+            response_text = f"❌ Error starting document search: {str(e)}"
+
     # Generate embeddings command
     elif any(phrase in message_lower for phrase in ['generate embedding', 'create embedding', 'generate embeddings']):
         try:

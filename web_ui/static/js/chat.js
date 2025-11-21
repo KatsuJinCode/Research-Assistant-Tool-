@@ -26,15 +26,14 @@ const Chat = {
             '• Add claims: "Add claim \\"Your text here\\""\n' +
             '• Adjust confidence: "Set to 80%" or "Mark as true"\n' +
             '• Remove invalid evidence\n\n' +
-            '**🔍 Research & Investigation:**\n' +
-            '• Select claim + "investigate this"\n' +
-            '• "Find supporting evidence"\n' +
-            '• "Find contradicting evidence"\n' +
+            '**🔍 Research & Discovery:**\n' +
+            '• "Search arXiv for [topic]" - Find papers from arXiv\n' +
+            '• "Search PubMed for [topic]" - Find biomedical papers\n' +
+            '• "Find papers about [topic]" - Search multiple sources\n' +
             '• "Auto-link evidence" - AI finds relationships\n' +
             '• "Generate embeddings" - Enable semantic search\n' +
-            '• "Search ArXiv for [topic]"\n' +
-            '• "Find citations for this claim"\n' +
-            '• "Fact check this"\n\n' +
+            '• Select claim + "investigate this"\n' +
+            '• "Find supporting/contradicting evidence"\n\n' +
             '**⚙️ Monitoring:**\n' +
             '• "What agents are running?"\n' +
             '• Check processing queue status\n' +
