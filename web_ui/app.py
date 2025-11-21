@@ -957,6 +957,229 @@ def process_chat_message(message, context):
         )
         actions.append({'type': 'highlight_upload'})
 
+    # Document approval commands
+    elif any(phrase in message_lower for phrase in ['pending document', 'approve document', 'reject document', 'pending approval']):
+        import re
+
+        # Show pending documents
+        if any(phrase in message_lower for phrase in ['show pending', 'list pending', 'pending document', 'what pending']):
+            try:
+                query = """
+                MATCH (d:PendingDocument)
+                WHERE d.status = 'pending_approval'
+                RETURN d.id as id, d.filename as filename, d.source as source,
+                       d.created_at as created_at
+                ORDER BY d.created_at DESC
+                """
+                pending_docs = db.execute_query(query)
+
+                if pending_docs and len(pending_docs) > 0:
+                    response_text = f"📋 **Pending Documents ({len(pending_docs)}):**\n\n"
+                    for idx, doc in enumerate(pending_docs, 1):
+                        response_text += f"{idx}. **{doc['filename']}**\n   Source: {doc['source']}\n   ID: {doc['id'][:12]}...\n\n"
+                    response_text += "To approve or reject:\n• \"Approve document 1\"\n• \"Reject document 2\"\n• \"Approve all\""
+                else:
+                    response_text = "✓ No documents pending approval.\n\nAll documents are processed!"
+
+            except Exception as e:
+                logger.error(f"Error fetching pending documents: {e}")
+                response_text = f"Error fetching pending documents: {str(e)}"
+
+        # Approve document(s)
+        elif 'approve' in message_lower:
+            # Check for "approve all"
+            if 'all' in message_lower:
+                try:
+                    query = """
+                    MATCH (d:PendingDocument)
+                    WHERE d.status = 'pending_approval'
+                    RETURN d.id as id, d.filename as filename, d.filepath as filepath
+                    """
+                    pending_docs = db.execute_query(query)
+
+                    if pending_docs and len(pending_docs) > 0:
+                        approved_count = 0
+                        for doc in pending_docs:
+                            # Update status
+                            update_query = """
+                            MATCH (d:PendingDocument {id: $approval_id})
+                            SET d.status = 'approved', d.approved_at = datetime()
+                            """
+                            db.execute_query(update_query, {'approval_id': doc['id']})
+
+                            # Add to processing queue
+                            processing_queue.put((doc['filepath'], doc['filename']))
+                            approved_count += 1
+
+                            # Emit events
+                            with app.app_context():
+                                socketio.emit('document_approved', {
+                                    'approval_id': doc['id'],
+                                    'filename': doc['filename']
+                                })
+
+                        # Update queue status
+                        queue_position = processing_queue.qsize()
+                        with app.app_context():
+                            socketio.emit('queue_update', {
+                                'processing': None,
+                                'queue_size': queue_position
+                            })
+
+                        response_text = (
+                            f"✓ Approved {approved_count} document(s)!\n\n"
+                            f"All pending documents have been added to the processing queue. "
+                            f"Check the Background Agents panel to monitor progress."
+                        )
+                        actions.append({'type': 'reload_graph'})
+                    else:
+                        response_text = "No documents pending approval."
+
+                except Exception as e:
+                    logger.error(f"Error approving all documents: {e}")
+                    logger.error(traceback.format_exc())
+                    response_text = f"Error approving documents: {str(e)}"
+
+            # Approve specific document by number or ID
+            else:
+                # Extract document number or ID
+                number_match = re.search(r'document\s+(\d+)', message_lower)
+                id_match = re.search(r'id[:\s]+([a-f0-9_]+)', message_lower)
+
+                if number_match or id_match:
+                    try:
+                        # Get pending documents
+                        query = """
+                        MATCH (d:PendingDocument)
+                        WHERE d.status = 'pending_approval'
+                        RETURN d.id as id, d.filename as filename, d.filepath as filepath
+                        ORDER BY d.created_at DESC
+                        """
+                        pending_docs = db.execute_query(query)
+
+                        if number_match:
+                            doc_number = int(number_match.group(1))
+                            if doc_number > 0 and doc_number <= len(pending_docs):
+                                doc = pending_docs[doc_number - 1]
+                            else:
+                                response_text = f"Document number {doc_number} not found. Use 'show pending' to see list."
+                                doc = None
+                        elif id_match:
+                            doc_id = id_match.group(1)
+                            doc = next((d for d in pending_docs if d['id'].startswith(doc_id)), None)
+                            if not doc:
+                                response_text = f"Document ID {doc_id} not found."
+
+                        if doc:
+                            # Update status
+                            update_query = """
+                            MATCH (d:PendingDocument {id: $approval_id})
+                            SET d.status = 'approved', d.approved_at = datetime()
+                            """
+                            db.execute_query(update_query, {'approval_id': doc['id']})
+
+                            # Add to processing queue
+                            processing_queue.put((doc['filepath'], doc['filename']))
+
+                            # Emit events
+                            with app.app_context():
+                                socketio.emit('document_approved', {
+                                    'approval_id': doc['id'],
+                                    'filename': doc['filename']
+                                })
+                                socketio.emit('queue_update', {
+                                    'processing': None,
+                                    'queue_size': processing_queue.qsize()
+                                })
+
+                            response_text = (
+                                f"✓ Document approved!\n\n"
+                                f"**File:** {doc['filename']}\n\n"
+                                f"Added to processing queue. Check Background Agents panel for progress."
+                            )
+                            actions.append({'type': 'reload_graph'})
+
+                    except Exception as e:
+                        logger.error(f"Error approving document: {e}")
+                        logger.error(traceback.format_exc())
+                        response_text = f"Error approving document: {str(e)}"
+                else:
+                    response_text = (
+                        "Please specify which document to approve:\n\n"
+                        "• \"Approve document 1\"\n"
+                        "• \"Approve document ID approval_abc\"\n"
+                        "• \"Approve all\"\n\n"
+                        "Use 'show pending' to see the list."
+                    )
+
+        # Reject document
+        elif 'reject' in message_lower:
+            # Extract document number or ID
+            number_match = re.search(r'document\s+(\d+)', message_lower)
+            id_match = re.search(r'id[:\s]+([a-f0-9_]+)', message_lower)
+
+            if number_match or id_match:
+                try:
+                    # Get pending documents
+                    query = """
+                    MATCH (d:PendingDocument)
+                    WHERE d.status = 'pending_approval'
+                    RETURN d.id as id, d.filename as filename, d.filepath as filepath
+                    ORDER BY d.created_at DESC
+                    """
+                    pending_docs = db.execute_query(query)
+
+                    if number_match:
+                        doc_number = int(number_match.group(1))
+                        if doc_number > 0 and doc_number <= len(pending_docs):
+                            doc = pending_docs[doc_number - 1]
+                        else:
+                            response_text = f"Document number {doc_number} not found."
+                            doc = None
+                    elif id_match:
+                        doc_id = id_match.group(1)
+                        doc = next((d for d in pending_docs if d['id'].startswith(doc_id)), None)
+                        if not doc:
+                            response_text = f"Document ID {doc_id} not found."
+
+                    if doc:
+                        # Delete from database
+                        delete_query = """
+                        MATCH (d:PendingDocument {id: $approval_id})
+                        DELETE d
+                        """
+                        db.execute_query(delete_query, {'approval_id': doc['id']})
+
+                        # Delete file from disk
+                        import os
+                        if os.path.exists(doc['filepath']):
+                            os.remove(doc['filepath'])
+
+                        # Emit event
+                        with app.app_context():
+                            socketio.emit('document_rejected', {
+                                'approval_id': doc['id'],
+                                'filename': doc['filename']
+                            })
+
+                        response_text = (
+                            f"✗ Document rejected!\n\n"
+                            f"**File:** {doc['filename']}\n\n"
+                            f"The document has been removed from the system."
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error rejecting document: {e}")
+                    logger.error(traceback.format_exc())
+                    response_text = f"Error rejecting document: {str(e)}"
+            else:
+                response_text = (
+                    "Please specify which document to reject:\n\n"
+                    "• \"Reject document 1\"\n"
+                    "• \"Reject document ID approval_abc\"\n\n"
+                    "Use 'show pending' to see the list."
+                )
+
     # Claim investigation
     elif any(word in message_lower for word in ['investigate', 'research', 'find evidence', 'support', 'contradict', 'challenge']):
         # Determine investigation type
