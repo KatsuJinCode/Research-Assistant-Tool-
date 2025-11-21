@@ -24,12 +24,15 @@ const Chat = {
             '• Track processing progress\n\n' +
             '**🎯 Claims:**\n' +
             '• Add claims: "Add claim \\"Your text here\\""\n' +
-            '• Adjust confidence scores manually\n' +
+            '• Adjust confidence: "Set to 80%" or "Mark as true"\n' +
             '• Remove invalid evidence\n\n' +
-            '**🔍 Research:**\n' +
+            '**🔍 Research & Investigation:**\n' +
             '• Select claim + "investigate this"\n' +
             '• "Find supporting evidence"\n' +
-            '• "Find contradicting evidence"\n\n' +
+            '• "Find contradicting evidence"\n' +
+            '• "Search ArXiv for [topic]"\n' +
+            '• "Find citations for this claim"\n' +
+            '• "Fact check this"\n\n' +
             '**⚙️ Monitoring:**\n' +
             '• "What agents are running?"\n' +
             '• Check processing queue status\n' +

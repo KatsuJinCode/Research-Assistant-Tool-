@@ -286,45 +286,6 @@
             transition: width 0.5s;
         }
 
-        /* Agent Launcher Toolbar */
-        #agent-launcher {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            background: #2a2a2a;
-            border: 2px solid #2196F3;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            transition: all 0.3s;
-        }
-
-        #agent-launcher.collapsed {
-            width: 200px;
-            height: 50px;
-        }
-
-        #agent-launcher.collapsed .launcher-body {
-            display: none;
-        }
-
-        .launcher-header {
-            background: #2196F3;
-            padding: 12px;
-            cursor: pointer;
-            border-radius: 6px 6px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            color: white;
-        }
-
-        .launcher-body {
-            padding: 15px;
-        }
-
         .form-group {
             margin-bottom: 15px;
         }
@@ -845,49 +806,6 @@
                         ✗ Find Contradicting Evidence
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Agent Launcher Toolbar -->
-    <div id="agent-launcher" class="collapsed">
-        <div class="launcher-header" onclick="toggleLauncher()">
-            <span>Agent Launcher</span>
-            <span id="launcher-toggle">▲</span>
-        </div>
-        <div class="launcher-body">
-            <div class="form-group">
-                <label class="form-label">Agent Type</label>
-                <select id="agent-type" class="form-control">
-                    <option value="arxiv_search">ArXiv Search</option>
-                    <option value="web_search">Web Search</option>
-                    <option value="fact_check">Fact Check</option>
-                    <option value="citation_finder">Citation Finder</option>
-                    <option value="contradiction_hunter">Contradiction Hunter</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Search Depth</label>
-                <div class="slider-container">
-                    <input type="range" id="search-depth" min="1" max="5" value="3" class="form-control">
-                    <span class="slider-value" id="depth-value">3</span>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Search Strategy</label>
-                <select id="search-strategy" class="form-control">
-                    <option value="breadth-first">Breadth-First (Wide exploration)</option>
-                    <option value="depth-first">Depth-First (Deep dive)</option>
-                    <option value="targeted">Targeted (Focused search)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Custom Prompt (Optional)</label>
-                <textarea id="custom-prompt" class="form-control" placeholder="Add specific instructions for the agent..."></textarea>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" onclick="quickInvestigate()" style="flex: 1;">Quick Investigate</button>
-                <button class="btn btn-primary" onclick="customInvestigate()" style="flex: 1;">Custom Investigate</button>
             </div>
         </div>
     </div>
