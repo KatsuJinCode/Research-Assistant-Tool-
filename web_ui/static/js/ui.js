@@ -194,6 +194,9 @@ const UI = {
             // Store claim ID for override operations
             detailPanel.dataset.claimId = claimId;
 
+            // Fetch and display provenance information
+            this.fetchAndDisplayProvenance(claimId);
+
             // Initialize confidence override slider
             const confidenceSlider = document.getElementById('confidence-override-slider');
             const confidenceValue = document.getElementById('confidence-override-value');
@@ -571,6 +574,206 @@ const UI = {
             notification.style.transform = 'translateX(400px)';
             setTimeout(() => notification.remove(), 300);
         }, 5000);
+    },
+
+    /**
+     * Fetch and display provenance information for a node
+     */
+    async fetchAndDisplayProvenance(nodeId) {
+        try {
+            console.log('🔍 Fetching provenance for node:', nodeId);
+            const response = await fetch(`/api/nodes/${nodeId}/provenance`);
+
+            if (!response.ok) {
+                // Node might not have provenance, hide the section
+                document.getElementById('provenance-section').style.display = 'none';
+                return;
+            }
+
+            const provenance = await response.json();
+            console.log('✓ Provenance data:', provenance);
+
+            // Show provenance section
+            const provenanceSection = document.getElementById('provenance-section');
+            provenanceSection.style.display = 'block';
+
+            // Display creator info
+            const creatorSpan = document.getElementById('provenance-creator');
+            if (provenance.created_by && provenance.created_by.actor) {
+                let creatorHTML = `<span style="color: #2196F3; font-weight: bold;">${provenance.created_by.actor}</span>`;
+
+                // Add clickable agent link if available
+                if (provenance.created_by.agent_id && provenance.created_by.agent_transcript_available) {
+                    creatorHTML += ` <a href="#" onclick="UI.showAgentTranscript('${provenance.created_by.agent_id}'); return false;"
+                                     style="color: #4CAF50; font-size: 11px; margin-left: 4px;">
+                                     [View Transcript]
+                                   </a>`;
+
+                    // Add agent description if available
+                    if (provenance.created_by.agent_description) {
+                        creatorHTML += `<br><span style="font-size: 11px; color: #999;">${provenance.created_by.agent_description}</span>`;
+                    }
+                }
+
+                creatorSpan.innerHTML = creatorHTML;
+            }
+
+            // Display discoverer info if present
+            const discoveredByDiv = document.getElementById('provenance-discovered-by');
+            if (provenance.discovered_by) {
+                discoveredByDiv.style.display = 'block';
+                const discovererSpan = document.getElementById('provenance-discoverer');
+
+                let discovererHTML = `<span style="color: #FF9800; font-weight: bold;">${provenance.discovered_by.actor}</span>`;
+
+                // Add clickable agent link if available
+                if (provenance.discovered_by.agent_id && provenance.discovered_by.agent_transcript_available) {
+                    discovererHTML += ` <a href="#" onclick="UI.showAgentTranscript('${provenance.discovered_by.agent_id}'); return false;"
+                                        style="color: #4CAF50; font-size: 11px; margin-left: 4px;">
+                                        [View Transcript]
+                                      </a>`;
+
+                    // Add agent description if available
+                    if (provenance.discovered_by.agent_description) {
+                        discovererHTML += `<br><span style="font-size: 11px; color: #999;">${provenance.discovered_by.agent_description}</span>`;
+                    }
+                }
+
+                discovererSpan.innerHTML = discovererHTML;
+            } else {
+                discoveredByDiv.style.display = 'none';
+            }
+
+            // Display lineage chain if present
+            if (provenance.lineage_chain && provenance.lineage_chain.length > 0) {
+                const lineageDiv = document.getElementById('provenance-lineage');
+                const lineageList = document.getElementById('provenance-lineage-list');
+                lineageDiv.style.display = 'block';
+
+                let lineageHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+
+                provenance.lineage_chain.forEach((step, index) => {
+                    const isLast = index === provenance.lineage_chain.length - 1;
+                    const arrow = isLast ? '' : '<div style="text-align: center; color: #666;">↓</div>';
+
+                    lineageHTML += `
+                        <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; border-left: 3px solid ${index === 0 ? '#FF9800' : '#2196F3'};">
+                            <strong>${step.action}</strong> by ${step.actor}
+                            ${step.agent_id ? `<br><span style="font-size: 10px; color: #666; font-family: monospace;">${step.agent_id}</span>` : ''}
+                        </div>
+                        ${arrow}
+                    `;
+                });
+
+                lineageHTML += '</div>';
+                lineageList.innerHTML = lineageHTML;
+            }
+
+        } catch (error) {
+            console.error('Error fetching provenance:', error);
+            // Hide section if error
+            document.getElementById('provenance-section').style.display = 'none';
+        }
+    },
+
+    /**
+     * Show agent transcript in a modal or panel
+     */
+    async showAgentTranscript(agentId) {
+        try {
+            console.log('🔍 Fetching transcript for agent:', agentId);
+            const response = await fetch(`/api/agents/${agentId}/transcript`);
+
+            if (!response.ok) {
+                this.showNotification('Agent transcript not found', 'error');
+                return;
+            }
+
+            const transcript = await response.json();
+            console.log('✓ Agent transcript:', transcript);
+
+            // Create modal to display transcript
+            let modalHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;"
+                     onclick="this.remove()">
+                    <div style="background: white; width: 80%; max-width: 800px; max-height: 80%; border-radius: 8px; padding: 24px; overflow-y: auto;"
+                         onclick="event.stopPropagation();">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="margin: 0; color: #333;">Agent Transcript</h2>
+                            <button onclick="this.closest('[onclick*=remove]').remove()"
+                                    style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Close
+                            </button>
+                        </div>
+
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                            <p><strong>Agent:</strong> ${transcript.agent_type}</p>
+                            <p><strong>Description:</strong> ${transcript.description}</p>
+                            <p><strong>Status:</strong> <span style="color: ${transcript.status === 'completed' ? '#4CAF50' : transcript.status === 'failed' ? '#f44336' : '#FF9800'}; font-weight: bold;">${transcript.status.toUpperCase()}</span></p>
+                            <p><strong>Duration:</strong> ${transcript.duration_seconds ? transcript.duration_seconds.toFixed(2) + 's' : 'In progress...'}</p>
+                        </div>
+
+                        <h3 style="margin: 20px 0 10px 0;">Activity Log (${transcript.entry_count} entries)</h3>
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #fafafa;">
+            `;
+
+            // Display log entries
+            transcript.entries.forEach((entry, index) => {
+                const levelColors = {
+                    'info': '#2196F3',
+                    'success': '#4CAF50',
+                    'warning': '#FF9800',
+                    'error': '#f44336'
+                };
+
+                const levelColor = levelColors[entry.level] || '#666';
+
+                modalHTML += `
+                    <div style="margin-bottom: 12px; padding: 10px; background: white; border-left: 4px solid ${levelColor}; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                            <strong style="color: ${levelColor}; text-transform: uppercase; font-size: 11px;">${entry.level}</strong>
+                            <span style="font-size: 10px; color: #999;">${new Date(entry.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #333;">${entry.message}</div>
+                        ${entry.data && Object.keys(entry.data).length > 0 ? `
+                            <details style="margin-top: 6px;">
+                                <summary style="cursor: pointer; font-size: 11px; color: #666;">View data</summary>
+                                <pre style="font-size: 10px; color: #666; margin: 4px 0 0 0; overflow-x: auto; white-space: pre-wrap;">${JSON.stringify(entry.data, null, 2)}</pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            modalHTML += `
+                        </div>
+
+                        ${transcript.result ? `
+                            <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                                <strong>Result:</strong>
+                                <pre style="margin: 8px 0 0 0; font-size: 12px; overflow-x: auto; white-space: pre-wrap;">${JSON.stringify(transcript.result, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+
+                        ${transcript.error ? `
+                            <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 5px; border-left: 4px solid #f44336;">
+                                <strong>Error:</strong>
+                                <div style="margin-top: 8px; color: #c62828;">${transcript.error}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Add modal to page
+            const modalDiv = document.createElement('div');
+            modalDiv.innerHTML = modalHTML;
+            document.body.appendChild(modalDiv);
+
+        } catch (error) {
+            console.error('Error fetching agent transcript:', error);
+            this.showNotification('Failed to load agent transcript', 'error');
+        }
     }
 };
 

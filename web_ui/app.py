@@ -725,6 +725,245 @@ def get_agent_transcript(agent_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/agents/<agent_id>/created-nodes', methods=['GET'])
+def get_agent_created_nodes(agent_id):
+    """
+    Get all nodes created by a specific agent.
+
+    Returns Documents, Claims, and any other nodes with created_by_agent_id matching agent_id.
+
+    Path parameters:
+        agent_id: The agent identifier
+    """
+    try:
+        # Query all node types that might have been created by this agent
+        query = """
+        // Find all Documents created by this agent
+        OPTIONAL MATCH (d:Document)
+        WHERE d.created_by_agent_id = $agent_id
+        WITH collect({
+            type: 'Document',
+            id: d.id,
+            title: d.title,
+            status: d.status,
+            created_at: d.created_at,
+            created_by: d.created_by
+        }) as documents
+
+        // Find all Claims created by this agent
+        OPTIONAL MATCH (c:Claim)
+        WHERE c.created_by_agent_id = $agent_id
+        WITH documents, collect({
+            type: 'Claim',
+            id: c.id,
+            text: c.text,
+            status: c.status,
+            created_at: c.created_at,
+            created_by: c.created_by
+        }) as claims
+
+        // Find all PendingDocuments created by this agent
+        OPTIONAL MATCH (p:PendingDocument)
+        WHERE p.created_by_agent_id = $agent_id
+        WITH documents, claims, collect({
+            type: 'PendingDocument',
+            id: p.id,
+            filename: p.filename,
+            status: p.status,
+            created_at: p.created_at,
+            created_by: p.created_by
+        }) as pending_documents
+
+        RETURN documents, claims, pending_documents
+        """
+
+        result = db.execute_query(query, {'agent_id': agent_id})
+
+        if not result:
+            # No results means agent exists but hasn't created any nodes yet
+            return jsonify({
+                'agent_id': agent_id,
+                'documents': [],
+                'claims': [],
+                'pending_documents': [],
+                'total_nodes': 0
+            })
+
+        record = result[0]
+        documents = [d for d in record['documents'] if d.get('id')]
+        claims = [c for c in record['claims'] if c.get('id')]
+        pending_documents = [p for p in record['pending_documents'] if p.get('id')]
+
+        return jsonify({
+            'agent_id': agent_id,
+            'documents': documents,
+            'claims': claims,
+            'pending_documents': pending_documents,
+            'total_nodes': len(documents) + len(claims) + len(pending_documents),
+            'counts': {
+                'documents': len(documents),
+                'claims': len(claims),
+                'pending_documents': len(pending_documents)
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error retrieving agent created nodes: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/nodes/<node_id>/provenance', methods=['GET'])
+def get_node_provenance(node_id):
+    """
+    Get complete provenance information for any node.
+
+    Returns:
+        - Node's own provenance (created_by, created_by_agent_id)
+        - Discovery provenance (discovered_by, discovered_by_agent_id) if present
+        - Agent transcripts (if available)
+        - Full lineage chain
+
+    Path parameters:
+        node_id: The node identifier
+    """
+    try:
+        # Query the node - search across all node types
+        query = """
+        // Try to find the node as any type
+        OPTIONAL MATCH (n:Document {id: $node_id})
+        WITH n, 'Document' as node_type
+        WHERE n IS NOT NULL
+
+        WITH n, node_type
+        RETURN
+            node_type,
+            n.id as id,
+            n.title as title,
+            n.text as text,
+            n.filename as filename,
+            n.created_by as created_by,
+            n.created_by_agent_id as created_by_agent_id,
+            n.discovered_by as discovered_by,
+            n.discovered_by_agent_id as discovered_by_agent_id,
+            n.created_at as created_at,
+            n.status as status
+
+        UNION
+
+        OPTIONAL MATCH (n:Claim {id: $node_id})
+        WITH n, 'Claim' as node_type
+        WHERE n IS NOT NULL
+        RETURN
+            node_type,
+            n.id as id,
+            null as title,
+            n.text as text,
+            null as filename,
+            n.created_by as created_by,
+            n.created_by_agent_id as created_by_agent_id,
+            null as discovered_by,
+            null as discovered_by_agent_id,
+            n.created_at as created_at,
+            n.status as status
+
+        UNION
+
+        OPTIONAL MATCH (n:PendingDocument {id: $node_id})
+        WITH n, 'PendingDocument' as node_type
+        WHERE n IS NOT NULL
+        RETURN
+            node_type,
+            n.id as id,
+            n.title as title,
+            null as text,
+            n.filename as filename,
+            n.created_by as created_by,
+            n.created_by_agent_id as created_by_agent_id,
+            null as discovered_by,
+            null as discovered_by_agent_id,
+            n.created_at as created_at,
+            n.status as status
+        """
+
+        results = db.execute_query(query, {'node_id': node_id})
+
+        if not results:
+            return jsonify({'error': 'Node not found'}), 404
+
+        node_data = results[0]
+
+        # Build provenance response
+        provenance = {
+            'node': {
+                'id': node_data['id'],
+                'type': node_data['node_type'],
+                'title': node_data.get('title'),
+                'text': node_data.get('text'),
+                'filename': node_data.get('filename'),
+                'status': node_data.get('status'),
+                'created_at': node_data.get('created_at')
+            },
+            'created_by': {
+                'actor': node_data.get('created_by'),
+                'agent_id': node_data.get('created_by_agent_id'),
+                'agent_transcript_available': False
+            },
+            'discovered_by': None,
+            'lineage_chain': []
+        }
+
+        # Check if creator agent transcript is available
+        if node_data.get('created_by_agent_id'):
+            from research_agent.transcript_manager import get_transcript_manager
+            transcript_manager = get_transcript_manager()
+            transcript = transcript_manager.get_transcript(node_data['created_by_agent_id'])
+            if transcript:
+                provenance['created_by']['agent_transcript_available'] = True
+                provenance['created_by']['agent_description'] = transcript.get('description')
+                provenance['created_by']['agent_status'] = transcript.get('status')
+
+        # Add discovery provenance if present
+        if node_data.get('discovered_by'):
+            provenance['discovered_by'] = {
+                'actor': node_data['discovered_by'],
+                'agent_id': node_data.get('discovered_by_agent_id'),
+                'agent_transcript_available': False
+            }
+
+            if node_data.get('discovered_by_agent_id'):
+                from research_agent.transcript_manager import get_transcript_manager
+                transcript_manager = get_transcript_manager()
+                transcript = transcript_manager.get_transcript(node_data['discovered_by_agent_id'])
+                if transcript:
+                    provenance['discovered_by']['agent_transcript_available'] = True
+                    provenance['discovered_by']['agent_description'] = transcript.get('description')
+                    provenance['discovered_by']['agent_status'] = transcript.get('status')
+
+        # Build lineage chain (from discovery → processing → node)
+        if provenance['discovered_by']:
+            provenance['lineage_chain'].append({
+                'step': 1,
+                'action': 'discovered',
+                'actor': provenance['discovered_by']['actor'],
+                'agent_id': provenance['discovered_by']['agent_id']
+            })
+
+        provenance['lineage_chain'].append({
+            'step': len(provenance['lineage_chain']) + 1,
+            'action': 'created',
+            'actor': provenance['created_by']['actor'],
+            'agent_id': provenance['created_by']['agent_id']
+        })
+
+        return jsonify(provenance)
+
+    except Exception as e:
+        logger.error(f"Error retrieving node provenance: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/full-graph')
 def get_full_graph():
     """Get complete hierarchical graph with arbitrary depth support."""
