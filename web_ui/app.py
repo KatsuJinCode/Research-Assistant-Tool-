@@ -560,8 +560,58 @@ def process_chat_message(message, context):
     if message.startswith('/'):
         return handle_chat_command(message, context)
 
+    # Manual claim creation
+    if any(word in message_lower for word in ['add claim', 'create claim', 'new claim', 'enter claim']):
+        # Extract claim text if present (look for quotes or "that" constructions)
+        claim_text = None
+
+        # Try to extract quoted text
+        import re
+        quotes = re.findall(r'"([^"]+)"', message)
+        if quotes:
+            claim_text = quotes[0]
+        elif 'that ' in message_lower:
+            # Try "I claim that X" or "claim that X"
+            parts = message.split('that ', 1)
+            if len(parts) > 1:
+                claim_text = parts[1].strip()
+
+        if claim_text:
+            # Create the claim
+            try:
+                import requests
+                response = requests.post('http://localhost:5000/api/create-manual-claim',
+                                        json={'text': claim_text},
+                                        timeout=10)
+
+                if response.ok:
+                    data = response.json()
+                    response_text = (
+                        f"✓ Claim created successfully!\n\n"
+                        f"**Claim:** {data['text']}\n"
+                        f"**ID:** {data['claim_id']}\n\n"
+                        f"The claim has been added to your graph. You can now:\n"
+                        f"• Find supporting evidence\n"
+                        f"• Find contradicting evidence\n"
+                        f"• Adjust the confidence score"
+                    )
+                    actions.append({'type': 'reload_graph'})
+                else:
+                    response_text = f"Failed to create claim: {response.text}"
+            except Exception as e:
+                logger.error(f"Error creating claim via chat: {e}")
+                response_text = f"Error creating claim: {str(e)}"
+        else:
+            response_text = (
+                'To add a claim, please include it in quotes or use this format:\n\n'
+                '• "Your claim here"\n'
+                '• I claim that [your claim]\n'
+                '• Add claim that [your claim]\n\n'
+                'Example: **Add claim "Climate change is caused by human activity"**'
+            )
+
     # Upload-related queries
-    if any(word in message_lower for word in ['upload', 'add document', 'add file', 'process document']):
+    elif any(word in message_lower for word in ['upload', 'add document', 'add file', 'process document']):
         response_text = (
             "I can help you upload documents! You can:\n\n"
             "• Drag and drop files directly onto the upload zone\n"
@@ -766,6 +816,68 @@ def clear_all():
         'status': 'cleared',
         'message': f'All data cleared from database ({deleted_count} nodes deleted)'
     })
+
+
+@app.route('/api/create-manual-claim', methods=['POST'])
+def create_manual_claim():
+    """Create a manual claim from user input (e.g., via chat)."""
+    data = request.json
+    claim_text = data.get('text', '').strip()
+
+    if not claim_text:
+        return jsonify({'error': 'Claim text is required'}), 400
+
+    try:
+        # Generate unique claim ID
+        import hashlib
+        claim_id = 'claim_' + hashlib.sha256(claim_text.encode()).hexdigest()[:16]
+
+        # Create claim node in Neo4j
+        query = """
+        CREATE (c:Claim {
+            id: $claim_id,
+            text: $text,
+            summary: $text,
+            claim_type: 'manual',
+            status: 'pending',
+            disposition: 'manual',
+            is_super_claim: false,
+            confidence: 0.5,
+            quality_score: 0.5,
+            created_at: datetime()
+        })
+        RETURN c.id as id, c.text as text
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'text': claim_text
+        })
+
+        if not result:
+            return jsonify({'error': 'Failed to create claim'}), 500
+
+        created_claim = result[0]
+
+        # Emit real-time update
+        with app.app_context():
+            socketio.emit('claim_created', {
+                'claim_id': created_claim['id'],
+                'text': created_claim['text']
+            })
+
+        logger.info(f"[MANUAL CLAIM] Created: {claim_id}")
+
+        return jsonify({
+            'status': 'created',
+            'claim_id': created_claim['id'],
+            'text': created_claim['text'],
+            'message': 'Claim created successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error creating manual claim: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/run-cross-document-clustering', methods=['POST'])
