@@ -15,6 +15,8 @@ import os
 import logging
 import traceback
 import hashlib
+import subprocess
+import time
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -2509,6 +2511,101 @@ def run_cross_document_clustering():
             'status': 'error',
             'message': str(e)
         }), 500
+
+
+@app.route('/api/assistant/chat', methods=['POST'])
+def assistant_chat():
+    """
+    AI Assistant chat endpoint - processes user messages and returns AI responses.
+    Uses the configured agent CLI (Claude Code by default).
+    """
+    try:
+        data = request.json
+        user_message = data.get('message', '').strip()
+        context = data.get('context', {})
+
+        if not user_message:
+            return jsonify({'error': 'No message provided'}), 400
+
+        # Build context-aware system prompt
+        active_tab = context.get('activeTab', 'documents')
+        selected_nodes = context.get('selectedNodes', [])
+
+        system_prompt = f"""You are an AI research assistant helping users navigate and analyze their research graph database.
+
+**Current Context:**
+- Active Tab: {active_tab}
+- Selected Nodes: {len(selected_nodes)} node(s) selected
+- Available Actions: Search, analyze, create connections, summarize findings
+
+**Your Role:**
+You help users:
+1. Find and analyze documents, claims, and evidence
+2. Discover connections between research items
+3. Search for specific information
+4. Organize and categorize research
+5. Suggest next steps in their research
+
+**Important Guidelines:**
+- Be conversational and helpful
+- Provide specific, actionable responses
+- When suggesting data modifications (creating claims, linking evidence), acknowledge that user approval is required
+- Reference the user's current context (tab, selected nodes)
+- Keep responses concise but informative
+- Suggest concrete next steps
+
+**User's Message:**
+{user_message}
+
+Respond naturally as a helpful research assistant. Keep your response under 200 words."""
+
+        # Invoke agent
+        from .agent_config import get_agent_adapter
+        adapter = get_agent_adapter()
+
+        logger.info(f"[Assistant] Processing message: {user_message[:100]}...")
+
+        try:
+            response = adapter.invoke(system_prompt, timeout=30)
+
+            # Try to parse JSON response if present
+            try:
+                import json
+                # Check if response is wrapped in JSON
+                if response.strip().startswith('{'):
+                    response_data = json.loads(response)
+                    # Extract text content if it's in a specific format
+                    if 'response' in response_data:
+                        response = response_data['response']
+                    elif 'content' in response_data:
+                        response = response_data['content']
+            except (json.JSONDecodeError, KeyError):
+                # Not JSON or different format, use as-is
+                pass
+
+            logger.info(f"[Assistant] Response generated ({len(response)} chars)")
+
+            return jsonify({
+                'response': response,
+                'timestamp': time.time()
+            })
+
+        except subprocess.TimeoutExpired:
+            logger.error("[Assistant] Agent timeout")
+            return jsonify({
+                'error': 'Assistant is taking too long to respond. Please try a simpler question.'
+            }), 408
+        except Exception as e:
+            logger.error(f"[Assistant] Agent error: {e}")
+            logger.error(traceback.format_exc())
+            return jsonify({
+                'error': f'Assistant encountered an error: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"[Assistant] Request error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

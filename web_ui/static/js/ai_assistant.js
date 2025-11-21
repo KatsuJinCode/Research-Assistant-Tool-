@@ -139,11 +139,40 @@ const AIAssistant = {
         // Show typing indicator
         this.showTypingIndicator();
 
-        // Simulate AI processing (replace with actual API call)
-        setTimeout(() => {
+        try {
+            // Call the real API endpoint
+            const response = await fetch('/api/assistant/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    context: this.context
+                })
+            });
+
             this.hideTypingIndicator();
-            this.handleUserQuery(message);
-        }, 1000);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to get response from assistant');
+            }
+
+            const data = await response.json();
+
+            // Display the AI's response
+            this.addAIMessage(data.response);
+
+        } catch (error) {
+            this.hideTypingIndicator();
+            console.error('[AIAssistant] Error:', error);
+
+            this.addAIMessage(
+                `⚠️ Sorry, I encountered an error: ${error.message}\n\n` +
+                `Please try rephrasing your question or check that the backend is running.`
+            );
+        }
     },
 
     /**
