@@ -290,15 +290,18 @@ class TranscriptManager:
 _transcript_manager: Optional[TranscriptManager] = None
 
 
-def get_transcript_manager(persist_to_disk: bool = False) -> TranscriptManager:
+def get_transcript_manager(persist_to_disk: bool = True) -> TranscriptManager:
     """
     Get or create the global transcript manager instance.
 
     Args:
-        persist_to_disk: Whether to save transcripts to disk
+        persist_to_disk: Whether to save transcripts to disk (default: True)
 
     Returns:
         Global TranscriptManager instance
+
+    Note: File persistence is now enabled by default to support provenance tracking.
+          All agent activity is saved for full auditability and data lineage.
     """
     global _transcript_manager
     if _transcript_manager is None:
