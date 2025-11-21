@@ -2,10 +2,10 @@
 ## Unified Interface & Document Discovery Pipeline
 
 **Current Session Date**: 2025-11-20
-**Session Focus**: UI polish, chat command completion, investigation button fixes
-**Session Commits**: 5
-**Cumulative Commits**: 14
-**Lines Changed This Session**: ~400+
+**Session Focus**: UI polish, chat commands, Stage 1 auto-linking (semantic similarity)
+**Session Commits**: 7
+**Cumulative Commits**: 16
+**Lines Changed This Session**: ~1,100+
 
 **Previous Session Date**: 2025-01-20
 **Previous Focus**: Transform chat from guide to executor, implement document approval workflow
@@ -64,6 +64,79 @@
 - Comprehensive error handling
 - User-friendly numbered list display
 - Integration with existing document approval backend
+
+#### 6. **Semantic Similarity System - Stage 1 Auto-Linking** (Commit: c07d057)
+**MAJOR FEATURE** - Complete implementation of evidence auto-linking foundation
+
+**New Module:** `research_agent/semantic_similarity.py` (681 lines)
+
+**Core Components:**
+- `SemanticSimilarityEngine`: Generates embeddings using sentence-transformers
+  - Primary model: `all-mpnet-base-v2` (768 dimensions, best quality)
+  - Fallback model: `all-MiniLM-L6-v2` (384 dimensions, faster)
+  - Batch processing for efficiency
+  - Cosine similarity calculations
+
+- `EmbeddingManager`: Manages Neo4j storage and retrieval
+  - Stores embeddings as node properties
+  - Retrieves and compares embeddings
+  - Finds similar evidence for claims
+
+**API Endpoints Added (3):**
+```
+GET  /api/claim/<id>/similar-evidence
+     → Find semantically similar evidence
+     → Params: threshold (0.7), limit (10)
+
+POST /api/embeddings/generate-all
+     → Batch generate embeddings for all claims/evidence
+     → Returns: counts of processed/failed
+
+POST /api/auto-link-evidence
+     → Automatically create SUPPORTED_BY relationships
+     → Params: threshold, auto_approve
+     → Creates links or pending approvals
+```
+
+**Document Processing Integration:**
+- Embeddings automatically generated after claim extraction
+- Non-blocking operation (doesn't fail document processing)
+- Real-time progress updates via WebSocket
+- Events: `embedding_generation_started`, `embedding_generation_complete`
+
+**Neo4j Schema Extensions:**
+```cypher
+// Claim/Evidence nodes now store:
+{
+  embedding: [float, float, ...],  // 768 or 384 dimensions
+  embedding_model: "all-mpnet-base-v2",
+  embedding_dim: 768
+}
+
+// Auto-linked relationships:
+(Claim)-[r:SUPPORTED_BY {
+  auto_linked: true,
+  semantic_similarity: 0.85,
+  link_strength: 0.85,
+  created_at: datetime()
+}]->(Evidence)
+
+// Pending link approval:
+(:PendingLink {
+  claim_id, evidence_id,
+  similarity: 0.85,
+  status: 'pending_review'
+})
+```
+
+**Usage Workflow:**
+1. Upload document → Claims extracted → Embeddings generated automatically
+2. Call `/api/auto-link-evidence` → Find similar pairs → Create relationships
+3. Or manually: `/api/claim/<id>/similar-evidence` → Review matches → Approve links
+
+**Based on:** `EVIDENCE_AUTO_LINKING_STRATEGY.md`
+**Threshold:** 0.7 similarity for candidate pairs
+**Ready for:** Stage 2 (LLM classification of SUPPORTS/CONTRADICTS/IRRELEVANT)
 
 ---
 
