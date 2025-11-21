@@ -1575,5 +1575,103 @@ const GraphRenderer = {
                 </div>
             `;
         }
+    },
+
+    /**
+     * Highlight a specific node in the graph and focus on it
+     * Used for provenance navigation: Agent → Node
+     */
+    highlightNode(nodeId) {
+        console.log('🎯 Highlighting node in graph:', nodeId);
+
+        // Find the node in the current graph data
+        const node = this.currentGraphData.nodes.find(n => n.id === nodeId);
+
+        if (!node) {
+            console.warn('Node not found in current graph:', nodeId);
+            UI.showNotification(`Node ${nodeId} not visible in current graph view`, 'warning');
+            return;
+        }
+
+        // Clear previous selection
+        this.clearSelection();
+
+        // Select the node
+        this.selectedNodeIds.add(nodeId);
+
+        // Apply visual highlighting
+        const svg = d3.select('#graph-svg');
+
+        // Highlight the node with a special color for provenance navigation
+        svg.selectAll('circle')
+            .attr('stroke', n => n.id === nodeId ? '#FF4081' : '#fff')
+            .attr('stroke-width', n => n.id === nodeId ? 6 : this.getNodeBorderWidth(n))
+            .style('filter', n => n.id === nodeId ? 'drop-shadow(0 0 12px #FF4081)' : 'none');
+
+        // Dim links that don't connect to this node
+        svg.selectAll('line')
+            .style('stroke-opacity', l => {
+                return (l.source.id === nodeId || l.target.id === nodeId) ? 0.8 : 0.2;
+            })
+            .style('stroke-width', l => {
+                return (l.source.id === nodeId || l.target.id === nodeId)
+                    ? this.getLinkWidth(l.type) * 1.5
+                    : this.getLinkWidth(l.type);
+            });
+
+        // Center the view on the node
+        if (this.simulation) {
+            // Get SVG element and its dimensions
+            const svgElement = document.getElementById('graph-svg');
+            const svgRect = svgElement.getBoundingClientRect();
+            const width = svgRect.width;
+            const height = svgRect.height;
+
+            // Calculate the transform to center the node
+            const scale = 1.5; // Zoom in slightly
+            const x = width / 2 - node.x * scale;
+            const y = height / 2 - node.y * scale;
+
+            // Apply smooth transition
+            svg.select('g')
+                .transition()
+                .duration(750)
+                .attr('transform', `translate(${x}, ${y}) scale(${scale})`);
+
+            // Add a temporary pulsing animation
+            const highlightedNode = svg.selectAll('circle')
+                .filter(n => n.id === nodeId);
+
+            // Pulse animation
+            highlightedNode
+                .transition()
+                .duration(300)
+                .attr('r', n => this.getNodeSize(n) * 1.3)
+                .transition()
+                .duration(300)
+                .attr('r', n => this.getNodeSize(n))
+                .transition()
+                .duration(300)
+                .attr('r', n => this.getNodeSize(n) * 1.3)
+                .transition()
+                .duration(300)
+                .attr('r', n => this.getNodeSize(n));
+        }
+
+        // Show node details in the detail panel
+        if (node.type === 'claim') {
+            // Show claim details
+            if (window.showClaimDetails) {
+                setTimeout(() => showClaimDetails(nodeId), 500);
+            }
+        } else if (node.type === 'document') {
+            // Show document details
+            if (window.UI && UI.showDocumentDetails) {
+                setTimeout(() => UI.showDocumentDetails(node), 500);
+            }
+        }
+
+        // Show notification
+        UI.showNotification(`Focused on ${node.type}: ${node.label || nodeId}`, 'success');
     }
 };
