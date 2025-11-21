@@ -1475,6 +1475,163 @@ def process_chat_message(message, context):
                 "Or use the buttons in the claim details panel."
             )
 
+    # Auto-linking evidence commands
+    elif any(phrase in message_lower for phrase in ['auto-link', 'link evidence', 'auto link', 'find related evidence', 'connect evidence']):
+        try:
+            from research_agent.llm_classifier import get_classifier, AutoLinkingPipeline
+            from research_agent.semantic_similarity import get_similarity_engine
+
+            # Check if user has a specific claim selected
+            selected_nodes = context.get('selected_nodes', [])
+
+            if selected_nodes and len(selected_nodes) > 0:
+                # Run auto-linking for selected claim only
+                claim_id = selected_nodes[0]
+
+                # Check if it's actually a claim
+                claim = claim_repo.get_claim(claim_id)
+                if not claim:
+                    response_text = "The selected node is not a claim. Please select a claim first."
+                else:
+                    response_text = "🔗 Running auto-linking pipeline for selected claim...\n\n"
+                    response_text += "**Stage 1:** Finding semantically similar evidence (embeddings)\n"
+                    response_text += "**Stage 2:** Classifying relationships (LLM)\n\n"
+
+                    classifier = get_classifier(provider="anthropic")
+                    engine = get_similarity_engine()
+                    pipeline = AutoLinkingPipeline(db, engine, classifier)
+
+                    result = pipeline.auto_link_for_claim(
+                        claim_id=claim_id,
+                        semantic_threshold=0.7,
+                        llm_confidence_threshold=0.7,
+                        auto_approve=True
+                    )
+
+                    if 'error' in result:
+                        response_text += f"❌ Error: {result['error']}"
+                    else:
+                        response_text += f"✓ **Found {result.get('candidates_found', 0)} similar pieces of evidence**\n\n"
+                        response_text += f"**Classification Results:**\n"
+                        response_text += f"• {result.get('supports', 0)} SUPPORTS\n"
+                        response_text += f"• {result.get('contradicts', 0)} CONTRADICTS\n"
+                        response_text += f"• {result.get('irrelevant', 0)} IRRELEVANT\n\n"
+                        response_text += f"**Created {result.get('links_created', 0)} relationships** in the graph."
+
+                        actions.append({'type': 'reload_graph'})
+
+            else:
+                # Run auto-linking for ALL claims
+                response_text = "🔗 Running auto-linking for ALL claims in database...\n\n"
+                response_text += "This may take a few minutes depending on the number of claims.\n\n"
+
+                # Get all claims
+                claims_query = """
+                MATCH (c:Claim)
+                WHERE c.embedding IS NOT NULL
+                RETURN c.id as id
+                """
+                all_claims = db.execute_query(claims_query)
+
+                if not all_claims:
+                    response_text = "No claims with embeddings found. Upload documents first."
+                else:
+                    classifier = get_classifier(provider="anthropic")
+                    engine = get_similarity_engine()
+                    pipeline = AutoLinkingPipeline(db, engine, classifier)
+
+                    total_links = 0
+                    total_supports = 0
+                    total_contradicts = 0
+
+                    for claim in all_claims:
+                        result = pipeline.auto_link_for_claim(
+                            claim_id=claim['id'],
+                            semantic_threshold=0.7,
+                            llm_confidence_threshold=0.7,
+                            auto_approve=True
+                        )
+
+                        if 'error' not in result:
+                            total_links += result.get('links_created', 0)
+                            total_supports += result.get('supports', 0)
+                            total_contradicts += result.get('contradicts', 0)
+
+                    response_text += f"✓ **Processed {len(all_claims)} claims**\n\n"
+                    response_text += f"**Total Relationships Created:**\n"
+                    response_text += f"• {total_supports} SUPPORTS\n"
+                    response_text += f"• {total_contradicts} CONTRADICTS\n"
+                    response_text += f"• {total_links} total links\n\n"
+                    response_text += "Check the graph to see the new connections!"
+
+                    actions.append({'type': 'reload_graph'})
+
+        except Exception as e:
+            logger.error(f"Error in auto-linking via chat: {e}")
+            logger.error(traceback.format_exc())
+            response_text = f"❌ Error during auto-linking: {str(e)}\n\nCheck the console for details."
+
+    # Generate embeddings command
+    elif any(phrase in message_lower for phrase in ['generate embedding', 'create embedding', 'generate embeddings']):
+        try:
+            from research_agent.semantic_similarity import get_embedding_manager
+
+            response_text = "🔄 Generating semantic embeddings for all claims and evidence...\n\n"
+            response_text += "This creates 768-dimensional vectors for semantic similarity matching.\n\n"
+
+            embedding_manager = get_embedding_manager(db)
+
+            # Get nodes without embeddings
+            claims_query = """
+            MATCH (c:Claim)
+            WHERE c.embedding IS NULL
+            RETURN c.id as id, c.text as text
+            """
+            claims = db.execute_query(claims_query)
+
+            evidence_query = """
+            MATCH (e:Evidence)
+            WHERE e.embedding IS NULL
+            RETURN e.id as id, e.text as text
+            """
+            evidence = db.execute_query(evidence_query)
+
+            claims_processed = 0
+            claims_failed = 0
+            for claim in claims:
+                success = embedding_manager.store_claim_embedding(claim['id'], claim['text'])
+                if success:
+                    claims_processed += 1
+                else:
+                    claims_failed += 1
+
+            evidence_processed = 0
+            evidence_failed = 0
+            for ev in evidence:
+                success = embedding_manager.store_evidence_embedding(ev['id'], ev['text'])
+                if success:
+                    evidence_processed += 1
+                else:
+                    evidence_failed += 1
+
+            response_text += f"✓ **Embeddings Generated:**\n\n"
+            response_text += f"**Claims:**\n"
+            response_text += f"• Processed: {claims_processed}\n"
+            response_text += f"• Failed: {claims_failed}\n\n"
+            response_text += f"**Evidence:**\n"
+            response_text += f"• Processed: {evidence_processed}\n"
+            response_text += f"• Failed: {evidence_failed}\n\n"
+
+            if claims_failed > 0 or evidence_failed > 0:
+                response_text += f"⚠️ Some embeddings failed. Check console for errors."
+            else:
+                response_text += f"Now you can run 'auto-link evidence' to find relationships!"
+
+        except Exception as e:
+            logger.error(f"Error generating embeddings via chat: {e}")
+            logger.error(traceback.format_exc())
+            response_text = f"❌ Error generating embeddings: {str(e)}\n\nCheck the console for details."
+
     # Graph navigation help
     elif any(word in message_lower for word in ['navigate', 'find', 'search', 'filter']):
         response_text = (

@@ -30,6 +30,8 @@ const Chat = {
             '• Select claim + "investigate this"\n' +
             '• "Find supporting evidence"\n' +
             '• "Find contradicting evidence"\n' +
+            '• "Auto-link evidence" - AI finds relationships\n' +
+            '• "Generate embeddings" - Enable semantic search\n' +
             '• "Search ArXiv for [topic]"\n' +
             '• "Find citations for this claim"\n' +
             '• "Fact check this"\n\n' +

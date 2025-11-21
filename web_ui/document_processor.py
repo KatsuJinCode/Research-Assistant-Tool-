@@ -1821,6 +1821,65 @@ Find the main title/heading at the top of the document. Return just the title te
 
         except Exception as e:
             logger.warning(f"Embedding generation failed (non-critical): {e}")
+            self._emit(f"⚠️ Embedding generation failed: {str(e)}", None, {
+                'event': 'embedding_generation_failed',
+                'doc_id': doc_id,
+                'error': str(e)
+            })
+            # Non-critical - don't fail the entire processing
+
+        # 10. Auto-link evidence using 2-stage pipeline (Stage 1 + Stage 2)
+        try:
+            logger.info("🔗 Running auto-linking pipeline (Stage 1: Semantic + Stage 2: LLM)...")
+            self._emit("Auto-linking evidence to claims...", None, {
+                'event': 'auto_linking_started',
+                'doc_id': doc_id
+            })
+
+            from research_agent.llm_classifier import get_classifier, AutoLinkingPipeline
+            from research_agent.semantic_similarity import get_similarity_engine
+
+            classifier = get_classifier(provider="anthropic")
+            engine = get_similarity_engine()
+            pipeline = AutoLinkingPipeline(self.db, engine, classifier)
+
+            # Run auto-linking for each new claim
+            total_links_created = 0
+            total_supports = 0
+            total_contradicts = 0
+
+            for claim_id in claim_ids:
+                result = pipeline.auto_link_for_claim(
+                    claim_id=claim_id,
+                    semantic_threshold=0.7,
+                    llm_confidence_threshold=0.7,
+                    auto_approve=True  # Auto-approve for now
+                )
+
+                if 'error' not in result:
+                    total_links_created += result.get('links_created', 0)
+                    total_supports += result.get('supports', 0)
+                    total_contradicts += result.get('contradicts', 0)
+
+            logger.info(f"✓ Auto-linking complete: {total_links_created} links created")
+            logger.info(f"  • {total_supports} SUPPORTS relationships")
+            logger.info(f"  • {total_contradicts} CONTRADICTS relationships")
+
+            self._emit(f"Auto-linked {total_links_created} pieces of evidence", None, {
+                'event': 'auto_linking_complete',
+                'doc_id': doc_id,
+                'links_created': total_links_created,
+                'supports': total_supports,
+                'contradicts': total_contradicts
+            })
+
+        except Exception as e:
+            logger.warning(f"Auto-linking failed (non-critical): {e}")
+            self._emit(f"⚠️ Auto-linking failed: {str(e)}", None, {
+                'event': 'auto_linking_failed',
+                'doc_id': doc_id,
+                'error': str(e)
+            })
             # Non-critical - don't fail the entire processing
 
         return doc_id
