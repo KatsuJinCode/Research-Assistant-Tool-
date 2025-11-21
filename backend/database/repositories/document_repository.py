@@ -21,29 +21,39 @@ class DocumentRepository(BaseRepository):
         title: str,
         source_file: str,
         status: str = 'processing',
+        created_by: str = 'user',
+        created_by_agent_id: str = None,
         **additional_props
     ) -> str:
         """
-        Create a new document node.
+        Create a new document node with provenance tracking.
 
         Args:
             title: Document title
             source_file: Path to source file
             status: Processing status (processing, complete, failed)
+            created_by: Who/what created this document (user, document_finder)
+            created_by_agent_id: Agent transcript ID if created by agent
             **additional_props: Additional document properties
 
         Returns:
             Document ID
         """
+        from datetime import datetime
+
         properties = {
             'title': title,
             'source_file': source_file,
             'status': status,
+            # Provenance tracking
+            'created_by': created_by,
+            'created_by_agent_id': created_by_agent_id,
+            'created_at': datetime.now().isoformat(),
             **additional_props
         }
 
         doc_id = self.create_node('Document', properties)
-        logger.info(f"Created document {doc_id}: {title}")
+        logger.info(f"Created document {doc_id}: {title} (created_by={created_by})")
         return doc_id
 
     def get_document(self, doc_id: str) -> Optional[Dict[str, Any]]:

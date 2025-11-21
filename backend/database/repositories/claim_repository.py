@@ -24,10 +24,12 @@ class ClaimRepository(BaseRepository):
         claim_type: str = 'extracted',
         confidence: float = 0.0,
         status: str = 'processing',
+        created_by: str = 'user',
+        created_by_agent_id: str = None,
         **additional_props
     ) -> str:
         """
-        Create a new claim node.
+        Create a new claim node with provenance tracking.
 
         Args:
             text: Claim text (display text, may be simplified)
@@ -36,11 +38,15 @@ class ClaimRepository(BaseRepository):
             claim_type: Type of claim (extracted, super_claim, etc.)
             confidence: Confidence score (0.0-1.0)
             status: Processing status
+            created_by: Who/what created this claim (user, document_processor, auto_linker)
+            created_by_agent_id: Agent transcript ID if created by agent (for provenance tracking)
             **additional_props: Additional claim properties
 
         Returns:
             Claim ID
         """
+        from datetime import datetime
+
         properties = {
             'text': text,
             'original_text': original_text,
@@ -49,6 +55,10 @@ class ClaimRepository(BaseRepository):
             'status': status,
             'processing_stage': 'pending',
             'word_count_original': len(original_text.split()),
+            # Provenance tracking
+            'created_by': created_by,
+            'created_by_agent_id': created_by_agent_id,
+            'created_at': datetime.now().isoformat(),
             **additional_props
         }
 
