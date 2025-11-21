@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import os
 import logging
 import traceback
+import hashlib
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -469,7 +470,12 @@ def get_full_graph():
 
 @app.route('/api/upload-document', methods=['POST'])
 def upload_document():
-    """Handle file upload and start processing."""
+    """
+    Handle file upload and start processing.
+
+    User-uploaded files are auto-approved.
+    Agent-uploaded files require approval.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
 
@@ -488,24 +494,199 @@ def upload_document():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Add to processing queue instead of starting immediately
-    processing_queue.put((filepath, filename))
-    queue_position = processing_queue.qsize()
+    # Check if uploaded by agent or user
+    source = request.form.get('source', 'user')  # 'user' or 'agent'
 
-    logger.info(f"[QUEUE] Added to queue: {filename} (position: {queue_position})")
+    if source == 'user':
+        # User uploads are auto-approved - add directly to processing queue
+        processing_queue.put((filepath, filename))
+        queue_position = processing_queue.qsize()
 
-    # Emit queue update
-    with app.app_context():
-        socketio.emit('queue_update', {
-            'processing': None if not is_processing else 'unknown',
-            'queue_size': queue_position
+        logger.info(f"[QUEUE] User upload added to queue: {filename} (position: {queue_position})")
+
+        # Emit queue update
+        with app.app_context():
+            socketio.emit('queue_update', {
+                'processing': None if not is_processing else 'unknown',
+                'queue_size': queue_position
+            })
+
+        return jsonify({
+            'status': 'queued',
+            'filename': filename,
+            'queue_position': queue_position,
+            'auto_approved': True
+        })
+    else:
+        # Agent uploads need approval - add to approval queue
+        approval_id = f"approval_{hashlib.sha256(filename.encode()).hexdigest()[:12]}"
+
+        # Store in Neo4j as pending document
+        query = """
+        CREATE (d:PendingDocument {
+            id: $approval_id,
+            filename: $filename,
+            filepath: $filepath,
+            source: $source,
+            status: 'pending_approval',
+            created_at: datetime()
+        })
+        RETURN d.id as id
+        """
+        result = db.execute_query(query, {
+            'approval_id': approval_id,
+            'filename': filename,
+            'filepath': filepath,
+            'source': source
         })
 
-    return jsonify({
-        'status': 'queued',
-        'filename': filename,
-        'queue_position': queue_position
-    })
+        logger.info(f"[APPROVAL QUEUE] Agent upload pending approval: {filename}")
+
+        # Emit approval needed event
+        with app.app_context():
+            socketio.emit('approval_needed', {
+                'approval_id': approval_id,
+                'filename': filename,
+                'source': source
+            })
+
+        return jsonify({
+            'status': 'pending_approval',
+            'approval_id': approval_id,
+            'filename': filename,
+            'auto_approved': False
+        })
+
+
+@app.route('/api/pending-documents')
+def get_pending_documents():
+    """Get list of documents awaiting approval."""
+    try:
+        query = """
+        MATCH (d:PendingDocument)
+        WHERE d.status = 'pending_approval'
+        RETURN d.id as id, d.filename as filename, d.source as source,
+               d.created_at as created_at
+        ORDER BY d.created_at DESC
+        """
+        results = db.execute_query(query)
+
+        return jsonify({
+            'pending_documents': results or [],
+            'count': len(results) if results else 0
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting pending documents: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/approve-document/<approval_id>', methods=['POST'])
+def approve_document(approval_id):
+    """Approve a pending document and add to processing queue."""
+    try:
+        import hashlib
+
+        # Get pending document details
+        query = """
+        MATCH (d:PendingDocument {id: $approval_id})
+        WHERE d.status = 'pending_approval'
+        RETURN d.filename as filename, d.filepath as filepath
+        """
+        result = db.execute_query(query, {'approval_id': approval_id})
+
+        if not result:
+            return jsonify({'error': 'Document not found or already processed'}), 404
+
+        filename = result[0]['filename']
+        filepath = result[0]['filepath']
+
+        # Update status to approved
+        update_query = """
+        MATCH (d:PendingDocument {id: $approval_id})
+        SET d.status = 'approved', d.approved_at = datetime()
+        """
+        db.execute_query(update_query, {'approval_id': approval_id})
+
+        # Add to processing queue
+        processing_queue.put((filepath, filename))
+        queue_position = processing_queue.qsize()
+
+        logger.info(f"[APPROVAL] Document approved and queued: {filename}")
+
+        # Emit updates
+        with app.app_context():
+            socketio.emit('document_approved', {
+                'approval_id': approval_id,
+                'filename': filename
+            })
+            socketio.emit('queue_update', {
+                'processing': None if not is_processing else 'unknown',
+                'queue_size': queue_position
+            })
+
+        return jsonify({
+            'status': 'approved',
+            'filename': filename,
+            'queue_position': queue_position
+        })
+
+    except Exception as e:
+        logger.error(f"Error approving document: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reject-document/<approval_id>', methods=['DELETE'])
+def reject_document(approval_id):
+    """Reject a pending document and remove from queue."""
+    try:
+        # Get document details
+        query = """
+        MATCH (d:PendingDocument {id: $approval_id})
+        WHERE d.status = 'pending_approval'
+        RETURN d.filename as filename, d.filepath as filepath
+        """
+        result = db.execute_query(query, {'approval_id': approval_id})
+
+        if not result:
+            return jsonify({'error': 'Document not found or already processed'}), 404
+
+        filename = result[0]['filename']
+        filepath = result[0]['filepath']
+
+        # Delete pending document node
+        delete_query = """
+        MATCH (d:PendingDocument {id: $approval_id})
+        DELETE d
+        """
+        db.execute_query(delete_query, {'approval_id': approval_id})
+
+        # Remove file from disk
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as e:
+            logger.warning(f"Could not delete file {filepath}: {e}")
+
+        logger.info(f"[APPROVAL] Document rejected and deleted: {filename}")
+
+        # Emit update
+        with app.app_context():
+            socketio.emit('document_rejected', {
+                'approval_id': approval_id,
+                'filename': filename
+            })
+
+        return jsonify({
+            'status': 'rejected',
+            'filename': filename
+        })
+
+    except Exception as e:
+        logger.error(f"Error rejecting document: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/process-url', methods=['POST'])
