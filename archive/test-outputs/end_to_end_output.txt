@@ -1,0 +1,271 @@
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=116>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 116, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:HAS_QUALIFIER $props]->(b)\n        RETURN id(r) as rel_id\n        '
+Received notification from DBMS server: <GqlStatusObject gql_status='01N02', status_description='warn: feature deprecated without replacement. id is deprecated and will be removed without a replacement.', position=<SummaryInputPosition line=4, column=16, offset=117>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 117, 'line': 4, 'column': 16}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n        MATCH (a {id: $from_id}), (b {id: $to_id})\n        CREATE (a)-[r:CONTAINS_CLAIM $props]->(b)\n        RETURN id(r) as rel_id\n        '
+
+================================================================================
+             RESEARCH VERIFICATION AGENT - END-TO-END DEMONSTRATION             
+================================================================================
+
+Test Started: 2025-11-16 19:23:10
+PDF File: sample papers\SHORT-The-Myth-of-Mental-Illness.pdf
+File exists: True
+
+================================================================================
+                          STEP 1: PDF TEXT EXTRACTION                           
+================================================================================
+
+Extracting text from PDF using pdfplumber...
+
+Extraction Results:
+  - Pages: 6
+  - Total characters: 28,693
+  - Average chars per page: 4,782
+
+--- First 500 Characters of Extracted Text ---
+
+THE MYTH OF MENTAL ILLNESS
+THOMAS S. SZASZ
+State University of New York, Upstate Medical Center, Syracuse
+M
+Y aim in this essay is to raise the ques- trists, physicians, and other scientists hold this
+tion "Is there such a thing as mental view. This position implies that people cannot
+illness?" and to argue that there is not. have troubles—expressed in what are now called
+Since the notion of mental illness is extremely "mental illnesses"—because of differences in per-
+widely used nowadays, inqui
+...
+
+================================================================================
+                         STEP 2: SENTENCE SEGMENTATION                          
+================================================================================
+
+Splitting text into sentences...
+
+Segmentation Results:
+  - Total sentences: 140
+
+--- Sample Sentences (first 10) ---
+
+1. THE MYTH OF MENTAL ILLNESS THOMAS S.
+2. SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to rai...
+3. This position implies that people cannot illness?" and to argue that there is not. have troubles—exp...
+4. All problems in living are attributed to pecially indicated.
+5. Mental illness, of course, is not physicochemical processes which in due time will literally a "thin...
+6. Yet, familiar no different than all other diseases (that is, of the theories are in the habit of pos...
+7. The only difference, in this view, between —at least to those who come to believe in them mental and...
+8. During cer- fecting the brain, manifest themselves by means tain historical periods, explanatory con...
+9. I submit that today referable to those parts of the body.
+10. This view mental illness is widely regarded in a somewhat rests on and expresses what are, in my opi...
+
+================================================================================
+                          STEP 3: KEY CLAIM EXTRACTION                          
+================================================================================
+
+Extracting key claims from sentences...
+
+Claim Extraction Results:
+  - Total claims found: 91
+  - Percentage of sentences: 65.0%
+
+--- Extracted Claims (first 10) ---
+
+
+1. SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to raise the ques- trists, physicians, and other scientists hold this tion "Is there such a thing as mental view.
+
+2. This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of mental illness is extremely "mental illnesses"—because of differences in per- widely used nowadays, inquiry into the ways in sonal needs, opinions, social aspirations, values, and which this term is employed would seem to be es- so on.
+
+3. All problems in living are attributed to pecially indicated.
+
+4. Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by medical research. it can "exist" only in the same sort of way in which "Mental illnesses" are thus regarded as basically other theoretical concepts exist.
+
+5. Yet, familiar no different than all other diseases (that is, of the theories are in the habit of posing, sooner or later body).
+
+6. The only difference, in this view, between —at least to those who come to believe in them mental and bodily diseases is that the former, af- •—as "objective truths" (or "facts").
+
+7. This view mental illness is widely regarded in a somewhat rests on and expresses what are, in my opinion, similar fashion, that is, as the cause of innumerable two fundamental errors. diverse happenings.
+
+8. It would not be some emotion or cause—-let us ask this question: What is meant complex bit of behavior.
+
+9. Rather, it would be blind- when it is asserted that someone is mentally ill? ness or a paralysis of some part of the body.
+
+10. The In what follows I shall describe briefly the main crux of the matter is that a disease of the brain, uses to which the concept of mental illness has been analogous to a disease of the skin or bone, is a put.
+
+================================================================================
+                    STEP 4: QUALIFIER EXTRACTION & ANALYSIS                     
+================================================================================
+
+Analyzing qualifiers in each claim...
+
+Qualifier Analysis Results:
+  - Claims analyzed: 20
+
+  Qualifier Type Distribution:
+    - quantity: 13
+    - modal: 12
+    - certainty: 1
+
+--- Detailed Qualifier Analysis (first 5 claims) ---
+
+
+Claim 1:
+  Text: SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to raise the ques- trists, physicians, and other scienti...
+  Strength: NEUTRAL
+  Total qualifiers: 0
+  No qualifiers found
+
+Claim 2:
+  Text: This position implies that people cannot illness?" and to argue that there is not. have troubles—expressed in what are now called Since the notion of ...
+  Strength: NEUTRAL
+  Total qualifiers: 1
+  Qualifiers found:
+    - MODAL: 'would' -> indicates_conditional_certainty
+
+Claim 3:
+  Text: All problems in living are attributed to pecially indicated....
+  Strength: NEUTRAL
+  Total qualifiers: 1
+  Qualifiers found:
+    - QUANTITY: 'all' -> universal_quantification
+
+Claim 4:
+  Text: Mental illness, of course, is not physicochemical processes which in due time will literally a "thing"—or physical object—and hence be discovered by m...
+  Strength: STRONG
+  Total qualifiers: 2
+  Qualifiers found:
+    - MODAL: 'can' -> indicates_possibility
+    - MODAL: 'will' -> indicates_future_certainty
+
+Claim 5:
+  Text: Yet, familiar no different than all other diseases (that is, of the theories are in the habit of posing, sooner or later body)....
+  Strength: NEUTRAL
+  Total qualifiers: 1
+  Qualifiers found:
+    - QUANTITY: 'all' -> universal_quantification
+
+================================================================================
+                   STEP 5: NEO4J KNOWLEDGE GRAPH CONSTRUCTION                   
+================================================================================
+
+Connecting to Neo4j database...
+  Connection successful!
+
+Initial Database State:
+  - Total nodes: 94
+  - Total relationships: 92
+
+--- Creating Document Node ---
+
+  Document node created: 53bc8b4f-d590-4509-be16-9a717dc94589
+
+--- Creating Claim Nodes ---
+
+Creating 20 claim nodes...
+  Created 5/20 claims...
+  Created 10/20 claims...
+  Created 15/20 claims...
+  Created 20/20 claims...
+  All 20 claims created!
+
+Final Database State:
+  - Total nodes: 141
+  - Total relationships: 138
+
+  Nodes by type:
+    - Document: 3
+    - Claim: 60
+    - Qualifier: 78
+
+  Relationships by type:
+    - CONTAINS_CLAIM: 60
+    - HAS_QUALIFIER: 78
+
+================================================================================
+                   STEP 6: RELATED RESEARCH DISCOVERY (arXiv)                   
+================================================================================
+
+Searching arXiv for related papers...
+Search query: SZASZ State University of New York, Upstate Medical Center, Syracuse M Y aim in this essay is to rai
+  ERROR searching arXiv: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)>
+  Continuing without related papers...
+
+================================================================================
+                            STEP 7: PIPELINE SUMMARY                            
+================================================================================
+
+Processing Complete!
+
+Pipeline Results:
+  PDF Extraction:
+    - Pages processed: 6
+    - Characters extracted: 28,693
+
+  Text Analysis:
+    - Sentences found: 140
+    - Key claims extracted: 91
+    - Claims analyzed: 20
+
+  Qualifier Analysis:
+    - Total qualifiers found: 26
+    - Qualifier types: 3
+    - Most common type: quantity
+
+  Knowledge Graph:
+    - Total nodes: 141
+    - Total relationships: 138
+    - Document nodes: 3
+    - Claim nodes: 60
+    - Qualifier nodes: 78
+    - Related paper nodes: 0
+
+  Related Research:
+    - arXiv papers found: 0
+
+End Time: 2025-11-16 19:23:15
+
+Database connection closed.
+
+================================================================================
+                            END-TO-END TEST COMPLETE                            
+================================================================================

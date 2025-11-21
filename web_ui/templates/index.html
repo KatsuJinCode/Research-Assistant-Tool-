@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Research Graph Navigator</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        /* ===== UNIFIED HEADER SYSTEM ===== */
+        #unified-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            color: white;
+            padding: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 100;
+        }
+
+        /* Header Top Row - Title and Project */
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .header-brand p {
+            font-size: 11px;
+            opacity: 0.85;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .project-selector {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .project-selector:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Header Bottom Row - Stats and Actions */
+        .header-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            gap: 20px;
+        }
+
+        /* Stat Cards Container */
+        .stats-container {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Individual Stat Cards - Clickable */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 20px;
+            min-width: 120px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card:active {
+            transform: translateY(0px);
+        }
+
+        /* Stat Card Glow Effect on Hover */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Action Buttons Container */
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 12px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .header-btn.btn-danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .header-btn.btn-danger:hover {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.7);
+        }
+
+        .header-btn.btn-success {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .header-btn.btn-success:hover {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.7);
+        }
+
+        .header-btn.btn-purple {
+            background: rgba(156, 39, 176, 0.3);
+            border-color: rgba(156, 39, 176, 0.5);
+        }
+
+        .header-btn.btn-purple:hover {
+            background: rgba(156, 39, 176, 0.5);
+            border-color: rgba(156, 39, 176, 0.7);
+        }
+
+        /* ===== TAB NAVIGATION BAR ===== */
+        .tab-bar {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0 24px;
+            display: flex;
+            gap: 4px;
+            align-items: flex-end;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border-radius: 8px 8px 0 0;
+            background: rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid transparent;
+            border-bottom: none;
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: #2a2a2a;
+            color: white;
+            transform: translateY(0);
+            border-color: rgba(255, 255, 255, 0.2);
+            border-bottom: 2px solid #2a2a2a;
+        }
+
+        .tab-icon {
+            font-size: 16px;
+        }
+
+        .tab-label {
+            font-size: 13px;
+        }
+
+        .tab-badge {
+            background: #f44336;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        /* ===== DRAGGABLE PANEL SYSTEM ===== */
+        #container {
+            display: flex;
+            height: calc(100vh - 180px); /* Adjusted for 3-row header with tabs */
+            position: relative;
+        }
+
+        /* Horizontal divider - resize left panel width */
+        .horizontal-divider {
+            width: 4px;
+            background: #333;
+            cursor: ew-resize;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .horizontal-divider:hover {
+            background: #2196F3;
+        }
+
+        .horizontal-divider::before {
+            content: '⋮';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            color: #666;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .horizontal-divider:hover::before {
+            color: #2196F3;
+        }
+
+        /* Left panel container */
+        #sidebar {
+            width: 350px;
+            min-width: 250px;
+            max-width: 600px;
+            background: #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Tab content area (top section) */
+        .tab-content-area {
+            flex: 2;
+            min-height: 200px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #2a2a2a;
+        }
+
+        /* Individual tab content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Vertical divider - resize content vs AI */
+        .vertical-divider {
+            height: 4px;
+            background: #333;
+            cursor: ns-resize;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .vertical-divider:hover {
+            background: #2196F3;
+        }
+
+        .vertical-divider::before {
+            content: '⋮⋮⋮';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 8px;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        .vertical-divider:hover::before {
+            color: #2196F3;
+        }
+
+        /* AI Assistant panel (bottom section) */
+        .ai-assistant-panel {
+            flex: 1;
+            min-height: 150px;
+            max-height: 500px;
+            background: #1f1f1f;
+            border-top: 2px solid #444;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        /* AI Assistant Styles */
+        .ai-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2196F3;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-context-badge {
+            background: rgba(33, 150, 243, 0.2);
+            color: #64B5F6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .ai-chat-area {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+
+        .ai-message {
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            max-width: 85%;
+        }
+
+        .ai-message.ai {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+        }
+
+        .ai-message.user {
+            background: #444;
+            color: #e0e0e0;
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-message-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .ai-quick-actions {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ai-quick-action {
+            background: #444;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .ai-quick-action:hover {
+            background: #555;
+            border-color: #2196F3;
+            color: white;
+        }
+
+        .ai-input-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #333;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .ai-input:focus {
+            border-color: #2196F3;
+        }
+
+        .ai-send-btn {
+            padding: 8px 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .ai-send-btn:hover {
+            background: #1976D2;
+        }
+
+        .ai-send-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* Attention drawing system */
+        .ui-attention {
+            animation: attention-pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+        }
+
+        @keyframes attention-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+            }
+        }
+
+        /* Old header/stats styles - will be removed but kept for safety */
+        #header {
+            display: none;
+        }
+
+        #stats {
+            display: none;
+        }
+
+        #graph-area {
+            flex: 1;
+            background: #1a1a1a;
+            position: relative;
+        }
+
+        .claim-card {
+            background: #333;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .claim-card:hover {
+            background: #3a3a3a;
+            border-left-color: #64B5F6;
+        }
+
+        .claim-card.selected {
+            background: #2196F3;
+            color: white;
+        }
+
+        .claim-text {
+            font-size: 14px;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .claim-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .claim-card.selected .claim-meta {
+            color: #E3F2FD;
+        }
+
+        #detail-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 400px;
+            background: #2a2a2a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            display: none;
+        }
+
+        #detail-panel.visible {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2196F3;
+        }
+
+        .detail-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #64B5F6;
+        }
+
+        .detail-item {
+            background: #333;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .badge-support {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .badge-contradict {
+            background: #F44336;
+            color: white;
+        }
+
+        .badge-pending {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #388E3C;
+        }
+
+        .btn-danger {
+            background: #F44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        .actions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #444;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node circle {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .node:hover circle {
+            stroke: #64B5F6;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font-size: 12px;
+            fill: #e0e0e0;
+            pointer-events: none;
+        }
+
+        .link {
+            stroke: #555;
+            stroke-width: 2px;
+            fill: none;
+        }
+
+        .link-support {
+            stroke: #4CAF50;
+        }
+
+        .link-parent {
+            stroke: #2196F3;
+        }
+
+        .link-evidence {
+            stroke: #FF9800;
+        }
+
+        .node-document circle {
+            fill: #9C27B0;
+        }
+
+        .node-root circle {
+            fill: #2196F3;
+        }
+
+        .node-child circle {
+            fill: #64B5F6;
+        }
+
+        .node-evidence circle {
+            fill: #FF9800;
+        }
+
+        .link-contains {
+            stroke: #9C27B0;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #F44336, #FF9800, #4CAF50);
+            transition: width 0.5s;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        textarea.form-control {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            color: #2196F3;
+            font-weight: bold;
+            min-width: 30px;
+        }
+
+        .progress-bar-smooth {
+            transition: width 0.3s ease-out;
+        }
+
+        .progress-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Processing state fill animation */
+        @keyframes fillUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0%);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Version Indicator - Bottom-right corner */
+        #version-indicator {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #4CAF50;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            z-index: 10000;
+            border: 1px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        #version-indicator:hover {
+            background: rgba(0, 0, 0, 0.95);
+            border-color: #66BB6A;
+            color: #66BB6A;
+        }
+
+        #version-indicator .version-separator {
+            color: #666;
+            margin: 0 6px;
+        }
+
+        /* Comparison Panel Styles */
+        .comparison-panel {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #444;
+        }
+
+        .comparison-header h3 {
+            color: #2196F3;
+            margin: 0;
+        }
+
+        .comparison-nodes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-node {
+            background: #333;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-node strong {
+            flex: 1;
+            color: #e0e0e0;
+        }
+
+        .comparison-node .btn-xs {
+            padding: 2px 8px;
+            font-size: 16px;
+            line-height: 1;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .comparison-node .btn-xs:hover {
+            background: #d32f2f;
+        }
+
+        .node-type-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .node-type-badge.document {
+            background: #FF9800;
+            color: white;
+        }
+
+        .node-type-badge.super {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .node-type-badge.sub {
+            background: #2196F3;
+            color: white;
+        }
+
+        .node-type-badge.evidence {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .comparison-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-actions .btn {
+            width: 100%;
+            text-align: left;
+            padding: 12px 15px;
+        }
+
+        .btn-info {
+            background: #00BCD4;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #0097A7;
+        }
+
+        .btn-secondary {
+            background: #607D8B;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #455A64;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .comparison-results {
+            margin-top: 20px;
+        }
+
+        .comparison-section {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .comparison-section h4 {
+            color: #64B5F6;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .comparison-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .comparison-section li {
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+        }
+
+        .comparison-section li:last-child {
+            border-bottom: none;
+        }
+
+        .path-visualization {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .path-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #3a3a3a;
+            border-radius: 4px;
+        }
+
+        .path-arrow {
+            color: #64B5F6;
+            font-size: 18px;
+            margin-left: auto;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #64B5F6;
+            font-style: italic;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .alert-warning {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid #FF9800;
+            color: #FFB74D;
+        }
+
+        .text-muted {
+            color: #999;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Unified Header System -->
+    <div id="unified-header">
+        <!-- Top Row: Brand and Project -->
+        <div class="header-top">
+            <div class="header-brand">
+                <div>
+                    <h1>🔍 Research Graph Navigator</h1>
+                    <p>Interactive Claim Exploration & Investigation</p>
+                </div>
+            </div>
+            <div class="project-selector" id="project-selector" onclick="HeaderManager.openProjectSelector()">
+                <span id="current-project-name">Default Project</span>
+                <span style="opacity: 0.6;">▼</span>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Stats and Actions -->
+        <div class="header-bottom">
+            <!-- Clickable Stat Cards -->
+            <div class="stats-container">
+                <div class="stat-card" id="stat-card-documents" onclick="HeaderManager.navigateToStat('documents')" title="Click to view all documents">
+                    <div class="stat-value" id="stat-nodes">-</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat-card" id="stat-card-claims" onclick="HeaderManager.navigateToStat('claims')" title="Click to view all claims">
+                    <div class="stat-value" id="stat-claims">-</div>
+                    <div class="stat-label">Claims</div>
+                </div>
+                <div class="stat-card" id="stat-card-evidence" onclick="HeaderManager.navigateToStat('evidence')" title="Click to view evidence links">
+                    <div class="stat-value" id="stat-evidence">-</div>
+                    <div class="stat-label">Evidence</div>
+                </div>
+                <div class="stat-card" id="stat-card-pending" onclick="HeaderManager.navigateToStat('pending')" title="Click to view pending documents">
+                    <div class="stat-value" id="stat-research">-</div>
+                    <div class="stat-label">Pending Docs</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="header-actions">
+                <button class="header-btn btn-success" id="run-clustering-btn" title="Refresh claim clustering">
+                    🔗 Cluster
+                </button>
+                <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
+                    ⚙️ Settings
+                </button>
+                <button class="header-btn btn-danger" id="clear-all-btn" title="Clear all data">
+                    🗑️ Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <div class="tab-bar" id="tab-bar">
+            <div class="tab active" data-tab="documents" onclick="TabManager.switchTab('documents')">
+                <span class="tab-icon">📄</span>
+                <span class="tab-label">Documents</span>
+            </div>
+            <div class="tab" data-tab="search" onclick="TabManager.switchTab('search')">
+                <span class="tab-icon">🔍</span>
+                <span class="tab-label">Search</span>
+            </div>
+            <div class="tab" data-tab="agents" onclick="TabManager.switchTab('agents')">
+                <span class="tab-icon">🤖</span>
+                <span class="tab-label">Agents</span>
+                <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
+            </div>
+            <div class="tab" data-tab="projects" onclick="TabManager.switchTab('projects')">
+                <span class="tab-icon">📁</span>
+                <span class="tab-label">Projects</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="container">
+        <!-- Left Panel with Tab Content and AI Assistant -->
+        <div id="sidebar">
+            <!-- Tab Content Area (Top Section - Scrollable) -->
+            <div class="tab-content-area" id="tab-content-area">
+                <div id="tab-documents" class="tab-content active">
+                    <h2 style="margin-bottom: 15px;">📄 Documents</h2>
+
+                    <!-- Upload area - Compact -->
+                    <div id="upload-zone" style="background: #9C27B0; border: 2px dashed #BA68C8; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 15px; cursor: pointer; transition: all 0.3s;">
+                        <div style="color: white; font-weight: bold; font-size: 13px; margin-bottom: 6px;">📄 Upload or Drop Files</div>
+                        <div style="color: #E1BEE7; font-size: 11px; margin-bottom: 6px;">PDF, TXT, DOCX</div>
+                        <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
+                        <input type="text" id="url-input" placeholder="Or paste URL..." style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 6px; font-size: 12px;">
+                        <button id="upload-btn" class="btn btn-primary" style="margin-top: 6px; width: 100%; background: white; color: #9C27B0; font-weight: bold; padding: 6px; font-size: 12px;">Process</button>
+                    </div>
+
+                    <!-- Search and Filter Panel - Compact -->
+                    <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #333;">
+                        <div style="margin-bottom: 8px;">
+                            <input type="text" id="search-input" placeholder="Search..." style="width: 100%; padding: 6px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 12px;">
+                            <div id="search-results-count" style="margin-top: 3px; font-size: 10px; color: #999;"></div>
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                            <label title="Show/hide document nodes. Search uses text matching on document titles and content."
+                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                <input type="checkbox" id="filter-documents" checked style="margin: 0;">
+                                <span style="color: #9C27B0;">■</span>
+                                <span style="color: #ccc;">Docs</span>
+                            </label>
+                            <label title="Show/hide claim nodes. Search uses semantic similarity (embeddings) to find related claims."
+                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                <input type="checkbox" id="filter-claims" checked style="margin: 0;">
+                                <span style="color: #2196F3;">■</span>
+                                <span style="color: #ccc;">Claims</span>
+                            </label>
+                            <label title="Show/hide duplicate/similar nodes. Identified using MECE clustering algorithm."
+                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                <input type="checkbox" id="filter-duplicates" checked style="margin: 0;">
+                                <span style="color: #FF6B35;">≈</span>
+                                <span style="color: #ccc;">Dupes</span>
+                            </label>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <input type="range" id="quality-filter" min="0" max="100" value="0" step="10" style="width: 100%; height: 4px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 9px; color: #666;">
+                                <span>Min Quality: <span id="quality-filter-value">0%</span></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            <button id="clear-filters-btn" style="flex: 1; padding: 4px; background: #333; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Clear</button>
+                            <button id="focus-search-btn" style="flex: 1; padding: 4px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Focus</button>
+                        </div>
+                    </div>
+
+                    <!-- Queue status -->
+                    <div id="queue-status" style="display: none; background: #2a2a2a; padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #FF9800;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-weight: bold; color: #FF9800;">Queue:</span>
+                                <span id="queue-count" style="color: #999; margin-left: 8px;">0 documents</span>
+                            </div>
+                            <div id="queue-processing" style="color: #4CAF50; font-size: 11px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Processing status -->
+                    <div id="processing-status" style="display: none; background: #2a2a2a; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <div style="font-weight: bold; margin-bottom: 10px;">Processing...</div>
+                        <div id="status-text" style="color: #999; font-size: 12px; max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace;"></div>
+                        <div style="margin-top: 10px;">
+                            <div style="background: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div id="progress-bar" style="background: #2196F3; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="root-claims"></div>
+                </div>
+
+                <!-- Placeholder tabs - will be populated by TabManager -->
+                <div id="tab-search" class="tab-content" style="display:none;"></div>
+                <div id="tab-agents" class="tab-content" style="display:none;"></div>
+                <div id="tab-projects" class="tab-content" style="display:none;"></div>
+            </div>
+
+            <!-- Vertical Divider (Draggable) -->
+            <div class="vertical-divider" id="vertical-divider"></div>
+
+            <!-- AI Assistant Panel (Bottom Section - Fixed Height) -->
+            <div class="ai-assistant-panel" id="ai-assistant-panel">
+                <div class="ai-header">
+                    <span class="tab-icon">🤖</span>
+                    <span>AI Research Assistant</span>
+                    <span class="ai-context-badge" id="ai-context-badge">Documents</span>
+                </div>
+
+                <div class="ai-chat-area" id="ai-chat-area">
+                    <div class="ai-message ai">
+                        <div>Hello! I'm your AI research assistant. I can help you navigate, analyze, and organize your research.</div>
+                        <div class="ai-message-time">Just now</div>
+                    </div>
+                </div>
+
+                <div class="ai-quick-actions" id="ai-quick-actions">
+                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('find-similar')">🔗 Find Similar</button>
+                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('analyze')">📊 Analyze</button>
+                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('suggest')">💡 Suggest</button>
+                </div>
+
+                <div class="ai-input-container">
+                    <input type="text" class="ai-input" id="ai-input" placeholder="Ask me anything..." />
+                    <button class="ai-send-btn" id="ai-send-btn" onclick="AIAssistant.sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horizontal Divider (Draggable) -->
+        <div class="horizontal-divider" id="horizontal-divider"></div>
+
+        <!-- Graph Area -->
+        <div id="graph-area">
+            <svg id="graph-svg"></svg>
+
+            <div id="detail-panel">
+                <div class="detail-section">
+                    <div class="detail-title" id="detail-claim-text"></div>
+                    <div class="claim-meta">
+                        <span>Specificity: <span id="detail-specificity">-</span></span> |
+                        <span>Strength: <span id="detail-strength">-</span></span>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="page-info-section" style="display:none;">
+                    <div class="detail-subtitle">Page Number</div>
+                    <div class="detail-item">
+                        Page <span id="detail-page" style="font-weight: bold; color: #2196F3;">-</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Full Original Text</div>
+                    <div class="detail-item" id="detail-full-text" style="white-space: pre-wrap; line-height: 1.5;">-</div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Confidence Score</div>
+                    <div class="detail-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="detail-confidence" style="font-weight: bold;">-</span>
+                            <span id="confidence-override-indicator" style="display: none; color: #FFD700; font-size: 11px; font-weight: bold;">✓ USER ADJUSTED</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidence-bar-fill" style="width: 50%;"></div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444;">
+                            <label style="display: block; font-size: 11px; color: #999; margin-bottom: 6px;">Override Confidence:</label>
+                            <input type="range" id="confidence-override-slider" min="0" max="100" value="50" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px;">
+                                <span>0%</span>
+                                <span id="confidence-override-value" style="color: #2196F3; font-weight: bold;">50%</span>
+                                <span>100%</span>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button id="apply-confidence-override-btn" class="btn btn-sm" style="flex: 1; background: #2196F3; color: white; padding: 6px; font-size: 11px;">Apply Override</button>
+                                <button id="reset-confidence-override-btn" class="btn btn-sm" style="flex: 1; background: #666; color: white; padding: 6px; font-size: 11px; display: none;">Reset to AI</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Investigation Value</div>
+                    <div class="detail-item">
+                        <span id="detail-investigation-value" style="font-weight: bold;">-</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="investigation-bar-fill" style="width: 50%;"></div>
+                        </div>
+                        <small style="color: #999;">How worthwhile it is to investigate further</small>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-subtitle">Timestamp</div>
+                    <div class="detail-item" id="detail-timestamp">-</div>
+                </div>
+
+                <!-- Provenance Section -->
+                <div class="detail-section" id="provenance-section" style="display:none;">
+                    <div class="detail-subtitle">🔍 Provenance</div>
+                    <div class="detail-item">
+                        <div id="provenance-created-by" style="margin-bottom: 8px;">
+                            <strong>Created by:</strong> <span id="provenance-creator">-</span>
+                        </div>
+                        <div id="provenance-discovered-by" style="margin-bottom: 8px; display:none;">
+                            <strong>Discovered by:</strong> <span id="provenance-discoverer">-</span>
+                        </div>
+                        <div id="provenance-lineage" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444; display:none;">
+                            <strong style="font-size: 11px; color: #999;">Lineage Chain:</strong>
+                            <div id="provenance-lineage-list" style="margin-top: 8px; font-size: 12px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="parent-claims-section" style="display:none;">
+                    <div class="detail-subtitle">What This Claim Supports</div>
+                    <div id="parent-claims-list"></div>
+                </div>
+
+                <div class="detail-section" id="supporting-info-section" style="display:none;">
+                    <div class="detail-subtitle">What Supports This Claim</div>
+                    <div id="supporting-info-list"></div>
+                </div>
+
+                <div class="detail-section" id="summary-section" style="display:none;">
+                    <div class="detail-subtitle">📝 Summarization Details</div>
+                    <div class="detail-item">
+                        <strong>Original Text:</strong><br>
+                        <span id="summary-original" style="font-size: 12px; color: #999;"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Compression:</strong> <span id="summary-compression">-</span> of original length<br>
+                        <strong>Qualifiers Preserved:</strong> <span id="summary-qualifiers">-</span>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="children-section" style="display:none;">
+                    <div class="detail-subtitle">📊 Sub-Claims (<span id="children-count">0</span>)</div>
+                    <div id="children-list"></div>
+                </div>
+
+                <div class="detail-section" id="evidence-section" style="display:none;">
+                    <div class="detail-subtitle">📚 Evidence (<span id="evidence-count">0</span>)</div>
+                    <div id="evidence-list"></div>
+                </div>
+
+                <div class="detail-section" id="sources-section" style="display:none;">
+                    <div class="detail-subtitle">📄 Source Locations (<span id="sources-count">0</span>)</div>
+                    <div id="sources-list"></div>
+                </div>
+
+                <div class="detail-section" id="research-section" style="display:none;">
+                    <div class="detail-subtitle">🤖 Research History (<span id="research-count">0</span>)</div>
+                    <div id="research-list"></div>
+                </div>
+
+                <div class="actions">
+                    <div class="detail-subtitle">🔬 Investigate This Claim</div>
+                    <button class="btn btn-success" onclick="investigateClaim('support')">
+                        ✓ Find Supporting Evidence
+                    </button>
+                    <button class="btn btn-danger" onclick="investigateClaim('contradict')">
+                        ✗ Find Contradicting Evidence
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: #2a2a2a; border: 2px solid #2196F3; border-radius: 12px; padding: 30px; width: 600px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+            <h2 style="margin: 0 0 20px 0; color: #2196F3; font-size: 24px;">⚙️ Auto-Linking Settings</h2>
+
+            <!-- Similarity Threshold -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: #e0e0e0; font-weight: bold; margin-bottom: 8px;">
+                    Semantic Similarity Threshold
+                    <span style="color: #999; font-weight: normal; font-size: 12px;">
+                        (Higher = Fewer but more accurate matches)
+                    </span>
+                </label>
+                <input type="range" id="similarity-threshold-slider" min="0.5" max="0.9" step="0.05" value="0.7"
+                       style="width: 100%; margin-bottom: 8px;" oninput="updateThresholdDisplay(this.value)">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+                    <span>0.5 (Aggressive)</span>
+                    <span id="threshold-value" style="color: #2196F3; font-weight: bold; font-size: 16px;">0.7</span>
+                    <span>0.9 (Conservative)</span>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #999; line-height: 1.5;">
+                    <strong style="color: #e0e0e0;">Current setting: <span id="threshold-label">Balanced (Recommended)</span></strong><br>
+                    • 0.5-0.6: Aggressive - Many matches, some false positives<br>
+                    • 0.7-0.8: Balanced - Good precision/recall trade-off<br>
+                    • 0.85-0.9: Conservative - Only high-confidence matches
+                </div>
+            </div>
+
+            <!-- Embedding Model -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: #e0e0e0; font-weight: bold; margin-bottom: 8px;">
+                    Embedding Model
+                    <span style="color: #999; font-weight: normal; font-size: 12px;">
+                        (Quality vs Speed vs Size trade-off)
+                    </span>
+                </label>
+                <select id="embedding-model-select" onchange="updateModelDescription()" style="width: 100%; padding: 12px; background: #333; border: 1px solid #666; color: white; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                    <option value="all-MiniLM-L6-v2">⚡ Maximum Speed - MiniLM-L6 (384-dim, ~0.5s/claim)</option>
+                    <option value="all-MiniLM-L12-v2">⚖️ Balanced - MiniLM-L12 (384-dim, ~1s/claim)</option>
+                    <option value="all-mpnet-base-v2" selected>✨ High Quality - MPNet (768-dim, ~2s/claim) [Recommended]</option>
+                    <option value="all-distilroberta-v1">🔬 Premium - DistilRoBERTa (768-dim, ~2.5s/claim)</option>
+                    <option value="paraphrase-multilingual-mpnet-base-v2">🌍 Multilingual - MPNet Multi (768-dim, ~2.5s/claim)</option>
+                    <option value="msmarco-distilbert-base-v4">🎯 Search-Optimized - MS MARCO (768-dim, ~2s/claim)</option>
+                </select>
+                <div id="model-description" style="margin-top: 12px; padding: 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid #4CAF50; border-radius: 6px; font-size: 12px; color: #e0e0e0; line-height: 1.6;">
+                    <strong style="color: #4CAF50;">High Quality - MPNet (Recommended)</strong><br>
+                    • Best semantic understanding for English research papers<br>
+                    • 768-dimensional embeddings capture rich meaning<br>
+                    • Good balance of quality and speed (~2 seconds per claim)<br>
+                    • Ideal for: Academic research, fact-checking, evidence analysis
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button onclick="saveSettings()" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                    ✓ Save Settings
+                </button>
+                <button onclick="closeSettings()" style="flex: 1; background: #666; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                    Cancel
+                </button>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #444; font-size: 11px; color: #999; line-height: 1.6;">
+                <strong style="color: #e0e0e0;">Note:</strong> Changing the embedding model will require regenerating embeddings for all existing claims and evidence.
+                You can do this by typing <code style="background: #333; padding: 2px 6px; border-radius: 3px;">"generate embeddings"</code> in the chat.
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Indicator (bottom-right corner) -->
+    <div id="version-indicator">
+        <span id="version-build">Build: loading...</span>
+        <span class="version-separator">|</span>
+        <span id="version-restart">Restart #0</span>
+    </div>
+
+    <!-- Background Agent Monitor Panel -->
+    <div id="agent-monitor-panel" class="collapsed">
+        <div class="agent-monitor-header" onclick="toggleAgentMonitor()">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">⚙️</span>
+                <span style="font-weight: bold;">Background Agents</span>
+                <span id="agent-count-badge" class="agent-badge">0</span>
+            </div>
+            <span id="agent-monitor-toggle">▼</span>
+        </div>
+        <div class="agent-monitor-body">
+            <div id="agent-list"></div>
+            <div id="agent-empty-state" style="text-align: center; color: #666; padding: 20px; font-size: 12px;">
+                No active agents
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Assistant Panel -->
+    <div id="chat-panel" class="collapsed">
+        <div class="chat-header" onclick="toggleChat()">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">💬</span>
+                <span style="font-weight: bold;">AI Assistant</span>
+            </div>
+            <span id="chat-toggle">▼</span>
+        </div>
+        <div class="chat-body">
+            <div id="chat-messages"></div>
+            <div id="chat-context-area" style="display: none; padding: 8px 12px; border-top: 1px solid #444; background: rgba(0,0,0,0.3);">
+                <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Context:</div>
+                <div id="chat-context-chips" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Ask me anything about your research..." />
+                <button id="chat-send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Agent Monitor Panel Styles */
+        #agent-monitor-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 350px;
+            max-height: 400px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        #agent-monitor-panel.collapsed {
+            max-height: 42px;
+            overflow: hidden;
+        }
+
+        .agent-monitor-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-bottom: 1px solid #444;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .agent-monitor-header:hover {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+        }
+
+        .agent-monitor-body {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .agent-badge {
+            background: #e94560;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .agent-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .agent-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .agent-name {
+            font-weight: bold;
+            font-size: 12px;
+            color: #2196F3;
+        }
+
+        .agent-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #4caf50;
+            color: white;
+        }
+
+        .agent-status.processing {
+            background: #ff9800;
+        }
+
+        .agent-status.idle {
+            background: #666;
+        }
+
+        .agent-task {
+            font-size: 11px;
+            color: #ccc;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .agent-progress {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .agent-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2196F3, #4caf50);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        /* Chat Panel Styles */
+        #chat-panel {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 400px;
+            max-width: calc(100vw - 40px);
+            background: #2a2a2a;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 3000;
+            transition: all 0.3s ease;
+        }
+
+        #chat-panel.collapsed {
+            height: 50px;
+        }
+
+        #chat-panel.collapsed .chat-body {
+            display: none;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            user-select: none;
+        }
+
+        .chat-header:hover {
+            background: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
+        }
+
+        .chat-body {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .chat-message.ai .chat-message-avatar {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        }
+
+        .chat-message.user .chat-message-avatar {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        .chat-message-content {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chat-message.ai .chat-message-content {
+            background: #333;
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.user .chat-message-content {
+            background: #2196F3;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 1px solid #444;
+            display: flex;
+            gap: 8px;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 10px 12px;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        #chat-input:focus {
+            border-color: #2196F3;
+        }
+
+        #chat-send-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        #chat-send-btn:hover {
+            background: #1976D2;
+        }
+
+        #chat-send-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .chat-typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+        }
+
+        .chat-typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+
+        .chat-typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .chat-typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Modular JavaScript -->
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/graph.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent_monitor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+    <script>
+        // Agent monitor toggle
+        function toggleAgentMonitor() {
+            const panel = document.getElementById('agent-monitor-panel');
+            const toggle = document.getElementById('agent-monitor-toggle');
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
+        }
+
+        // Chat panel toggle
+        function toggleChat() {
+            const panel = document.getElementById('chat-panel');
+            const toggle = document.getElementById('chat-toggle');
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
+        }
+
+        // Investigate claim function for detail panel buttons
+        function investigateClaim(type) {
+            // Get selected claim ID from graph renderer
+            if (!GraphRenderer.selectedNodeIds || GraphRenderer.selectedNodeIds.size === 0) {
+                alert('No claim selected. Please select a claim first.');
+                return;
+            }
+
+            const selectedNodes = Array.from(GraphRenderer.selectedNodeIds);
+            const selectedClaimId = selectedNodes[0]; // Use first selected node
+
+            // Make API call to start investigation
+            fetch('/api/investigate-claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    claim_id: selectedClaimId,
+                    type: type
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error starting investigation: ' + result.error);
+                } else {
+                    alert(`Investigation started!\n\nType: ${type}\nClaim: ${selectedClaimId}\n\nCheck the Background Agents panel to monitor progress.`);
+                }
+            })
+            .catch(err => {
+                alert('Error starting investigation: ' + err.message);
+            });
+        }
+
+        // Settings Modal Functions
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+
+            // Load saved settings from localStorage
+            const savedThreshold = localStorage.getItem('similarity_threshold') || '0.7';
+            const savedModel = localStorage.getItem('embedding_model') || 'all-mpnet-base-v2';
+
+            // Apply saved values to modal
+            const slider = document.getElementById('similarity-threshold-slider');
+            if (slider) {
+                slider.value = savedThreshold;
+                updateThresholdDisplay(savedThreshold);
+            }
+
+            // Set select dropdown
+            const modelSelect = document.getElementById('embedding-model-select');
+            if (modelSelect) {
+                modelSelect.value = savedModel;
+            }
+            updateModelDescription();
+
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function saveSettings() {
+            // Get values
+            const threshold = document.getElementById('similarity-threshold-slider').value;
+            const modelSelect = document.getElementById('embedding-model-select');
+            const model = modelSelect ? modelSelect.value : 'all-mpnet-base-v2';
+
+            // Save to localStorage
+            localStorage.setItem('similarity_threshold', threshold);
+            localStorage.setItem('embedding_model', model);
+
+            // Check if model changed
+            const previousModel = localStorage.getItem('previous_embedding_model') || 'all-mpnet-base-v2';
+            const modelChanged = previousModel !== model;
+            localStorage.setItem('previous_embedding_model', model);
+
+            // Close modal
+            closeSettings();
+
+            // Get model display name
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            const modelDisplayName = selectedOption ? selectedOption.text : model;
+
+            // Show confirmation message
+            let message = `✓ Settings saved!\n\nSimilarity Threshold: ${threshold}\nEmbedding Model: ${modelDisplayName}`;
+            if (modelChanged) {
+                message += '\n\n⚠️ Model changed! Type "generate embeddings" in chat to regenerate embeddings with the new model.';
+            }
+            alert(message);
+
+            console.log('[Settings] Saved:', { threshold, model, modelChanged });
+        }
+
+        function updateThresholdDisplay(value) {
+            const valueDisplay = document.getElementById('threshold-value');
+            const labelDisplay = document.getElementById('threshold-label');
+
+            if (valueDisplay) {
+                valueDisplay.textContent = parseFloat(value).toFixed(2);
+            }
+
+            if (labelDisplay) {
+                const val = parseFloat(value);
+                let label = '';
+                if (val < 0.65) {
+                    label = 'Aggressive';
+                } else if (val <= 0.8) {
+                    label = 'Balanced (Recommended)';
+                } else {
+                    label = 'Conservative';
+                }
+                labelDisplay.textContent = label;
+            }
+        }
+
+        function updateModelDescription() {
+            const modelDescription = document.getElementById('model-description');
+            const modelSelect = document.getElementById('embedding-model-select');
+
+            if (!modelDescription || !modelSelect) return;
+
+            const modelValue = modelSelect.value;
+            const descriptions = {
+                'all-MiniLM-L6-v2': {
+                    color: '#00BCD4',
+                    title: 'Maximum Speed - MiniLM-L6',
+                    text: '• Fastest processing (~0.5 seconds per claim)<br>• Smallest model (384 dimensions)<br>• Good accuracy for most use cases<br>• Ideal for: Large document collections, quick prototyping, real-time processing'
+                },
+                'all-MiniLM-L12-v2': {
+                    color: '#03A9F4',
+                    title: 'Balanced - MiniLM-L12',
+                    text: '• Good balance of speed and quality (~1 second per claim)<br>• Medium-sized model (384 dimensions)<br>• Better accuracy than L6, faster than MPNet<br>• Ideal for: General research, balanced workloads, moderate document collections'
+                },
+                'all-mpnet-base-v2': {
+                    color: '#4CAF50',
+                    title: 'High Quality - MPNet (Recommended)',
+                    text: '• Best semantic understanding for English research papers<br>• 768-dimensional embeddings capture rich meaning<br>• Good balance of quality and speed (~2 seconds per claim)<br>• Ideal for: Academic research, fact-checking, evidence analysis'
+                },
+                'all-distilroberta-v1': {
+                    color: '#9C27B0',
+                    title: 'Premium - DistilRoBERTa',
+                    text: '• Alternative high-quality architecture<br>• 768 dimensions with RoBERTa training<br>• Slightly slower but very accurate (~2.5 seconds per claim)<br>• Ideal for: Critical analysis, legal documents, premium research'
+                },
+                'paraphrase-multilingual-mpnet-base-v2': {
+                    color: '#FF9800',
+                    title: 'Multilingual - MPNet Multi',
+                    text: '• Supports 50+ languages<br>• 768 dimensions with multilingual training<br>• Best for non-English or mixed-language documents (~2.5 seconds per claim)<br>• Ideal for: International research, multilingual corpora, global studies'
+                },
+                'msmarco-distilbert-base-v4': {
+                    color: '#E91E63',
+                    title: 'Search-Optimized - MS MARCO',
+                    text: '• Fine-tuned for search and retrieval tasks<br>• 768 dimensions optimized for finding relevant passages<br>• Excellent for question-answering (~2 seconds per claim)<br>• Ideal for: Evidence retrieval, Q&A systems, information seeking'
+                }
+            };
+
+            const desc = descriptions[modelValue] || descriptions['all-mpnet-base-v2'];
+            modelDescription.style.background = `rgba(${parseInt(desc.color.slice(1,3), 16)}, ${parseInt(desc.color.slice(3,5), 16)}, ${parseInt(desc.color.slice(5,7), 16)}, 0.1)`;
+            modelDescription.style.borderColor = desc.color;
+            modelDescription.innerHTML = `<strong style="color: ${desc.color};">${desc.title}</strong><br>${desc.text}`;
+        }
+
+        // Load settings on page load and apply them globally
+        function loadGlobalSettings() {
+            const threshold = localStorage.getItem('similarity_threshold') || '0.7';
+            const model = localStorage.getItem('embedding_model') || 'all-mpnet-base-v2';
+
+            // Make settings available globally
+            window.USER_SETTINGS = {
+                similarity_threshold: parseFloat(threshold),
+                embedding_model: model
+            };
+
+            console.log('[Settings] Loaded global settings:', window.USER_SETTINGS);
+        }
+
+        // Initialize settings on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGlobalSettings();
+        });
+    </script>
+
+    <!-- Header Manager Module -->
+    <script src="{{ url_for('static', filename='js/header_manager.js') }}"></script>
+
+    <!-- Tab Navigation System -->
+    <script src="{{ url_for('static', filename='js/tab_manager.js') }}"></script>
+
+    <!-- Draggable Panel System -->
+    <script src="{{ url_for('static', filename='js/panel_manager.js') }}"></script>
+
+    <!-- AI Assistant -->
+    <script src="{{ url_for('static', filename='js/ai_assistant.js') }}"></script>
+</body>
+</html>

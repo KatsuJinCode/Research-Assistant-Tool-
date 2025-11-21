@@ -1,217 +1,169 @@
-# Transition Notes for Continuing in Claude Code Web Interface
+# Transition Notes: From Arbitrary Thresholds to MECE Graph Architecture
 
-## Current State Summary
+## What Changed and Why
 
-### ✅ What We've Completed
+### 1. Chunk Size: 7K → 400K characters (57x increase!)
 
-1. **Full System Architecture** - `REVISED_ARCHITECTURE.md`
-   - Pull-based agent work queue system
-   - PostgreSQL database design with hybrid hierarchical storage
-   - 11 specialized agent types with different frameworks
-   - Dual-source evidence system (academic + web)
-   - Investigation chains and claim relationships
+**Problem**: Was only using ~1.5 pages of a 200K token context window
+**Fix**: Now using ~100 pages per chunk
+**Impact**: 300-page document goes from 100+ chunks to 3-6 chunks
 
-2. **Philosophy Framework System** - `AGENT_PHILOSOPHY_AND_NORMALIZATION.md`
-   - Configurable agent cognition (8 pre-built frameworks)
-   - ClaimNormalizer agent design
-   - Presupposition and context tracking
-   - Investigation tree visualization
-   - Word document export system
+**Evidence**:
+- Claude Sonnet 4.5: 200K tokens
+- 1 token ≈ 4 characters
+- 200K × 4 = 800K characters (theoretical max)
+- Use 400K for document (leaves 400K for prompt + response + safety)
 
-3. **ClaimNormalizer Research** - `CLAIM_NORMALIZER_RESEARCH.md`
-   - Academic research on argument mining, Toulmin model, SRL
-   - 6-layer context preservation system
-   - Multi-stage normalization pipeline
-   - Human-in-the-loop validation
-   - Learning system from user corrections
-   - Hybrid database structure for recursive claims
+**Actual Math**:
+- 400,000 chars ÷ 4,000 chars/page = 100 pages per chunk
+- 600-page document ÷ 100 pages = 6 chunks (not 200!)
 
-4. **MVP Roadmap** - `MVP_ROADMAP.md`
-   - **CRITICAL ACKNOWLEDGMENTS**:
-     - Qualifier terms (can/will/mostly/often) must be preserved
-     - Confidence scores drive adaptive investigation depth
-   - 6-week implementation plan
-   - Phase-by-phase deliverables
-   - Test success criteria
+### 2. Extraction Directive: Added MECE Requirements
 
-5. **Compatibility Documentation** - `AI_CODING_ASSISTANT_COMPATIBILITY.md`
-   - Confirmed: Works with Claude Code CLI, Codex CLI, Cursor, etc.
-   - CLAUDE.md is universal guide
-
-6. **Updated CLAUDE.md**
-   - Compatible with all AI coding assistants
-   - Project overview and architecture
-   - Common commands and development workflow
-
-## 🎯 Where We Are Now
-
-**Phase**: Ready to begin **Phase 1: Foundation Implementation**
-
-**Next Immediate Tasks**:
-1. Create database schema file (`database/schema_v1_mvp.sql`)
-2. Create database setup script (`database/setup.sh`)
-3. Create configuration template (`config/config.yaml`)
-4. Set up Python project structure
-
-**Current Todo List Status**:
-- [x] Document qualifier and confidence score systems
-- [x] Create MVP implementation roadmap
-- [ ] **IN PROGRESS**: Implement Phase 1: Core database schema
-- [ ] Implement Phase 2: Basic claim extraction
-- [ ] Implement Phase 3: Simple normalization
-- [ ] Implement Phase 4: Basic investigation agents
-- [ ] Test MVP end-to-end pipeline
-
-## 📋 What to Tell Claude Code Web Interface
-
-When you continue, provide this context:
-
+**Before**:
 ```
-We're building a Research Verification Agent System - an autonomous multi-agent
-system that analyzes research papers, extracts claims, and uses specialized agents
-to verify/challenge/expand claims with evidence.
-
-CRITICAL DESIGN PRINCIPLES:
-1. Qualifier terms (can/will/mostly/often/all/some) MUST be preserved - auto-fail if lost
-2. Confidence scores at every stage - low confidence triggers more investigation
-3. Pull-based work queue - agents discover work, don't spawn recursively
-4. Human-in-the-loop for claim normalization
-5. PostgreSQL with hybrid hierarchical structure
-
-CURRENT PHASE: Phase 1 - Foundation (Week 1-2)
-We need to implement:
-1. PostgreSQL database schema (see MVP_ROADMAP.md Phase 1)
-2. Configuration system
-3. AI client wrapper (OpenAI + Anthropic)
-4. CLI framework
-5. Database connection
-
-FILES TO READ FIRST:
-- MVP_ROADMAP.md (implementation plan)
-- REVISED_ARCHITECTURE.md (full system design)
-- CLAIM_NORMALIZER_RESEARCH.md (normalization details)
-
-START WITH: Create database/schema_v1_mvp.sql based on the MVP schema in MVP_ROADMAP.md
+Extract 10-20 claims. Preserve qualifiers.
 ```
 
-## 📁 Files You'll Need to Reference
+**After**:
+```
+CRITICAL MECE Requirements:
 
-### Core Architecture Documents
-1. **REVISED_ARCHITECTURE.md** - Full system architecture
-2. **AGENT_PHILOSOPHY_AND_NORMALIZATION.md** - ClaimNormalizer + philosophy frameworks
-3. **CLAIM_NORMALIZER_RESEARCH.md** - Research-backed normalization design
-4. **MVP_ROADMAP.md** - 6-week implementation plan with code examples
+1. MUTUALLY EXCLUSIVE: Each claim = ONE distinct idea
+   - No overlap between claims
+   - Extract parent claim AND child claims separately
 
-### Configuration & Compatibility
-5. **AI_CODING_ASSISTANT_COMPATIBILITY.md** - Tool compatibility
-6. **CLAUDE.md** - Universal AI assistant guide
+2. COMPREHENSIVELY EXHAUSTIVE: Extract EVERY substantive claim
+   - Don't skip "obvious" claims
+   - Include ALL claim types (factual, methodological, causal, interpretive)
 
-### Original Planning (For Reference)
-7. **AGENT_SYSTEM_ARCHITECTURE.md** - Original recursive design (superseded by REVISED)
-8. **PROJECT_PLAN.md** - Original web app plan (now CLI-focused)
-
-## 🔑 Key Decisions Made
-
-### Technology Stack (MVP)
-- **Database**: PostgreSQL (not SQLite) - chosen for complex queries, concurrency
-- **AI Providers**: OpenAI + Anthropic (multi-provider support)
-- **Interface**: CLI first (not web) - faster to build
-- **Language**: Python 3.11+
-- **PDF Processing**: pdfplumber
-- **Academic Search**: Semantic Scholar, arXiv, PubMed (Phase 6)
-
-### Architecture Patterns
-- **Agent System**: Pull-based work queue (NOT recursive spawning)
-- **Claim Hierarchy**: Hybrid (adjacency list + materialized path + ltree + closure table)
-- **Normalization**: Human-in-the-loop with learning system
-- **Investigation**: Autonomous background agents with configurable philosophies
-
-### MVP Scope (What's IN)
-✅ PDF ingestion
-✅ Claim extraction (LLM-based)
-✅ Qualifier preservation (CRITICAL)
-✅ Human-validated normalization
-✅ 3 agent types (Support, Challenge, Analysis)
-✅ Evidence with APA citations
-✅ Confidence scoring
-✅ Markdown reports
-
-### MVP Scope (What's OUT - Post-MVP)
-❌ Real academic API search (Phase 6)
-❌ Philosophy frameworks (Phase 7)
-❌ Advanced normalization with SRL (Phase 8)
-❌ Tree visualization (Phase 9)
-❌ Word document export (Phase 9)
-
-## 🚀 Recommended First Actions
-
-### Option A: Continue Implementation
-```bash
-# Tell Claude Code:
-"Let's continue implementing Phase 1.
-Create database/schema_v1_mvp.sql with the MVP schema from MVP_ROADMAP.md.
-Focus on: documents, claims, claim_qualifiers, agents, investigations, findings, evidence."
+Extract 20-50 claims for comprehensive coverage.
 ```
 
-### Option B: Review & Refine
-```bash
-# Tell Claude Code:
-"Review the MVP_ROADMAP.md and suggest any improvements before we start coding.
-Are there any edge cases we haven't considered for qualifier preservation?"
-```
+**Why**: LLM needs explicit instruction to avoid:
+- Skipping "minor" claims
+- Merging related claims
+- Missing edge cases
 
-### Option C: Quick Prototype
-```bash
-# Tell Claude Code:
-"Let's build a quick proof-of-concept for the qualifier extraction system.
-Create normalization/qualifier_extractor.py with the regex patterns for
-modals, frequency adverbs, and quantifiers."
-```
+### 3. Semantic Linking: Thresholds → Graph Communities (Next Phase)
 
-## ⚠️ Important Reminders for Claude Code
+**Current (Temporary)**:
+- 70% threshold for "related"
+- 85% threshold for "duplicate"
+- ❌ **This is wrong and needs to be replaced**
 
-1. **Qualifier Preservation is CRITICAL**
-   - Test case: "AI can improve most tasks" → normalized MUST keep "can" and "most"
-   - Auto-fail any normalization that loses qualifiers
-
-2. **Confidence Thresholds Matter**
-   - <0.60 = Low → trigger more agents
-   - 0.60-0.84 = Medium → standard investigation
-   - 0.85-1.0 = High → can proceed
-
-3. **Human-in-the-Loop is Required**
-   - Never auto-approve normalizations without user review
-   - User feedback teaches the system
-
-4. **Database is PostgreSQL, Not SQLite**
-   - We need pgvector, ltree extensions
-   - Concurrent agent access is important
-
-## 📊 Project Statistics
-
-- **Total Architecture Docs**: 6 major documents
-- **Lines of Design Work**: ~8,000 lines
-- **Database Tables Designed**: 25+ (full system), 8 (MVP)
-- **Agent Types Designed**: 11 (full), 3 (MVP)
-- **Implementation Phases**: 10 phases total, 5 phases for MVP
-- **Estimated MVP Timeline**: 6 weeks
-- **Lines of Code to Write (MVP)**: ~3,000-4,000 estimated
-
-## ✅ Ready to Transition
-
-**Yes, we're ready!** All architecture decisions are documented. The MVP roadmap is clear with specific deliverables and code examples.
-
-When you continue in Claude Code web interface, it will have access to all the markdown files we created, and can start implementing based on the detailed plans in MVP_ROADMAP.md.
-
-## 🎯 Immediate Next Step
+**Correct Approach** (to be implemented):
 
 ```python
-# First file to create:
-"database/schema_v1_mvp.sql"
+# WRONG: Arbitrary thresholds
+if similarity > 0.85:
+    mark_as_duplicate()
+elif similarity > 0.70:
+    mark_as_related()
 
-# Contents: The simplified MVP schema from MVP_ROADMAP.md Phase 1
-# Tables: documents, claims, claim_qualifiers, agents, investigations,
-#         findings, evidence, normalization_validations
+# CORRECT: Graph-based clustering
+embeddings = embed_all_claims()
+G = build_similarity_graph(embeddings, min_sim=0.5)
+communities = leiden_algorithm(G)  # Discovers natural clusters
+
+for community in communities:
+    super_claim = generate_super_claim(community.claims)
+    for claim in community.claims:
+        create_relationship(claim, "IS_INSTANCE_OF", super_claim)
 ```
 
-Good luck with the implementation! The foundation is solid. 🚀
+**Why Graph-Based is Better**:
+1. **No Manual Tuning**: Algorithm finds optimal partition
+2. **Mathematically Principled**: Maximizes modularity (intra-cluster similarity, inter-cluster dissimilarity)
+3. **Hierarchical**: Naturally reveals parent-child structure
+4. **Scalable**: Works for 10 documents or 10,000 documents
+
+## Implementation Roadmap
+
+### Phase 1: Foundation (DONE ✅)
+- [x] Increase chunk size to 400K chars
+- [x] Add MECE directive to extraction prompt
+- [x] Document architecture in MECE_ARCHITECTURE.md
+
+### Phase 2: Graph Infrastructure (NEXT)
+- [ ] Install graph libraries: `pip install leidenalg python-igraph scikit-learn`
+- [ ] Create `research_agent/mece_clustering.py`
+- [ ] Implement embedding pipeline (reuse existing sentence-transformers)
+- [ ] Implement similarity graph builder
+- [ ] Integrate Leiden community detection
+
+### Phase 3: Super-Claim Generation
+- [ ] Design super-claim generation prompt
+- [ ] Add LLM-based super-claim synthesis
+- [ ] Create MECE relationship types in Neo4j:
+  - `IS_INSTANCE_OF` (specific example of general claim)
+  - `GENERALIZES` (broader framing)
+  - `CONTRASTS_WITH` (alternative perspective)
+  - `REFINES` (adds nuance/detail)
+
+### Phase 4: UI Integration
+- [ ] Add "MECE View" toggle button
+- [ ] Visualize super-claims as larger nodes
+- [ ] Color-code relationship types
+- [ ] Add cluster quality metrics display
+- [ ] Show modularity scores
+
+### Phase 5: Validation & Testing
+- [ ] Validate MECE properties:
+  - Mutual exclusivity: Inter-cluster similarity < 0.6
+  - Comprehensiveness: Coverage > 95%
+- [ ] Test with multiple related documents
+- [ ] Compare against manual clustering (ground truth)
+
+## Migration Path
+
+**Current State**:
+- Using temporary 70%/85% thresholds
+- Works but not optimal
+
+**Transition**:
+1. Keep current system running
+2. Implement graph clustering in parallel
+3. A/B test both approaches
+4. Switch to graph clustering when validated
+5. Remove threshold-based code
+
+**Backward Compatibility**:
+- Old claims still work
+- New MECE relationships added incrementally
+- Can run MECE clustering on existing database
+
+## Performance Expectations
+
+### Before (7K chunks):
+- 300-page document: ~120 chunks
+- Processing time: ~10 minutes (120 agent calls)
+- Claim extraction: Incomplete (missed content beyond 8K chars)
+
+### After (400K chunks):
+- 300-page document: ~4 chunks
+- Processing time: ~2 minutes (4 agent calls)
+- Claim extraction: Complete (all 300 pages analyzed)
+
+### Graph Clustering (when implemented):
+- 1,000 claims: ~2 seconds (embedding + clustering)
+- 10,000 claims: ~20 seconds
+- Real-time updates: Not needed (run periodically)
+
+## Key Insights
+
+1. **Context is King**: Using full 200K context dramatically improves extraction quality
+2. **Explicit MECE Directive**: LLM needs to be told to be comprehensive
+3. **Graph > Thresholds**: Let the data reveal its own structure
+4. **Overlap is Good**: 50K char overlap ensures no claims fall through cracks
+5. **Quality over Speed**: Taking 30 seconds per chunk to do it right beats rushing with tiny fragments
+
+## Next Immediate Action
+
+Run a test with a large document to validate:
+1. Chunks are actually 400K chars (not 7K)
+2. Extraction includes MECE directive
+3. More claims are extracted per chunk
+4. Overlap prevents boundary issues
+
+Then proceed to Phase 2: Graph clustering implementation.

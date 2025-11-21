@@ -122,9 +122,9 @@ models/
 # Research Assistant Config (contains API keys)
 .research_config
 
-# AI Coding Assistant Files (optional - CLAUDE.md is the universal guide)
-# Uncomment if you create tool-specific configs:
-# .cursorrules
-# .github/copilot-instructions.md
-# .ai-instructions
-# .ai/
+# Windows null device file (created by error redirects)
+nul
+
+# Agent-Fusion database
+context.duckdb
+context.duckdb.wal
