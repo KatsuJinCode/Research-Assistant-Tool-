@@ -826,27 +826,40 @@ def process_chat_message(message, context):
                 claim_id = selected_nodes[0]
 
                 try:
-                    import requests
-                    response = requests.post(f'http://localhost:5000/api/claim/{claim_id}/override-confidence',
-                                            json={'confidence': confidence_value},
-                                            timeout=10)
-
-                    if response.ok:
-                        data = response.json()
-                        confidence_percent = int(confidence_value * 100)
-                        response_text = (
-                            f"✓ Confidence updated!\n\n"
-                            f"**Claim:** {claim_id[:20]}...\n"
-                            f"**New Confidence:** {confidence_percent}%\n"
-                            f"**AI Original:** {int(data['ai_confidence'] * 100)}%\n\n"
-                            f"Your override is now active (marked with gold ✓). "
-                            f"The graph has been updated."
-                        )
-                        actions.append({'type': 'reload_graph'})
+                    # Get the claim
+                    claim = claim_repo.get_claim(claim_id)
+                    if not claim:
+                        response_text = f"Could not find claim with ID: {claim_id}"
                     else:
-                        response_text = f"Failed to update confidence: {response.text}"
+                        # Store the user override in Neo4j
+                        query = """
+                        MATCH (c:Claim {id: $claim_id})
+                        SET c.user_confidence_override = $user_confidence
+                        SET c.override_timestamp = datetime()
+                        RETURN c.confidence as ai_confidence, c.user_confidence_override as user_override
+                        """
+                        result = db.execute_query(query, {
+                            'claim_id': claim_id,
+                            'user_confidence': confidence_value
+                        })
+
+                        if result:
+                            confidence_percent = int(confidence_value * 100)
+                            response_text = (
+                                f"✓ Confidence updated!\n\n"
+                                f"**Claim:** {claim_id[:20]}...\n"
+                                f"**New Confidence:** {confidence_percent}%\n"
+                                f"**AI Original:** {int(result[0]['ai_confidence'] * 100)}%\n\n"
+                                f"Your override is now active (marked with gold ✓). "
+                                f"The graph has been updated."
+                            )
+                            actions.append({'type': 'reload_graph'})
+                        else:
+                            response_text = "Failed to update confidence in database"
+
                 except Exception as e:
                     logger.error(f"Error updating confidence via chat: {e}")
+                    logger.error(traceback.format_exc())
                     response_text = f"Error updating confidence: {str(e)}"
             else:
                 response_text = (
@@ -867,7 +880,8 @@ def process_chat_message(message, context):
             )
 
     # Manual claim creation (with optional confidence setting)
-    elif any(word in message_lower for word in ['add claim', 'create claim', 'new claim', 'enter claim']):
+    # More flexible pattern matching: "add a claim", "add claim", "create a claim", etc.
+    elif any(phrase in message_lower for phrase in ['add a claim', 'add claim', 'create a claim', 'create claim', 'new claim', 'enter a claim', 'enter claim', 'i claim']):
         # Extract claim text if present (look for quotes or "that" constructions)
         claim_text = None
         initial_confidence = 0.5  # Default
@@ -897,23 +911,19 @@ def process_chat_message(message, context):
             initial_confidence = 0.0
 
         if claim_text:
-            # Create the claim
+            # Create the claim (call helper function directly instead of HTTP request)
             try:
-                import requests
-                response = requests.post('http://localhost:5000/api/create-manual-claim',
-                                        json={'text': claim_text, 'initial_confidence': initial_confidence},
-                                        timeout=10)
+                result = _create_claim_helper(claim_text, initial_confidence)
 
-                if response.ok:
-                    data = response.json()
+                if result['success']:
                     confidence_note = ""
                     if initial_confidence != 0.5:
                         confidence_note = f"\n**Initial Confidence:** {int(initial_confidence * 100)}%"
 
                     response_text = (
                         f"✓ Claim created successfully!\n\n"
-                        f"**Claim:** {data['text']}\n"
-                        f"**ID:** {data['claim_id'][:16]}..."
+                        f"**Claim:** {result['text']}\n"
+                        f"**ID:** {result['claim_id'][:16]}..."
                         f"{confidence_note}\n\n"
                         f"The claim has been added to your graph. You can now:\n"
                         f"• Find supporting evidence\n"
@@ -922,9 +932,10 @@ def process_chat_message(message, context):
                     )
                     actions.append({'type': 'reload_graph'})
                 else:
-                    response_text = f"Failed to create claim: {response.text}"
+                    response_text = f"Failed to create claim: {result['error']}"
             except Exception as e:
                 logger.error(f"Error creating claim via chat: {e}")
+                logger.error(traceback.format_exc())
                 response_text = f"Error creating claim: {str(e)}"
         else:
             response_text = (
@@ -961,26 +972,47 @@ def process_chat_message(message, context):
             claim_id = selected_nodes[0]  # Use first selected node
 
             try:
-                import requests
-                response = requests.post('http://localhost:5000/api/investigate-claim',
-                                        json={'claim_id': claim_id, 'type': investigation_type},
-                                        timeout=10)
+                # Get claim using repository
+                claim = claim_repo.get_claim(claim_id)
+                if not claim:
+                    response_text = f"Could not find claim with ID: {claim_id}"
+                else:
+                    claim_text = claim['text']
 
-                if response.ok:
-                    data = response.json()
+                    # Create agent and research result
+                    agent_tracker = AgentTracker()
+
+                    agent_name = f"InvestigationAgent-{investigation_type.capitalize()}"
+                    agent_tracker.create_agent_node_in_neo4j(
+                        agent_name=agent_name,
+                        agent_type="investigation",
+                        capabilities=["evidence_search", "claim_validation"],
+                        db=db
+                    )
+
+                    research_result = agent_tracker.create_research_result(
+                        agent_name=agent_name,
+                        claim_id=claim_id,
+                        findings=f"Investigating claim to {investigation_type}...",
+                        status="in_progress",
+                        confidence=None
+                    )
+
+                    result_id = agent_tracker.create_research_result_node_in_neo4j(research_result, db)
+
                     response_text = (
                         f"✓ Investigation started!\n\n"
                         f"**Type:** {investigation_type.capitalize()}\n"
-                        f"**Agent:** {data['agent']}\n"
-                        f"**Claim:** {data['claim'][:100]}...\n\n"
+                        f"**Agent:** {agent_name}\n"
+                        f"**Claim:** {claim_text[:100]}...\n\n"
                         f"The agent will search for {investigation_type}ing evidence. "
                         f"Results will appear in the graph when complete."
                     )
                     actions.append({'type': 'reload_graph'})
-                else:
-                    response_text = f"Failed to start investigation: {response.text}"
+
             except Exception as e:
                 logger.error(f"Error starting investigation via chat: {e}")
+                logger.error(traceback.format_exc())
                 response_text = f"Error starting investigation: {str(e)}"
 
         else:
@@ -1214,23 +1246,26 @@ def clear_all():
     })
 
 
-@app.route('/api/create-manual-claim', methods=['POST'])
-def create_manual_claim():
-    """Create a manual claim from user input (e.g., via chat)."""
-    data = request.json
-    claim_text = data.get('text', '').strip()
-    initial_confidence = data.get('initial_confidence', 0.5)
+def _create_claim_helper(claim_text, initial_confidence=0.5):
+    """
+    Helper function to create a claim (shared by API and chat).
 
-    if not claim_text:
-        return jsonify({'error': 'Claim text is required'}), 400
+    Args:
+        claim_text: The claim text
+        initial_confidence: Initial confidence score (0-1)
+
+    Returns:
+        dict with 'success', 'claim_id', 'text', 'error'
+    """
+    if not claim_text or not claim_text.strip():
+        return {'success': False, 'error': 'Claim text is required'}
 
     # Validate confidence
     if not (0 <= initial_confidence <= 1):
-        return jsonify({'error': 'Confidence must be between 0 and 1'}), 400
+        return {'success': False, 'error': 'Confidence must be between 0 and 1'}
 
     try:
         # Generate unique claim ID
-        import hashlib
         claim_id = 'claim_' + hashlib.sha256(claim_text.encode()).hexdigest()[:16]
 
         # Create claim node in Neo4j with user-specified confidence
@@ -1256,7 +1291,7 @@ def create_manual_claim():
         })
 
         if not result:
-            return jsonify({'error': 'Failed to create claim'}), 500
+            return {'success': False, 'error': 'Failed to create claim in database'}
 
         created_claim = result[0]
 
@@ -1269,17 +1304,36 @@ def create_manual_claim():
 
         logger.info(f"[MANUAL CLAIM] Created: {claim_id}")
 
-        return jsonify({
-            'status': 'created',
+        return {
+            'success': True,
             'claim_id': created_claim['id'],
-            'text': created_claim['text'],
-            'message': 'Claim created successfully'
-        })
+            'text': created_claim['text']
+        }
 
     except Exception as e:
         logger.error(f"Error creating manual claim: {e}")
         logger.error(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return {'success': False, 'error': str(e)}
+
+
+@app.route('/api/create-manual-claim', methods=['POST'])
+def create_manual_claim():
+    """Create a manual claim from user input (e.g., via chat)."""
+    data = request.json
+    claim_text = data.get('text', '').strip()
+    initial_confidence = data.get('initial_confidence', 0.5)
+
+    result = _create_claim_helper(claim_text, initial_confidence)
+
+    if result['success']:
+        return jsonify({
+            'status': 'created',
+            'claim_id': result['claim_id'],
+            'text': result['text'],
+            'message': 'Claim created successfully'
+        })
+    else:
+        return jsonify({'error': result['error']}), 400
 
 
 @app.route('/api/run-cross-document-clustering', methods=['POST'])
