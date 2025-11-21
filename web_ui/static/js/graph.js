@@ -628,6 +628,64 @@ const GraphRenderer = {
     },
 
     /**
+     * Calculate spawn position for new document nodes (away from existing trees)
+     */
+    calculateDocumentSpawnPosition(docId, canvasWidth, canvasHeight) {
+        const existingDocs = this.currentGraphData.nodes.filter(n => n.type === 'document' && n.id !== docId);
+
+        if (existingDocs.length === 0) {
+            // First document - center of canvas
+            return { x: canvasWidth / 2, y: canvasHeight / 2 };
+        }
+
+        // Strategy: Create a grid of potential positions around the canvas
+        const minDistance = 350;  // Minimum distance from other document trees
+
+        // Try positions in strategic locations
+        const candidates = [
+            { x: canvasWidth * 0.20, y: canvasHeight * 0.20 },
+            { x: canvasWidth * 0.80, y: canvasHeight * 0.20 },
+            { x: canvasWidth * 0.20, y: canvasHeight * 0.80 },
+            { x: canvasWidth * 0.80, y: canvasHeight * 0.80 },
+            { x: canvasWidth * 0.50, y: canvasHeight * 0.10 },
+            { x: canvasWidth * 0.50, y: canvasHeight * 0.90 },
+            { x: canvasWidth * 0.10, y: canvasHeight * 0.50 },
+            { x: canvasWidth * 0.90, y: canvasHeight * 0.50 },
+            // Additional corners
+            { x: canvasWidth * 0.35, y: canvasHeight * 0.35 },
+            { x: canvasWidth * 0.65, y: canvasHeight * 0.35 },
+            { x: canvasWidth * 0.35, y: canvasHeight * 0.65 },
+            { x: canvasWidth * 0.65, y: canvasHeight * 0.65 }
+        ];
+
+        // Find candidate with maximum distance from all existing documents
+        let bestPos = candidates[0];
+        let maxMinDistance = 0;
+
+        for (const candidate of candidates) {
+            let minDistToAnyDoc = Infinity;
+
+            for (const doc of existingDocs) {
+                if (doc.x !== undefined && doc.y !== undefined) {
+                    const dist = Math.sqrt(
+                        Math.pow(candidate.x - doc.x, 2) +
+                        Math.pow(candidate.y - doc.y, 2)
+                    );
+                    minDistToAnyDoc = Math.min(minDistToAnyDoc, dist);
+                }
+            }
+
+            if (minDistToAnyDoc > maxMinDistance) {
+                maxMinDistance = minDistToAnyDoc;
+                bestPos = candidate;
+            }
+        }
+
+        console.log(`[calculateDocumentSpawnPosition] Best position: (${bestPos.x.toFixed(0)}, ${bestPos.y.toFixed(0)}) with clearance ${maxMinDistance.toFixed(0)}px`);
+        return bestPos;
+    },
+
+    /**
      * Add a single node incrementally with gentle growth animation
      * @param {Object} nodeData - The node data including id, type, label, fullData
      * @param {String} parentId - Optional parent node ID to position near
@@ -642,7 +700,7 @@ const GraphRenderer = {
             return;
         }
 
-        // Position new node near parent or center
+        // Position new node strategically
         const svg = d3.select('#graph-svg');
         const width = svg.node().getBoundingClientRect().width;
         const height = svg.node().getBoundingClientRect().height;
@@ -650,7 +708,15 @@ const GraphRenderer = {
         let startX = width / 2;
         let startY = height / 2;
 
-        if (parentId) {
+        // DOCUMENT NODES: Spawn away from existing document trees
+        if (nodeData.type === 'document') {
+            const spawnPos = this.calculateDocumentSpawnPosition(nodeData.id, width, height);
+            startX = spawnPos.x;
+            startY = spawnPos.y;
+            console.log(`[addNodeIncremental] Document spawned at strategic position: (${startX}, ${startY})`);
+        }
+        // CLAIM NODES: Position near parent
+        else if (parentId) {
             const parentNode = this.currentGraphData.nodes.find(n => n.id === parentId);
             if (parentNode && parentNode.x !== undefined) {
                 // Position near parent with small random offset
