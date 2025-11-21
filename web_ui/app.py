@@ -391,6 +391,45 @@ def clear_all():
     })
 
 
+@app.route('/api/run-cross-document-clustering', methods=['POST'])
+def run_cross_document_clustering():
+    """Run cross-document MECE clustering using Leiden algorithm."""
+    try:
+        from research_agent.cross_document_mece import run_cross_document_clustering
+        import asyncio
+
+        # Run the async clustering function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(run_cross_document_clustering())
+        finally:
+            loop.close()
+
+        return jsonify({
+            'status': 'success',
+            'super_claims': len(result.get('super_claims', [])),
+            'clusters': len(result.get('clusters', [])),
+            'modularity': result.get('metrics', {}).get('modularity', 0),
+            'total_claims': result.get('stats', {}).get('total_claims', 0),
+            'message': f"Created {len(result.get('super_claims', []))} super-claims from {len(result.get('clusters', []))} communities"
+        })
+
+    except ImportError as e:
+        logger.error(f"MECE clustering not available: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'MECE clustering dependencies not installed. Run: pip install leidenalg python-igraph'
+        }), 500
+    except Exception as e:
+        logger.error(f"Clustering failed: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     print("=" * 80)
     print("RESEARCH GRAPH WEB INTERFACE - LIVE UPDATES ENABLED".center(80))

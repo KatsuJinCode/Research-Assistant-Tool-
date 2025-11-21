@@ -394,6 +394,46 @@ const App = {
             });
         }
 
+        // Cross-document clustering button
+        const clusteringBtn = document.getElementById('run-clustering-btn');
+        const clusteringStatus = document.getElementById('clustering-status');
+        if (clusteringBtn) {
+            clusteringBtn.addEventListener('click', async () => {
+                try {
+                    clusteringBtn.disabled = true;
+                    clusteringBtn.textContent = '⏳ Clustering...';
+                    if (clusteringStatus) {
+                        clusteringStatus.style.display = 'block';
+                        clusteringStatus.textContent = 'Running Leiden algorithm across all documents...';
+                    }
+
+                    const response = await fetch('/api/run-cross-document-clustering', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (clusteringStatus) {
+                            clusteringStatus.textContent = `✓ Created ${data.super_claims || 0} super-claims from ${data.clusters || 0} communities (modularity: ${(data.modularity || 0).toFixed(3)})`;
+                        }
+                        // Refresh the graph to show new super-claims
+                        await App.loadGraph();
+                    } else {
+                        throw new Error('Clustering failed');
+                    }
+                } catch (error) {
+                    console.error('Clustering error:', error);
+                    if (clusteringStatus) {
+                        clusteringStatus.textContent = '❌ Clustering failed. Check console for details.';
+                    }
+                } finally {
+                    clusteringBtn.disabled = false;
+                    clusteringBtn.textContent = '🚀 Run Clustering';
+                }
+            });
+        }
+
         // Agent launcher search depth slider
         const depthSlider = document.getElementById('search-depth');
         const depthValue = document.getElementById('depth-value');

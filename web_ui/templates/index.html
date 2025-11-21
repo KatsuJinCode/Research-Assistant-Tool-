@@ -422,6 +422,205 @@
             color: #666;
             margin: 0 6px;
         }
+
+        /* Comparison Panel Styles */
+        .comparison-panel {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #444;
+        }
+
+        .comparison-header h3 {
+            color: #2196F3;
+            margin: 0;
+        }
+
+        .comparison-nodes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-node {
+            background: #333;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-node strong {
+            flex: 1;
+            color: #e0e0e0;
+        }
+
+        .comparison-node .btn-xs {
+            padding: 2px 8px;
+            font-size: 16px;
+            line-height: 1;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .comparison-node .btn-xs:hover {
+            background: #d32f2f;
+        }
+
+        .node-type-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .node-type-badge.document {
+            background: #FF9800;
+            color: white;
+        }
+
+        .node-type-badge.super {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .node-type-badge.sub {
+            background: #2196F3;
+            color: white;
+        }
+
+        .node-type-badge.evidence {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .comparison-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-actions .btn {
+            width: 100%;
+            text-align: left;
+            padding: 12px 15px;
+        }
+
+        .btn-info {
+            background: #00BCD4;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #0097A7;
+        }
+
+        .btn-secondary {
+            background: #607D8B;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #455A64;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .comparison-results {
+            margin-top: 20px;
+        }
+
+        .comparison-section {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .comparison-section h4 {
+            color: #64B5F6;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .comparison-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .comparison-section li {
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+        }
+
+        .comparison-section li:last-child {
+            border-bottom: none;
+        }
+
+        .path-visualization {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .path-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #3a3a3a;
+            border-radius: 4px;
+        }
+
+        .path-arrow {
+            color: #64B5F6;
+            font-size: 18px;
+            margin-left: auto;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #64B5F6;
+            font-style: italic;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .alert-warning {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid #FF9800;
+            color: #FFB74D;
+        }
+
+        .text-muted {
+            color: #999;
+            font-size: 13px;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -465,6 +664,17 @@
                 <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
                 <input type="text" id="url-input" placeholder="https://arxiv.org/..." style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 10px;">
                 <button id="upload-btn" class="btn btn-primary" style="margin-top: 10px; width: 100%; background: white; color: #9C27B0; font-weight: bold;">Process Document</button>
+            </div>
+
+            <!-- Cross-Document Clustering -->
+            <div id="clustering-panel" style="background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 36px; margin-bottom: 10px;">🔗</div>
+                <div style="color: white; font-weight: bold; font-size: 15px; margin-bottom: 8px;">Cross-Document MECE Clustering</div>
+                <div style="color: #B2EBF2; font-size: 12px; margin-bottom: 12px;">Find patterns and generate super-claims across all documents using Leiden algorithm</div>
+                <button id="run-clustering-btn" class="btn" style="width: 100%; background: white; color: #00BCD4; font-weight: bold; padding: 12px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.3s;">
+                    🚀 Run Clustering
+                </button>
+                <div id="clustering-status" style="margin-top: 12px; font-size: 12px; color: #E0F7FA; display: none;"></div>
             </div>
 
             <!-- Search and Filter Panel -->

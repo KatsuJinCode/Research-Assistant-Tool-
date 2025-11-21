@@ -5,7 +5,7 @@
 const GraphRenderer = {
     simulation: null,
     currentGraphData: { nodes: [], links: [] },
-    selectedNodeId: null,  // Track selected node
+    selectedNodeIds: new Set(),  // Track multiple selected nodes
     hoveredLinkIndices: new Set(),  // Track hovered links
     searchQuery: '',  // Current search query
     activeFilters: {
@@ -15,6 +15,7 @@ const GraphRenderer = {
         minQuality: 0
     },
     filteredNodes: new Set(),  // IDs of nodes matching current filters
+    comparisonMode: false,  // Track if in comparison mode
 
     /**
      * Build unified graph from full graph data with arbitrary depth support
@@ -398,49 +399,64 @@ const GraphRenderer = {
         node.on('click', (event, d) => {
             event.stopPropagation();
 
-            // Update selected node
-            const previouslySelected = this.selectedNodeId;
-            this.selectedNodeId = d.id;
+            // Multi-selection support: Ctrl/Cmd for add/remove, Shift for range (not implemented yet)
+            if (event.ctrlKey || event.metaKey) {
+                // Toggle selection
+                if (this.selectedNodeIds.has(d.id)) {
+                    this.selectedNodeIds.delete(d.id);
+                } else {
+                    this.selectedNodeIds.add(d.id);
+                }
+            } else {
+                // Single selection (clear others)
+                this.selectedNodeIds.clear();
+                this.selectedNodeIds.add(d.id);
+            }
 
-            // Remove selection from all nodes
+            // Update visual selection for all nodes
             node.selectAll('circle')
-                .attr('stroke', '#fff')
-                .attr('stroke-width', n => this.getNodeBorderWidth(n))
-                .style('filter', 'none');
+                .attr('stroke', n => this.selectedNodeIds.has(n.id) ? '#FFD700' : '#fff')
+                .attr('stroke-width', n => this.selectedNodeIds.has(n.id) ? 5 : this.getNodeBorderWidth(n))
+                .style('filter', n => this.selectedNodeIds.has(n.id) ? 'drop-shadow(0 0 8px #FFD700)' : 'none');
 
-            // Highlight selected node with gold glow
-            d3.select(event.currentTarget).select('circle')
-                .attr('stroke', '#FFD700')  // Gold
-                .attr('stroke-width', 5)
-                .style('filter', 'drop-shadow(0 0 8px #FFD700)');
-
-            // Highlight connected links
+            // Highlight connected links for all selected nodes
             link
                 .style('stroke-opacity', l => {
                     const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
                     const targetId = typeof l.target === 'object' ? l.target.id : l.target;
-                    return (sourceId === d.id || targetId === d.id) ? 1.0 : 0.3;
+                    const isConnected = Array.from(this.selectedNodeIds).some(selectedId =>
+                        sourceId === selectedId || targetId === selectedId
+                    );
+                    return isConnected ? 1.0 : 0.3;
                 })
                 .style('stroke-width', l => {
                     const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
                     const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    const isConnected = Array.from(this.selectedNodeIds).some(selectedId =>
+                        sourceId === selectedId || targetId === selectedId
+                    );
                     const baseWidth = this.getLinkWidth(l.type);
-                    return (sourceId === d.id || targetId === d.id) ? baseWidth * 1.5 : baseWidth;
+                    return isConnected ? baseWidth * 1.5 : baseWidth;
                 });
 
-            // Show details for all clickable nodes
-            if (d.type === 'super' || d.type === 'sub') {
-                window.showClaimDetails(d.id);
-            } else if (d.type === 'document') {
-                UI.showDocumentDetails(d);
-            } else if (d.type === 'evidence') {
-                UI.showEvidenceDetails(d);
+            // Update comparison panel if multiple nodes selected
+            if (this.selectedNodeIds.size > 1) {
+                this.showComparisonPanel();
+            } else if (this.selectedNodeIds.size === 1) {
+                // Show details for single selected node
+                if (d.type === 'super' || d.type === 'sub') {
+                    window.showClaimDetails(d.id);
+                } else if (d.type === 'document') {
+                    UI.showDocumentDetails(d);
+                } else if (d.type === 'evidence') {
+                    UI.showEvidenceDetails(d);
+                }
             }
         });
 
         // Click on background to deselect
         svg.on('click', () => {
-            this.selectedNodeId = null;
+            this.selectedNodeIds.clear();
             node.selectAll('circle')
                 .attr('stroke', '#fff')
                 .attr('stroke-width', d => this.getNodeBorderWidth(d))
@@ -448,6 +464,7 @@ const GraphRenderer = {
             link
                 .style('stroke-opacity', 0.6)
                 .style('stroke-width', l => this.getLinkWidth(l.type));
+            this.hideComparisonPanel();
         });
 
         // Enhanced tick function with label collision avoidance
@@ -1314,5 +1331,292 @@ const GraphRenderer = {
             .call(d3.zoom().transform, transform);
 
         console.log(`[focusFilteredNodes] Focused on ${visibleNodes.length} nodes`);
+    },
+
+    /**
+     * Show comparison panel for multiple selected nodes
+     */
+    showComparisonPanel() {
+        const selectedIds = Array.from(this.selectedNodeIds);
+        const nodes = this.currentGraphData.nodes.filter(n => selectedIds.includes(n.id));
+
+        // Create/update comparison panel in the details container
+        const detailsPanel = document.getElementById('details-panel');
+        if (!detailsPanel) return;
+
+        detailsPanel.innerHTML = `
+            <div class="comparison-panel">
+                <div class="comparison-header">
+                    <h3>Node Comparison (${nodes.length} selected)</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="GraphRenderer.clearSelection()">Clear Selection</button>
+                </div>
+                <div class="comparison-nodes">
+                    ${nodes.map(n => `
+                        <div class="comparison-node">
+                            <span class="node-type-badge ${n.type}">${n.type}</span>
+                            <strong>${n.label}</strong>
+                            <button class="btn btn-xs" onclick="GraphRenderer.deselectNode('${n.id}')">×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="comparison-actions">
+                    <button class="btn btn-primary" onclick="GraphRenderer.compareNodes()">
+                        🔍 Compare Commonality & Linkages
+                    </button>
+                    <button class="btn btn-info" onclick="GraphRenderer.findConnectionPath()">
+                        🔗 Find Connection Path
+                    </button>
+                    <button class="btn btn-success" onclick="GraphRenderer.launchGapFillingAgents()">
+                        🤖 Fill Knowledge Gaps
+                    </button>
+                </div>
+                <div id="comparison-results" class="comparison-results"></div>
+            </div>
+        `;
+
+        detailsPanel.style.display = 'block';
+    },
+
+    /**
+     * Hide comparison panel
+     */
+    hideComparisonPanel() {
+        const detailsPanel = document.getElementById('details-panel');
+        if (detailsPanel) {
+            detailsPanel.innerHTML = '';
+            detailsPanel.style.display = 'none';
+        }
+    },
+
+    /**
+     * Clear all selections
+     */
+    clearSelection() {
+        this.selectedNodeIds.clear();
+        const svg = d3.select('#graph-svg');
+        svg.selectAll('circle')
+            .attr('stroke', '#fff')
+            .attr('stroke-width', d => this.getNodeBorderWidth(d))
+            .style('filter', 'none');
+        svg.selectAll('line')
+            .style('stroke-opacity', 0.6)
+            .style('stroke-width', l => this.getLinkWidth(l.type));
+        this.hideComparisonPanel();
+    },
+
+    /**
+     * Deselect specific node
+     */
+    deselectNode(nodeId) {
+        this.selectedNodeIds.delete(nodeId);
+        if (this.selectedNodeIds.size === 0) {
+            this.clearSelection();
+        } else {
+            this.showComparisonPanel();
+            // Update visual selection
+            const svg = d3.select('#graph-svg');
+            svg.selectAll('circle')
+                .attr('stroke', n => this.selectedNodeIds.has(n.id) ? '#FFD700' : '#fff')
+                .attr('stroke-width', n => this.selectedNodeIds.has(n.id) ? 5 : this.getNodeBorderWidth(n))
+                .style('filter', n => this.selectedNodeIds.has(n.id) ? 'drop-shadow(0 0 8px #FFD700)' : 'none');
+        }
+    },
+
+    /**
+     * Compare selected nodes to find commonality and linkages
+     */
+    async compareNodes() {
+        const resultsDiv = document.getElementById('comparison-results');
+        resultsDiv.innerHTML = '<div class="loading">Analyzing nodes...</div>';
+
+        const selectedIds = Array.from(this.selectedNodeIds);
+        const nodes = this.currentGraphData.nodes.filter(n => selectedIds.includes(n.id));
+        const links = this.currentGraphData.links.filter(l => {
+            const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+            const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+            return selectedIds.includes(sourceId) || selectedIds.includes(targetId);
+        });
+
+        // Find direct connections between selected nodes
+        const directConnections = links.filter(l => {
+            const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+            const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+            return selectedIds.includes(sourceId) && selectedIds.includes(targetId);
+        });
+
+        // Find common neighbors
+        const neighbors = new Map();
+        links.forEach(l => {
+            const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+            const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+
+            if (selectedIds.includes(sourceId) && !selectedIds.includes(targetId)) {
+                if (!neighbors.has(targetId)) neighbors.set(targetId, new Set());
+                neighbors.get(targetId).add(sourceId);
+            } else if (selectedIds.includes(targetId) && !selectedIds.includes(sourceId)) {
+                if (!neighbors.has(sourceId)) neighbors.set(sourceId, new Set());
+                neighbors.get(sourceId).add(targetId);
+            }
+        });
+
+        const commonNeighbors = Array.from(neighbors.entries())
+            .filter(([neighborId, connectedNodes]) => connectedNodes.size > 1)
+            .map(([neighborId, connectedNodes]) => {
+                const node = this.currentGraphData.nodes.find(n => n.id === neighborId);
+                return {
+                    id: neighborId,
+                    label: node ? node.label : 'Unknown',
+                    type: node ? node.type : 'unknown',
+                    connectedTo: Array.from(connectedNodes)
+                };
+            });
+
+        // Display results
+        resultsDiv.innerHTML = `
+            <div class="comparison-section">
+                <h4>Direct Connections</h4>
+                ${directConnections.length > 0 ? `
+                    <ul>
+                        ${directConnections.map(l => {
+                            const sourceNode = this.currentGraphData.nodes.find(n =>
+                                n.id === (typeof l.source === 'object' ? l.source.id : l.source)
+                            );
+                            const targetNode = this.currentGraphData.nodes.find(n =>
+                                n.id === (typeof l.target === 'object' ? l.target.id : l.target)
+                            );
+                            return `<li><strong>${sourceNode?.label || 'Unknown'}</strong> → <em>${l.type}</em> → <strong>${targetNode?.label || 'Unknown'}</strong></li>`;
+                        }).join('')}
+                    </ul>
+                ` : '<p>No direct connections between selected nodes.</p>'}
+            </div>
+            <div class="comparison-section">
+                <h4>Common Neighbors (${commonNeighbors.length})</h4>
+                ${commonNeighbors.length > 0 ? `
+                    <ul>
+                        ${commonNeighbors.map(n =>
+                            `<li><span class="node-type-badge ${n.type}">${n.type}</span> ${n.label} (connected to ${n.connectedTo.length} selected nodes)</li>`
+                        ).join('')}
+                    </ul>
+                ` : '<p>No common neighbors found.</p>'}
+            </div>
+            <div class="comparison-section">
+                <h4>Node Details</h4>
+                <ul>
+                    ${nodes.map(n => `
+                        <li><strong>${n.label}</strong> (${n.type})</li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    },
+
+    /**
+     * Find shortest path between selected nodes
+     */
+    async findConnectionPath() {
+        const resultsDiv = document.getElementById('comparison-results');
+        resultsDiv.innerHTML = '<div class="loading">Finding connection paths...</div>';
+
+        const selectedIds = Array.from(this.selectedNodeIds);
+
+        if (selectedIds.length < 2) {
+            resultsDiv.innerHTML = '<p>Please select at least 2 nodes to find paths.</p>';
+            return;
+        }
+
+        // Simple BFS to find shortest path between first two nodes
+        const startId = selectedIds[0];
+        const endId = selectedIds[1];
+
+        const visited = new Set();
+        const queue = [[startId]];
+        const maxDepth = 5;
+
+        while (queue.length > 0) {
+            const path = queue.shift();
+            const currentId = path[path.length - 1];
+
+            if (currentId === endId) {
+                // Found path!
+                const pathNodes = path.map(id =>
+                    this.currentGraphData.nodes.find(n => n.id === id)
+                ).filter(n => n);
+
+                resultsDiv.innerHTML = `
+                    <div class="comparison-section">
+                        <h4>Connection Path (${pathNodes.length - 1} steps)</h4>
+                        <div class="path-visualization">
+                            ${pathNodes.map((n, idx) => `
+                                <div class="path-node">
+                                    <span class="node-type-badge ${n.type}">${n.type}</span>
+                                    ${n.label}
+                                    ${idx < pathNodes.length - 1 ? '<span class="path-arrow">→</span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (path.length > maxDepth) continue;
+
+            if (!visited.has(currentId)) {
+                visited.add(currentId);
+
+                // Find neighbors
+                this.currentGraphData.links.forEach(l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+
+                    if (sourceId === currentId && !visited.has(targetId)) {
+                        queue.push([...path, targetId]);
+                    } else if (targetId === currentId && !visited.has(sourceId)) {
+                        queue.push([...path, sourceId]);
+                    }
+                });
+            }
+        }
+
+        resultsDiv.innerHTML = '<p>No path found between selected nodes (within 5 steps).</p>';
+    },
+
+    /**
+     * Launch research agents to fill knowledge gaps between nodes
+     */
+    async launchGapFillingAgents() {
+        const resultsDiv = document.getElementById('comparison-results');
+        resultsDiv.innerHTML = '<div class="loading">Launching research agents to fill knowledge gaps...</div>';
+
+        const selectedIds = Array.from(this.selectedNodeIds);
+
+        try {
+            const response = await fetch('/api/fill-knowledge-gaps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_ids: selectedIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                resultsDiv.innerHTML = `
+                    <div class="comparison-section">
+                        <h4>Research Agents Launched</h4>
+                        <p>${data.message || 'Research agents are analyzing connections between selected nodes...'}</p>
+                        <p class="text-muted">Results will appear as new claims in the graph.</p>
+                    </div>
+                `;
+            } else {
+                throw new Error('Failed to launch research agents');
+            }
+        } catch (error) {
+            console.error('Error launching research agents:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-warning">
+                    <strong>Feature Coming Soon:</strong> Research agents for gap-filling will be implemented shortly.
+                    <p class="text-muted">This will use investigation agents to find connections between selected nodes.</p>
+                </div>
+            `;
+        }
     }
 };
