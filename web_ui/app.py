@@ -1701,8 +1701,8 @@ def process_chat_message(message, context):
             user_settings = context.get('user_settings', {})
             embedding_model = user_settings.get('embedding_model', 'all-mpnet-base-v2')
 
-            # Determine dimensions based on model
-            dimensions = 768 if 'mpnet' in embedding_model else 384
+            # Determine dimensions based on model (384 for MiniLM, 768 for others)
+            dimensions = 384 if 'minilm' in embedding_model.lower() else 768
 
             response_text = "🔄 Generating semantic embeddings for all claims and evidence...\n\n"
             response_text += f"**Model:** {embedding_model}\n"
