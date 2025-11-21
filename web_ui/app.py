@@ -634,6 +634,60 @@ def auto_link_evidence():
         return jsonify({'error': str(e)}), 500
 
 
+# AGENT TRANSCRIPT ENDPOINTS
+@app.route('/api/agents', methods=['GET'])
+def list_agents():
+    """
+    List all background agents with optional filtering.
+
+    Query parameters:
+        agent_type: Filter by type (document_finder, document_processor, etc.)
+        status: Filter by status (running, completed, failed)
+    """
+    try:
+        from research_agent.transcript_manager import get_transcript_manager
+
+        transcript_manager = get_transcript_manager()
+
+        agent_type = request.args.get('agent_type')
+        status = request.args.get('status')
+
+        agents = transcript_manager.list_agents(agent_type=agent_type, status=status)
+
+        return jsonify({
+            'agents': agents,
+            'total': len(agents)
+        })
+
+    except Exception as e:
+        logger.error(f"Error listing agents: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agents/<agent_id>/transcript', methods=['GET'])
+def get_agent_transcript(agent_id):
+    """
+    Get the full transcript for a specific agent.
+
+    Path parameters:
+        agent_id: The agent identifier
+    """
+    try:
+        from research_agent.transcript_manager import get_transcript_manager
+
+        transcript_manager = get_transcript_manager()
+        transcript = transcript_manager.get_transcript(agent_id)
+
+        if transcript is None:
+            return jsonify({'error': 'Agent not found'}), 404
+
+        return jsonify(transcript)
+
+    except Exception as e:
+        logger.error(f"Error retrieving transcript: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/full-graph')
 def get_full_graph():
     """Get complete hierarchical graph with arbitrary depth support."""
@@ -1621,10 +1675,20 @@ def process_chat_message(message, context):
 
                 # Start background agent
                 from research_agent.document_finder_agent import DocumentFinderAgent
+                from research_agent.transcript_manager import get_transcript_manager
                 import threading
+
+                # Create transcript for monitoring
+                transcript_manager = get_transcript_manager()
+                agent_id = transcript_manager.create_agent(
+                    'document_finder',
+                    f'Searching for papers: {query}'
+                )
 
                 def run_finder():
                     try:
+                        transcript_manager.log(agent_id, 'info', f'Starting document search for: {query}')
+
                         agent = DocumentFinderAgent(
                             query=query,
                             output_dir="./uploads/discovered_papers"
@@ -1632,11 +1696,19 @@ def process_chat_message(message, context):
                         agent.set_sources(sources)
                         agent.set_max_results(10)
 
-                        # Set progress callback to emit WebSocket events
+                        # Set progress callback to emit WebSocket events AND log to transcript
                         def progress_callback(message, data=None):
+                            # Log to transcript
+                            level = 'error' if 'error' in message.lower() or '❌' in message else \
+                                   'warning' if 'warning' in message.lower() or '⚠️' in message else \
+                                   'success' if '✓' in message or '✅' in message else 'info'
+                            transcript_manager.log(agent_id, level, message, data)
+
+                            # Emit WebSocket event
                             with app.app_context():
                                 socketio.emit('agent_progress', {
                                     'agent': 'document_finder',
+                                    'agent_id': agent_id,
                                     'message': message,
                                     'data': data or {}
                                 })
@@ -1663,21 +1735,31 @@ def process_chat_message(message, context):
                                     }
                                     pending_documents[pending_doc['id']] = pending_doc
 
+                        # Mark agent as completed
+                        transcript_manager.complete_agent(agent_id, results)
+
                         # Emit completion event
                         with app.app_context():
                             socketio.emit('agent_complete', {
                                 'agent': 'document_finder',
+                                'agent_id': agent_id,
                                 'query': query,
                                 'results': results,
                                 'message': f"✅ Found {results.get('downloaded', 0)} papers. Added to approval queue."
                             })
 
                     except Exception as e:
-                        logger.error(f"Document finder agent error: {e}")
+                        error_msg = f"Document finder agent error: {str(e)}"
+                        logger.error(error_msg)
                         logger.error(traceback.format_exc())
+
+                        # Mark agent as failed
+                        transcript_manager.fail_agent(agent_id, error_msg)
+
                         with app.app_context():
                             socketio.emit('agent_error', {
                                 'agent': 'document_finder',
+                                'agent_id': agent_id,
                                 'error': str(e)
                             })
 
