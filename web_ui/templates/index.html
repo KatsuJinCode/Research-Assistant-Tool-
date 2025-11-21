@@ -749,9 +749,25 @@
                 <div class="detail-section">
                     <div class="detail-subtitle">Confidence Score</div>
                     <div class="detail-item">
-                        <span id="detail-confidence" style="font-weight: bold;">-</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="detail-confidence" style="font-weight: bold;">-</span>
+                            <span id="confidence-override-indicator" style="display: none; color: #FFD700; font-size: 11px; font-weight: bold;">✓ USER ADJUSTED</span>
+                        </div>
                         <div class="confidence-bar">
                             <div class="confidence-fill" id="confidence-bar-fill" style="width: 50%;"></div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444;">
+                            <label style="display: block; font-size: 11px; color: #999; margin-bottom: 6px;">Override Confidence:</label>
+                            <input type="range" id="confidence-override-slider" min="0" max="100" value="50" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px;">
+                                <span>0%</span>
+                                <span id="confidence-override-value" style="color: #2196F3; font-weight: bold;">50%</span>
+                                <span>100%</span>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button id="apply-confidence-override-btn" class="btn btn-sm" style="flex: 1; background: #2196F3; color: white; padding: 6px; font-size: 11px;">Apply Override</button>
+                                <button id="reset-confidence-override-btn" class="btn btn-sm" style="flex: 1; background: #666; color: white; padding: 6px; font-size: 11px; display: none;">Reset to AI</button>
+                            </div>
                         </div>
                     </div>
                 </div>

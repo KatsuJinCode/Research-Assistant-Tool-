@@ -547,6 +547,106 @@ const App = {
             });
         }
 
+        // Confidence override slider
+        const confidenceSlider = document.getElementById('confidence-override-slider');
+        const confidenceValue = document.getElementById('confidence-override-value');
+        if (confidenceSlider && confidenceValue) {
+            confidenceSlider.addEventListener('input', (e) => {
+                confidenceValue.textContent = e.target.value + '%';
+            });
+        }
+
+        // Apply confidence override button
+        const applyOverrideBtn = document.getElementById('apply-confidence-override-btn');
+        const resetOverrideBtn = document.getElementById('reset-confidence-override-btn');
+        const overrideIndicator = document.getElementById('confidence-override-indicator');
+
+        if (applyOverrideBtn) {
+            applyOverrideBtn.addEventListener('click', async () => {
+                const claimId = document.getElementById('detail-panel').dataset.claimId;
+                if (!claimId) return;
+
+                const overrideValue = parseInt(confidenceSlider.value) / 100;
+
+                try {
+                    const response = await fetch(`/api/claim/${claimId}/override-confidence`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ confidence: overrideValue })
+                    });
+
+                    if (response.ok) {
+                        // Show success indicator
+                        if (overrideIndicator) overrideIndicator.style.display = 'block';
+                        if (resetOverrideBtn) resetOverrideBtn.style.display = 'block';
+
+                        // Update confidence display
+                        const confidenceEl = document.getElementById('detail-confidence');
+                        if (confidenceEl) confidenceEl.textContent = (overrideValue * 100).toFixed(1) + '%';
+
+                        const confidenceFill = document.getElementById('confidence-bar-fill');
+                        if (confidenceFill) confidenceFill.style.width = (overrideValue * 100) + '%';
+
+                        // Reload graph to show visual indicator
+                        await App.loadGraph();
+
+                        UI.showNotification('Confidence override applied', 'success', 3000);
+                    } else {
+                        throw new Error('Failed to apply override');
+                    }
+                } catch (error) {
+                    console.error('Error applying confidence override:', error);
+                    UI.showNotification('Failed to apply confidence override', 'error', 5000);
+                }
+            });
+        }
+
+        // Reset confidence override button
+        if (resetOverrideBtn) {
+            resetOverrideBtn.addEventListener('click', async () => {
+                const claimId = document.getElementById('detail-panel').dataset.claimId;
+                if (!claimId) return;
+
+                try {
+                    const response = await fetch(`/api/claim/${claimId}/reset-confidence`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        // Hide override indicator
+                        if (overrideIndicator) overrideIndicator.style.display = 'none';
+                        resetOverrideBtn.style.display = 'none';
+
+                        // Update confidence display to AI value
+                        const confidenceEl = document.getElementById('detail-confidence');
+                        if (confidenceEl) confidenceEl.textContent = (data.ai_confidence * 100).toFixed(1) + '%';
+
+                        const confidenceFill = document.getElementById('confidence-bar-fill');
+                        if (confidenceFill) confidenceFill.style.width = (data.ai_confidence * 100) + '%';
+
+                        // Reset slider to AI value
+                        if (confidenceSlider) {
+                            confidenceSlider.value = Math.round(data.ai_confidence * 100);
+                            if (confidenceValue) confidenceValue.textContent = Math.round(data.ai_confidence * 100) + '%';
+                        }
+
+                        // Reload graph
+                        await App.loadGraph();
+
+                        UI.showNotification('Reset to AI confidence', 'success', 3000);
+                    } else {
+                        throw new Error('Failed to reset override');
+                    }
+                } catch (error) {
+                    console.error('Error resetting confidence override:', error);
+                    UI.showNotification('Failed to reset confidence', 'error', 5000);
+                }
+            });
+        }
+
         console.log('✓ Event listeners setup complete');
     },
 

@@ -174,6 +174,37 @@ const UI = {
             detailTitle.innerHTML = detailsHTML;
             detailPanel.style.display = 'block';
             detailPanel.classList.add('visible');
+
+            // Store claim ID for override operations
+            detailPanel.dataset.claimId = claimId;
+
+            // Initialize confidence override slider
+            const confidenceSlider = document.getElementById('confidence-override-slider');
+            const confidenceValue = document.getElementById('confidence-override-value');
+            const overrideIndicator = document.getElementById('confidence-override-indicator');
+            const resetBtn = document.getElementById('reset-confidence-override-btn');
+
+            if (confidenceSlider && confidenceValue) {
+                // Determine which confidence to use (user override or AI)
+                const effectiveConfidence = claim.user_confidence_override !== undefined
+                    ? claim.user_confidence_override
+                    : confidence;
+
+                // Set slider to current effective confidence
+                const confidencePercent = Math.round(effectiveConfidence * 100);
+                confidenceSlider.value = confidencePercent;
+                confidenceValue.textContent = confidencePercent + '%';
+
+                // Show override indicator if user has overridden
+                if (claim.user_confidence_override !== undefined) {
+                    if (overrideIndicator) overrideIndicator.style.display = 'block';
+                    if (resetBtn) resetBtn.style.display = 'block';
+                } else {
+                    if (overrideIndicator) overrideIndicator.style.display = 'none';
+                    if (resetBtn) resetBtn.style.display = 'none';
+                }
+            }
+
             console.log('✓ Detail panel shown');
         } catch (error) {
             console.error('❌ Failed to load claim details:', error);

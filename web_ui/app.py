@@ -169,6 +169,80 @@ def get_claim_details(claim_id):
     return jsonify(claim)
 
 
+@app.route('/api/claim/<claim_id>/override-confidence', methods=['POST'])
+def override_claim_confidence(claim_id):
+    """Allow user to manually override the AI-calculated confidence score."""
+    data = request.json
+    user_confidence = data.get('confidence')
+
+    if user_confidence is None or not (0 <= user_confidence <= 1):
+        return jsonify({'error': 'confidence must be between 0 and 1'}), 400
+
+    # Get the claim
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    # Store the user override in Neo4j
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        SET c.user_confidence_override = $user_confidence
+        SET c.override_timestamp = datetime()
+        RETURN c.confidence as ai_confidence, c.user_confidence_override as user_override
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'user_confidence': user_confidence
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_confidence': result[0]['ai_confidence'],
+                'user_override': result[0]['user_override']
+            })
+        else:
+            return jsonify({'error': 'Failed to update claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error setting confidence override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/reset-confidence', methods=['POST'])
+def reset_claim_confidence(claim_id):
+    """Reset claim confidence to AI-calculated value (remove user override)."""
+    # Get the claim
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    # Remove the user override from Neo4j
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        REMOVE c.user_confidence_override
+        REMOVE c.override_timestamp
+        RETURN c.confidence as ai_confidence
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_confidence': result[0]['ai_confidence']
+            })
+        else:
+            return jsonify({'error': 'Failed to reset claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting confidence override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/investigate-claim', methods=['POST'])
 def investigate_claim():
     """Spawn an agent to investigate a claim."""
