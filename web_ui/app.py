@@ -2608,6 +2608,175 @@ Respond naturally as a helpful research assistant. Keep your response under 200 
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/nodes/<node_id>/full-details', methods=['GET'])
+def get_node_full_details(node_id):
+    """Get comprehensive node details including relationships, history, and metadata."""
+    try:
+        logger.info(f"[API] Fetching full details for node: {node_id}")
+
+        # Get base node data
+        query = """
+        MATCH (n)
+        WHERE id(n) = $node_id OR n.id = $node_id
+        RETURN n, labels(n) as labels, id(n) as internal_id
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, {'node_id': node_id})
+        )
+
+        if not result:
+            return jsonify({'error': 'Node not found'}), 404
+
+        node_data = result[0]
+        node = node_data['n']
+        node_labels = node_data['labels']
+        internal_id = node_data['internal_id']
+
+        # Get all properties
+        node_props = dict(node)
+        node_props['labels'] = node_labels
+        node_props['internal_id'] = internal_id
+
+        # Get relationships
+        rel_query = """
+        MATCH (n)-[r]-(m)
+        WHERE id(n) = $node_id
+        RETURN type(r) as rel_type,
+               properties(r) as rel_props,
+               startNode(r) = n as is_outgoing,
+               m as related_node,
+               labels(m) as related_labels,
+               id(m) as related_id
+        """
+
+        relationships_result = with_app_context(
+            lambda: claim_repo.execute_query(rel_query, {'node_id': internal_id})
+        )
+
+        relationships = {}
+        for rel in relationships_result:
+            rel_type = rel['rel_type']
+            if rel_type not in relationships:
+                relationships[rel_type] = []
+
+            related = rel['related_node']
+            relationships[rel_type].append({
+                'type': rel_type,
+                'direction': 'outgoing' if rel['is_outgoing'] else 'incoming',
+                'properties': rel['rel_props'],
+                'related_node': {
+                    'id': rel['related_id'],
+                    'internal_id': rel['related_id'],
+                    'labels': rel['related_labels'],
+                    'text': related.get('text', ''),
+                    'title': related.get('title', ''),
+                    'status': related.get('status', '')
+                }
+            })
+
+        # Get history/provenance if available
+        history = []
+        if node_props.get('created_by_agent_id'):
+            history.append({
+                'timestamp': node_props.get('created_at', 'Unknown'),
+                'event': 'Created',
+                'agent_id': node_props.get('created_by_agent_id'),
+                'agent_type': node_props.get('created_by', 'unknown')
+            })
+
+        if node_props.get('discovered_by_agent_id'):
+            history.append({
+                'timestamp': node_props.get('discovered_at', 'Unknown'),
+                'event': 'Discovered',
+                'agent_id': node_props.get('discovered_by_agent_id'),
+                'agent_type': node_props.get('discovered_by', 'unknown')
+            })
+
+        # Compile full details
+        full_details = {
+            'node': node_props,
+            'relationships': relationships,
+            'history': history,
+            'metadata': {
+                'created_at': node_props.get('created_at'),
+                'updated_at': node_props.get('updated_at'),
+                'version': node_props.get('version', 1)
+            }
+        }
+
+        logger.info(f"[API] Successfully fetched details for node {node_id}")
+        return jsonify(full_details)
+
+    except Exception as e:
+        logger.error(f"[API] Error fetching node details: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/nodes/<node_id>/update', methods=['PUT'])
+def update_node_properties(node_id):
+    """Update editable node properties (confidence, investigation_value, notes)."""
+    try:
+        data = request.json
+        logger.info(f"[API] Updating node {node_id} with data: {data}")
+
+        # Build update query
+        updates = []
+        params = {'node_id': node_id}
+
+        if 'confidence' in data:
+            updates.append('n.confidence = $confidence')
+            params['confidence'] = float(data['confidence'])
+
+        if 'investigation_value' in data:
+            updates.append('n.investigation_value = $investigation_value')
+            params['investigation_value'] = float(data['investigation_value'])
+
+        if 'notes' in data:
+            updates.append('n.notes = $notes')
+            params['notes'] = data['notes']
+
+        # Always update timestamp
+        updates.append('n.updated_at = datetime()')
+
+        if not updates:
+            return jsonify({'error': 'No valid fields to update'}), 400
+
+        query = f"""
+        MATCH (n)
+        WHERE id(n) = $node_id OR n.id = $node_id
+        SET {', '.join(updates)}
+        RETURN n
+        """
+
+        result = with_app_context(
+            lambda: claim_repo.execute_query(query, params)
+        )
+
+        if not result:
+            return jsonify({'error': 'Node not found'}), 404
+
+        updated_node = dict(result[0]['n'])
+
+        # Emit update event via WebSocket
+        socketio.emit('node_updated', {
+            'node_id': node_id,
+            'properties': updated_node
+        })
+
+        logger.info(f"[API] Successfully updated node {node_id}")
+        return jsonify({
+            'success': True,
+            'node': updated_node
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error updating node: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("=" * 80)
     print("RESEARCH GRAPH WEB INTERFACE - LIVE UPDATES ENABLED".center(80))

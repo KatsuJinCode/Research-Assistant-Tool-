@@ -459,6 +459,15 @@ const GraphRenderer = {
                 } else if (d.type === 'evidence') {
                     UI.showEvidenceDetails(d);
                 }
+
+                // Emit nodeSelected event for PropertyViewer
+                const event = new CustomEvent('nodeSelected', {
+                    detail: {
+                        nodeId: d.id,
+                        nodeData: d
+                    }
+                });
+                document.dispatchEvent(event);
             }
         });
 
