@@ -615,10 +615,81 @@ def process_chat_message(message, context):
     if message.startswith('/'):
         return handle_chat_command(message, context)
 
-    # Manual claim creation
-    if any(word in message_lower for word in ['add claim', 'create claim', 'new claim', 'enter claim']):
+    # Confidence adjustment via chat (EXECUTE DIRECTLY)
+    if any(word in message_lower for word in ['set confidence', 'set to', 'mark as', 'confidence to']):
+        # Extract confidence value
+        import re
+        confidence_value = None
+
+        # Try to find percentage (e.g., "80%", "80 percent")
+        percent_match = re.search(r'(\d+)\s*(?:%|percent)', message_lower)
+        if percent_match:
+            confidence_value = int(percent_match.group(1)) / 100.0
+
+        # Try decimal (e.g., "0.8")
+        elif re.search(r'0\.\d+', message):
+            decimal_match = re.search(r'(0\.\d+)', message)
+            confidence_value = float(decimal_match.group(1))
+
+        # Try "mark as true/false"
+        elif 'mark as true' in message_lower or 'set to true' in message_lower:
+            confidence_value = 1.0
+        elif 'mark as false' in message_lower or 'set to false' in message_lower:
+            confidence_value = 0.0
+
+        if confidence_value is not None:
+            # Check if user has a claim selected
+            selected_nodes = context.get('selected_nodes', [])
+
+            if selected_nodes and len(selected_nodes) > 0:
+                claim_id = selected_nodes[0]
+
+                try:
+                    import requests
+                    response = requests.post(f'http://localhost:5000/api/claim/{claim_id}/override-confidence',
+                                            json={'confidence': confidence_value},
+                                            timeout=10)
+
+                    if response.ok:
+                        data = response.json()
+                        confidence_percent = int(confidence_value * 100)
+                        response_text = (
+                            f"✓ Confidence updated!\n\n"
+                            f"**Claim:** {claim_id[:20]}...\n"
+                            f"**New Confidence:** {confidence_percent}%\n"
+                            f"**AI Original:** {int(data['ai_confidence'] * 100)}%\n\n"
+                            f"Your override is now active (marked with gold ✓). "
+                            f"The graph has been updated."
+                        )
+                        actions.append({'type': 'reload_graph'})
+                    else:
+                        response_text = f"Failed to update confidence: {response.text}"
+                except Exception as e:
+                    logger.error(f"Error updating confidence via chat: {e}")
+                    response_text = f"Error updating confidence: {str(e)}"
+            else:
+                response_text = (
+                    f"To set confidence to {int(confidence_value * 100)}%, first select a claim by clicking it in the graph.\n\n"
+                    f"Then you can say:\n"
+                    f"• \"Set this to {int(confidence_value * 100)}%\"\n"
+                    f"• \"Mark this as true\" (100%)\n"
+                    f"• \"Mark this as false\" (0%)"
+                )
+        else:
+            response_text = (
+                "I couldn't find a confidence value in your message.\n\n"
+                "Try:\n"
+                "• \"Set to 80%\"\n"
+                "• \"Mark as true\" (100%)\n"
+                "• \"Mark as false\" (0%)\n"
+                "• \"Set confidence to 50%\""
+            )
+
+    # Manual claim creation (with optional confidence setting)
+    elif any(word in message_lower for word in ['add claim', 'create claim', 'new claim', 'enter claim']):
         # Extract claim text if present (look for quotes or "that" constructions)
         claim_text = None
+        initial_confidence = 0.5  # Default
 
         # Try to extract quoted text
         import re
@@ -629,22 +700,40 @@ def process_chat_message(message, context):
             # Try "I claim that X" or "claim that X"
             parts = message.split('that ', 1)
             if len(parts) > 1:
-                claim_text = parts[1].strip()
+                # Remove any confidence specification from claim text
+                claim_part = parts[1].strip()
+                # Remove trailing "with confidence X%" or "at X%"
+                claim_text = re.sub(r'\s+(with|at)\s+confidence\s+\d+%?.*$', '', claim_part, flags=re.IGNORECASE)
+                claim_text = re.sub(r'\s+confidence\s+\d+%?.*$', '', claim_text, flags=re.IGNORECASE)
+
+        # Extract confidence if specified (e.g., "with confidence 80%", "at 100%")
+        confidence_match = re.search(r'(?:with|at)?\s*confidence\s*(?:of)?\s*(\d+)\s*%?', message_lower)
+        if confidence_match:
+            initial_confidence = int(confidence_match.group(1)) / 100.0
+        elif 'mark as true' in message_lower or '100%' in message_lower:
+            initial_confidence = 1.0
+        elif 'mark as false' in message_lower or '0%' in message_lower:
+            initial_confidence = 0.0
 
         if claim_text:
             # Create the claim
             try:
                 import requests
                 response = requests.post('http://localhost:5000/api/create-manual-claim',
-                                        json={'text': claim_text},
+                                        json={'text': claim_text, 'initial_confidence': initial_confidence},
                                         timeout=10)
 
                 if response.ok:
                     data = response.json()
+                    confidence_note = ""
+                    if initial_confidence != 0.5:
+                        confidence_note = f"\n**Initial Confidence:** {int(initial_confidence * 100)}%"
+
                     response_text = (
                         f"✓ Claim created successfully!\n\n"
                         f"**Claim:** {data['text']}\n"
-                        f"**ID:** {data['claim_id']}\n\n"
+                        f"**ID:** {data['claim_id'][:16]}..."
+                        f"{confidence_note}\n\n"
                         f"The claim has been added to your graph. You can now:\n"
                         f"• Find supporting evidence\n"
                         f"• Find contradicting evidence\n"
@@ -949,16 +1038,21 @@ def create_manual_claim():
     """Create a manual claim from user input (e.g., via chat)."""
     data = request.json
     claim_text = data.get('text', '').strip()
+    initial_confidence = data.get('initial_confidence', 0.5)
 
     if not claim_text:
         return jsonify({'error': 'Claim text is required'}), 400
+
+    # Validate confidence
+    if not (0 <= initial_confidence <= 1):
+        return jsonify({'error': 'Confidence must be between 0 and 1'}), 400
 
     try:
         # Generate unique claim ID
         import hashlib
         claim_id = 'claim_' + hashlib.sha256(claim_text.encode()).hexdigest()[:16]
 
-        # Create claim node in Neo4j
+        # Create claim node in Neo4j with user-specified confidence
         query = """
         CREATE (c:Claim {
             id: $claim_id,
@@ -968,15 +1062,16 @@ def create_manual_claim():
             status: 'pending',
             disposition: 'manual',
             is_super_claim: false,
-            confidence: 0.5,
+            confidence: $confidence,
             quality_score: 0.5,
             created_at: datetime()
         })
-        RETURN c.id as id, c.text as text
+        RETURN c.id as id, c.text as text, c.confidence as confidence
         """
         result = db.execute_query(query, {
             'claim_id': claim_id,
-            'text': claim_text
+            'text': claim_text,
+            'confidence': initial_confidence
         })
 
         if not result:
