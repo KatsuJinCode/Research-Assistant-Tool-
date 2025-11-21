@@ -243,6 +243,51 @@ def reset_claim_confidence(claim_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/claim/<claim_id>/evidence/<evidence_id>', methods=['DELETE'])
+def remove_evidence(claim_id, evidence_id):
+    """Remove an evidence link from a claim and recalculate confidence."""
+    # Get the claim
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        # Delete the evidence relationship
+        query = """
+        MATCH (c:Claim {id: $claim_id})-[r:SUPPORTED_BY|CONTRADICTED_BY]->(e:Evidence {id: $evidence_id})
+        DELETE r
+        RETURN c.confidence as new_confidence
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'evidence_id': evidence_id
+        })
+
+        if not result:
+            # Relationship might not exist
+            return jsonify({'error': 'Evidence relationship not found'}), 404
+
+        new_confidence = result[0]['new_confidence']
+
+        # Emit real-time update via WebSocket
+        with app.app_context():
+            socketio.emit('evidence_removed', {
+                'claim_id': claim_id,
+                'evidence_id': evidence_id,
+                'new_confidence': new_confidence
+            })
+
+        return jsonify({
+            'status': 'success',
+            'new_confidence': new_confidence,
+            'message': 'Evidence removed successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error removing evidence: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/investigate-claim', methods=['POST'])
 def investigate_claim():
     """Spawn an agent to investigate a claim."""

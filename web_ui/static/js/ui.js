@@ -127,10 +127,18 @@ const UI = {
                     detailsHTML += `
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #4CAF50;">Supporting (${supporting.length}):</strong>
-                            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                            <ul style="margin: 5px 0 0 20px; padding: 0; list-style: none;">
                     `;
                     supporting.forEach(ev => {
-                        detailsHTML += `<li style="margin-bottom: 3px;">${ev.title}</li>`;
+                        detailsHTML += `
+                            <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                <span style="flex: 1;">${ev.title || 'Unknown Evidence'}</span>
+                                <button onclick="UI.removeEvidence('${claimId}', '${ev.id}', '${ev.title || 'this evidence'}')"
+                                        style="background: #f44336; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    Remove
+                                </button>
+                            </li>
+                        `;
                     });
                     detailsHTML += `</ul></div>`;
                 }
@@ -141,10 +149,18 @@ const UI = {
                     detailsHTML += `
                         <div>
                             <strong style="color: #F44336;">Contradicting (${contradicting.length}):</strong>
-                            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                            <ul style="margin: 5px 0 0 20px; padding: 0; list-style: none;">
                     `;
                     contradicting.forEach(ev => {
-                        detailsHTML += `<li style="margin-bottom: 3px;">${ev.title}</li>`;
+                        detailsHTML += `
+                            <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                <span style="flex: 1;">${ev.title || 'Unknown Evidence'}</span>
+                                <button onclick="UI.removeEvidence('${claimId}', '${ev.id}', '${ev.title || 'this evidence'}')"
+                                        style="background: #f44336; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    Remove
+                                </button>
+                            </li>
+                        `;
                     });
                     detailsHTML += `</ul></div>`;
                 }
@@ -459,6 +475,52 @@ const UI = {
         } catch (error) {
             console.error('Clear failed:', error);
             alert(`Failed to clear data: ${error.message}`);
+        }
+    },
+
+    /**
+     * Remove evidence link from a claim
+     * @param {string} claimId - Claim ID
+     * @param {string} evidenceId - Evidence ID to remove
+     * @param {string} evidenceTitle - Evidence title for confirmation dialog
+     */
+    async removeEvidence(claimId, evidenceId, evidenceTitle) {
+        const confirmed = confirm(
+            `Remove evidence "${evidenceTitle}"?\n\n` +
+            `This will permanently remove this evidence link from the claim. ` +
+            `The claim's confidence may be recalculated.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/claim/${claimId}/evidence/${evidenceId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to remove evidence');
+            }
+
+            const data = await response.json();
+
+            // Show success notification
+            this.showNotification(
+                `Evidence removed. Confidence updated to ${(data.new_confidence * 100).toFixed(1)}%`,
+                'success',
+                5000
+            );
+
+            // Reload claim details to show updated evidence list
+            await this.showClaimDetails(claimId);
+
+            // Reload graph to reflect any confidence changes
+            await App.loadGraph();
+
+        } catch (error) {
+            console.error('Error removing evidence:', error);
+            this.showNotification('Failed to remove evidence', 'error', 5000);
         }
     },
 
