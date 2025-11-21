@@ -609,6 +609,7 @@
         </div>
         <div class="stat">
             <button id="run-clustering-btn" style="background: #00BCD4; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; margin-right: 8px;">🔗 Refresh Clustering</button>
+            <button id="settings-btn" style="background: #9C27B0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; margin-right: 8px;" onclick="openSettings()">⚙️ Settings</button>
             <button id="clear-all-btn" style="background: #d32f2f; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">Clear All Data</button>
         </div>
     </div>
@@ -806,6 +807,90 @@
                         ✗ Find Contradicting Evidence
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: #2a2a2a; border: 2px solid #2196F3; border-radius: 12px; padding: 30px; width: 600px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+            <h2 style="margin: 0 0 20px 0; color: #2196F3; font-size: 24px;">⚙️ Auto-Linking Settings</h2>
+
+            <!-- Similarity Threshold -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: #e0e0e0; font-weight: bold; margin-bottom: 8px;">
+                    Semantic Similarity Threshold
+                    <span style="color: #999; font-weight: normal; font-size: 12px;">
+                        (Higher = Fewer but more accurate matches)
+                    </span>
+                </label>
+                <input type="range" id="similarity-threshold-slider" min="0.5" max="0.9" step="0.05" value="0.7"
+                       style="width: 100%; margin-bottom: 8px;" oninput="updateThresholdDisplay(this.value)">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+                    <span>0.5 (Aggressive)</span>
+                    <span id="threshold-value" style="color: #2196F3; font-weight: bold; font-size: 16px;">0.7</span>
+                    <span>0.9 (Conservative)</span>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #999; line-height: 1.5;">
+                    <strong style="color: #e0e0e0;">Current setting: <span id="threshold-label">Balanced (Recommended)</span></strong><br>
+                    • 0.5-0.6: Aggressive - Many matches, some false positives<br>
+                    • 0.7-0.8: Balanced - Good precision/recall trade-off<br>
+                    • 0.85-0.9: Conservative - Only high-confidence matches
+                </div>
+            </div>
+
+            <!-- Embedding Model -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: #e0e0e0; font-weight: bold; margin-bottom: 8px;">
+                    Embedding Model
+                    <span style="color: #999; font-weight: normal; font-size: 12px;">
+                        (Quality vs Speed trade-off)
+                    </span>
+                </label>
+                <div style="display: flex; gap: 15px;">
+                    <label style="flex: 1; cursor: pointer; padding: 15px; background: #333; border: 2px solid #666; border-radius: 8px; transition: all 0.2s;">
+                        <input type="radio" name="embedding-model" value="all-mpnet-base-v2" checked onchange="updateModelDescription()">
+                        <div style="margin-top: 8px;">
+                            <strong style="color: #4CAF50;">High Quality (768-dim)</strong><br>
+                            <span style="font-size: 11px; color: #999;">
+                                • Model: all-mpnet-base-v2<br>
+                                • Best semantic understanding<br>
+                                • Slower processing (~2sec/claim)<br>
+                                • Higher accuracy
+                            </span>
+                        </div>
+                    </label>
+                    <label style="flex: 1; cursor: pointer; padding: 15px; background: #333; border: 2px solid #666; border-radius: 8px; transition: all 0.2s;">
+                        <input type="radio" name="embedding-model" value="all-MiniLM-L6-v2" onchange="updateModelDescription()">
+                        <div style="margin-top: 8px;">
+                            <strong style="color: #00BCD4;">High Speed (384-dim)</strong><br>
+                            <span style="font-size: 11px; color: #999;">
+                                • Model: all-MiniLM-L6-v2<br>
+                                • Good semantic understanding<br>
+                                • Faster processing (~1sec/claim)<br>
+                                • Good accuracy
+                            </span>
+                        </div>
+                    </label>
+                </div>
+                <div id="model-description" style="margin-top: 12px; padding: 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid #4CAF50; border-radius: 6px; font-size: 12px; color: #e0e0e0;">
+                    <strong style="color: #4CAF50;">Recommended:</strong> High Quality model provides best results for research analysis. Choose High Speed if you have many documents to process.
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button onclick="saveSettings()" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                    ✓ Save Settings
+                </button>
+                <button onclick="closeSettings()" style="flex: 1; background: #666; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                    Cancel
+                </button>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #444; font-size: 11px; color: #999; line-height: 1.6;">
+                <strong style="color: #e0e0e0;">Note:</strong> Changing the embedding model will require regenerating embeddings for all existing claims and evidence.
+                You can do this by typing <code style="background: #333; padding: 2px 6px; border-radius: 3px;">"generate embeddings"</code> in the chat.
             </div>
         </div>
     </div>
@@ -1243,6 +1328,127 @@
                 alert('Error starting investigation: ' + err.message);
             });
         }
+
+        // Settings Modal Functions
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+
+            // Load saved settings from localStorage
+            const savedThreshold = localStorage.getItem('similarity_threshold') || '0.7';
+            const savedModel = localStorage.getItem('embedding_model') || 'all-mpnet-base-v2';
+
+            // Apply saved values to modal
+            const slider = document.getElementById('similarity-threshold-slider');
+            if (slider) {
+                slider.value = savedThreshold;
+                updateThresholdDisplay(savedThreshold);
+            }
+
+            // Set radio button
+            const radios = document.querySelectorAll('input[name="embedding-model"]');
+            radios.forEach(radio => {
+                if (radio.value === savedModel) {
+                    radio.checked = true;
+                }
+            });
+            updateModelDescription();
+
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function saveSettings() {
+            // Get values
+            const threshold = document.getElementById('similarity-threshold-slider').value;
+            const model = document.querySelector('input[name="embedding-model"]:checked').value;
+
+            // Save to localStorage
+            localStorage.setItem('similarity_threshold', threshold);
+            localStorage.setItem('embedding_model', model);
+
+            // Check if model changed
+            const previousModel = localStorage.getItem('previous_embedding_model') || 'all-mpnet-base-v2';
+            const modelChanged = previousModel !== model;
+            localStorage.setItem('previous_embedding_model', model);
+
+            // Close modal
+            closeSettings();
+
+            // Show confirmation message
+            let message = `✓ Settings saved!\n\nSimilarity Threshold: ${threshold}\nEmbedding Model: ${model}`;
+            if (modelChanged) {
+                message += '\n\n⚠️ Model changed! Type "generate embeddings" in chat to regenerate embeddings with the new model.';
+            }
+            alert(message);
+
+            console.log('[Settings] Saved:', { threshold, model, modelChanged });
+        }
+
+        function updateThresholdDisplay(value) {
+            const valueDisplay = document.getElementById('threshold-value');
+            const labelDisplay = document.getElementById('threshold-label');
+
+            if (valueDisplay) {
+                valueDisplay.textContent = parseFloat(value).toFixed(2);
+            }
+
+            if (labelDisplay) {
+                const val = parseFloat(value);
+                let label = '';
+                if (val < 0.65) {
+                    label = 'Aggressive';
+                } else if (val <= 0.8) {
+                    label = 'Balanced (Recommended)';
+                } else {
+                    label = 'Conservative';
+                }
+                labelDisplay.textContent = label;
+            }
+        }
+
+        function updateModelDescription() {
+            const modelDescription = document.getElementById('model-description');
+            const selectedModel = document.querySelector('input[name="embedding-model"]:checked');
+
+            if (!modelDescription || !selectedModel) return;
+
+            if (selectedModel.value === 'all-mpnet-base-v2') {
+                modelDescription.style.background = 'rgba(76, 175, 80, 0.1)';
+                modelDescription.style.borderColor = '#4CAF50';
+                modelDescription.innerHTML = '<strong style="color: #4CAF50;">Recommended:</strong> High Quality model provides best results for research analysis. Choose High Speed if you have many documents to process.';
+            } else {
+                modelDescription.style.background = 'rgba(0, 188, 212, 0.1)';
+                modelDescription.style.borderColor = '#00BCD4';
+                modelDescription.innerHTML = '<strong style="color: #00BCD4;">High Speed:</strong> Faster processing with good accuracy. Ideal for large document collections. Consider High Quality for critical research requiring maximum precision.';
+            }
+        }
+
+        // Load settings on page load and apply them globally
+        function loadGlobalSettings() {
+            const threshold = localStorage.getItem('similarity_threshold') || '0.7';
+            const model = localStorage.getItem('embedding_model') || 'all-mpnet-base-v2';
+
+            // Make settings available globally
+            window.USER_SETTINGS = {
+                similarity_threshold: parseFloat(threshold),
+                embedding_model: model
+            };
+
+            console.log('[Settings] Loaded global settings:', window.USER_SETTINGS);
+        }
+
+        // Initialize settings on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGlobalSettings();
+        });
     </script>
 </body>
 </html>

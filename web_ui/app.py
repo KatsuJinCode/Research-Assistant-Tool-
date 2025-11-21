@@ -1484,6 +1484,11 @@ def process_chat_message(message, context):
             # Check if user has a specific claim selected
             selected_nodes = context.get('selected_nodes', [])
 
+            # Get user settings from context (defaults to 0.7 if not provided)
+            user_settings = context.get('user_settings', {})
+            similarity_threshold = user_settings.get('similarity_threshold', 0.7)
+            embedding_model = user_settings.get('embedding_model', 'all-mpnet-base-v2')
+
             if selected_nodes and len(selected_nodes) > 0:
                 # Run auto-linking for selected claim only
                 claim_id = selected_nodes[0]
@@ -1494,16 +1499,17 @@ def process_chat_message(message, context):
                     response_text = "The selected node is not a claim. Please select a claim first."
                 else:
                     response_text = "🔗 Running auto-linking pipeline for selected claim...\n\n"
+                    response_text += f"**Settings:** Threshold={similarity_threshold:.2f}, Model={embedding_model}\n"
                     response_text += "**Stage 1:** Finding semantically similar evidence (embeddings)\n"
                     response_text += "**Stage 2:** Classifying relationships (LLM)\n\n"
 
                     classifier = get_classifier(provider="anthropic")
-                    engine = get_similarity_engine()
+                    engine = get_similarity_engine(model_name=embedding_model)
                     pipeline = AutoLinkingPipeline(db, engine, classifier)
 
                     result = pipeline.auto_link_for_claim(
                         claim_id=claim_id,
-                        semantic_threshold=0.7,
+                        semantic_threshold=similarity_threshold,
                         llm_confidence_threshold=0.7,
                         auto_approve=True
                     )
@@ -1523,6 +1529,7 @@ def process_chat_message(message, context):
             else:
                 # Run auto-linking for ALL claims
                 response_text = "🔗 Running auto-linking for ALL claims in database...\n\n"
+                response_text += f"**Settings:** Threshold={similarity_threshold:.2f}, Model={embedding_model}\n"
                 response_text += "This may take a few minutes depending on the number of claims.\n\n"
 
                 # Get all claims
@@ -1537,7 +1544,7 @@ def process_chat_message(message, context):
                     response_text = "No claims with embeddings found. Upload documents first."
                 else:
                     classifier = get_classifier(provider="anthropic")
-                    engine = get_similarity_engine()
+                    engine = get_similarity_engine(model_name=embedding_model)
                     pipeline = AutoLinkingPipeline(db, engine, classifier)
 
                     total_links = 0
@@ -1547,7 +1554,7 @@ def process_chat_message(message, context):
                     for claim in all_claims:
                         result = pipeline.auto_link_for_claim(
                             claim_id=claim['id'],
-                            semantic_threshold=0.7,
+                            semantic_threshold=similarity_threshold,
                             llm_confidence_threshold=0.7,
                             auto_approve=True
                         )
@@ -1576,10 +1583,19 @@ def process_chat_message(message, context):
         try:
             from research_agent.semantic_similarity import get_embedding_manager
 
-            response_text = "🔄 Generating semantic embeddings for all claims and evidence...\n\n"
-            response_text += "This creates 768-dimensional vectors for semantic similarity matching.\n\n"
+            # Get user settings from context
+            user_settings = context.get('user_settings', {})
+            embedding_model = user_settings.get('embedding_model', 'all-mpnet-base-v2')
 
-            embedding_manager = get_embedding_manager(db)
+            # Determine dimensions based on model
+            dimensions = 768 if 'mpnet' in embedding_model else 384
+
+            response_text = "🔄 Generating semantic embeddings for all claims and evidence...\n\n"
+            response_text += f"**Model:** {embedding_model}\n"
+            response_text += f"**Dimensions:** {dimensions}\n\n"
+            response_text += "This creates vectors for semantic similarity matching.\n\n"
+
+            embedding_manager = get_embedding_manager(db, model_name=embedding_model)
 
             # Get nodes without embeddings
             claims_query = """

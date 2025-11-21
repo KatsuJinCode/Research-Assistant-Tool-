@@ -184,11 +184,19 @@ const Chat = {
      * Get current graph context for AI
      */
     getGraphContext() {
+        // Get user settings from localStorage
+        const similarityThreshold = parseFloat(localStorage.getItem('similarity_threshold') || '0.7');
+        const embeddingModel = localStorage.getItem('embedding_model') || 'all-mpnet-base-v2';
+
         return {
             selected_nodes: Array.from(GraphRenderer.selectedNodeIds || []),
             total_nodes: GraphRenderer.currentGraphData?.nodes?.length || 0,
             total_links: GraphRenderer.currentGraphData?.links?.length || 0,
-            search_query: GraphRenderer.searchQuery || ''
+            search_query: GraphRenderer.searchQuery || '',
+            user_settings: {
+                similarity_threshold: similarityThreshold,
+                embedding_model: embeddingModel
+            }
         };
     },
 

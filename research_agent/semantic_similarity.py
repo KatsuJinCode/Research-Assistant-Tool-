@@ -386,23 +386,46 @@ class EmbeddingManager:
             return []
 
 
-# Global instances (initialized on first use)
-_similarity_engine = None
-_embedding_manager = None
+# Global instances (initialized on first use, keyed by model name)
+_similarity_engines = {}
+_embedding_managers = {}
 
 
-def get_similarity_engine() -> SemanticSimilarityEngine:
-    """Get or create global similarity engine instance."""
-    global _similarity_engine
-    if _similarity_engine is None:
-        _similarity_engine = SemanticSimilarityEngine()
-    return _similarity_engine
+def get_similarity_engine(model_name: str = 'all-mpnet-base-v2') -> SemanticSimilarityEngine:
+    """
+    Get or create similarity engine instance for the specified model.
+
+    Args:
+        model_name: The sentence-transformer model to use.
+                   Default: 'all-mpnet-base-v2' (768-dim, high quality)
+                   Alternative: 'all-MiniLM-L6-v2' (384-dim, high speed)
+
+    Returns:
+        SemanticSimilarityEngine instance for the specified model.
+    """
+    global _similarity_engines
+    if model_name not in _similarity_engines:
+        _similarity_engines[model_name] = SemanticSimilarityEngine(model_name=model_name)
+    return _similarity_engines[model_name]
 
 
-def get_embedding_manager(db) -> EmbeddingManager:
-    """Get or create global embedding manager instance."""
-    global _embedding_manager
-    if _embedding_manager is None:
-        engine = get_similarity_engine()
-        _embedding_manager = EmbeddingManager(db, engine)
-    return _embedding_manager
+def get_embedding_manager(db, model_name: str = 'all-mpnet-base-v2') -> EmbeddingManager:
+    """
+    Get or create embedding manager instance for the specified model.
+
+    Args:
+        db: Neo4j database instance
+        model_name: The sentence-transformer model to use.
+                   Default: 'all-mpnet-base-v2' (768-dim, high quality)
+                   Alternative: 'all-MiniLM-L6-v2' (384-dim, high speed)
+
+    Returns:
+        EmbeddingManager instance for the specified model and database.
+    """
+    global _embedding_managers
+    # Use model_name + db connection string as key (simplified to just model_name for now)
+    manager_key = f"{model_name}_{id(db)}"
+    if manager_key not in _embedding_managers:
+        engine = get_similarity_engine(model_name=model_name)
+        _embedding_managers[manager_key] = EmbeddingManager(db, engine)
+    return _embedding_managers[manager_key]
