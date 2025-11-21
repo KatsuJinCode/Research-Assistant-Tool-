@@ -334,6 +334,61 @@ def investigate_claim():
     })
 
 
+@app.route('/api/agent-status')
+def get_agent_status():
+    """
+    Get status of all active background agents.
+
+    Returns current state of:
+    - Document processing queue
+    - Active document processor
+    - Investigation agents (if any)
+    """
+    try:
+        # Check document processing status
+        with processing_lock:
+            is_proc = is_processing
+
+        queue_size = processing_queue.qsize()
+
+        agents = []
+
+        # Document processor agent
+        if is_proc:
+            agents.append({
+                'id': 'document_processor',
+                'name': 'Document Processor',
+                'type': 'document',
+                'status': 'processing',
+                'task': 'Processing document...',
+                'start_time': None  # Would need to track this globally
+            })
+
+        # Queue status
+        if queue_size > 0:
+            agents.append({
+                'id': 'document_queue',
+                'name': 'Processing Queue',
+                'type': 'queue',
+                'status': 'idle',
+                'task': f'{queue_size} document(s) waiting',
+                'queue_size': queue_size
+            })
+
+        # Future: Add investigation agents from orchestrator
+
+        return jsonify({
+            'active_agents': len(agents),
+            'agents': agents,
+            'is_processing': is_proc,
+            'queue_size': queue_size
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting agent status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/graph-stats')
 def get_graph_stats():
     """Get overall graph statistics."""
@@ -622,18 +677,50 @@ def process_chat_message(message, context):
         actions.append({'type': 'highlight_upload'})
 
     # Claim investigation
-    elif any(word in message_lower for word in ['investigate', 'research', 'find evidence']):
-        if context.get('selected_nodes'):
-            selected_count = len(context['selected_nodes'])
-            response_text = (
-                f"I see you have {selected_count} node(s) selected. "
-                f"To investigate a claim, click on it in the graph to view details, "
-                f"then use the 'Find Supporting Evidence' or 'Find Contradicting Evidence' buttons."
-            )
+    elif any(word in message_lower for word in ['investigate', 'research', 'find evidence', 'support', 'contradict', 'challenge']):
+        # Determine investigation type
+        investigation_type = 'support'
+        if any(word in message_lower for word in ['contradict', 'challenge', 'against', 'opposing']):
+            investigation_type = 'contradict'
+
+        # Check if user has a claim selected
+        selected_nodes = context.get('selected_nodes', [])
+
+        if selected_nodes and len(selected_nodes) > 0:
+            # Try to trigger investigation for selected claim
+            claim_id = selected_nodes[0]  # Use first selected node
+
+            try:
+                import requests
+                response = requests.post('http://localhost:5000/api/investigate-claim',
+                                        json={'claim_id': claim_id, 'type': investigation_type},
+                                        timeout=10)
+
+                if response.ok:
+                    data = response.json()
+                    response_text = (
+                        f"✓ Investigation started!\n\n"
+                        f"**Type:** {investigation_type.capitalize()}\n"
+                        f"**Agent:** {data['agent']}\n"
+                        f"**Claim:** {data['claim'][:100]}...\n\n"
+                        f"The agent will search for {investigation_type}ing evidence. "
+                        f"Results will appear in the graph when complete."
+                    )
+                    actions.append({'type': 'reload_graph'})
+                else:
+                    response_text = f"Failed to start investigation: {response.text}"
+            except Exception as e:
+                logger.error(f"Error starting investigation via chat: {e}")
+                response_text = f"Error starting investigation: {str(e)}"
+
         else:
             response_text = (
-                "To investigate a claim, first click on a claim node in the graph. "
-                "Then you'll see options to find supporting or contradicting evidence."
+                "To investigate a claim, first select it in the graph by clicking on it.\n\n"
+                "Then you can ask me to:\n"
+                "• \"Investigate this claim\"\n"
+                "• \"Find supporting evidence\"\n"
+                "• \"Find contradicting evidence\"\n\n"
+                "Or use the buttons in the claim details panel."
             )
 
     # Graph navigation help
@@ -671,6 +758,31 @@ def process_chat_message(message, context):
             "3. Clicking 'Apply Override'\n\n"
             "Your adjustments will be marked with a gold ✓ indicator."
         )
+
+    # Agent status queries
+    elif any(word in message_lower for word in ['agent', 'processing', 'working', 'busy', 'queue']):
+        try:
+            import requests
+            response = requests.get('http://localhost:5000/api/agent-status', timeout=5)
+
+            if response.ok:
+                data = response.json()
+                agent_count = data['active_agents']
+
+                if agent_count == 0:
+                    response_text = "No agents are currently active. The system is idle."
+                else:
+                    response_text = f"**Active Agents ({agent_count}):**\n\n"
+                    for agent in data['agents']:
+                        response_text += f"• **{agent['name']}**: {agent['task']}\n"
+
+                    if data['queue_size'] > 0:
+                        response_text += f"\n📋 {data['queue_size']} document(s) in queue"
+            else:
+                response_text = "Could not retrieve agent status."
+        except Exception as e:
+            logger.error(f"Error querying agent status: {e}")
+            response_text = "Error retrieving agent status."
 
     # Graph statistics
     elif any(word in message_lower for word in ['how many', 'count', 'stats', 'statistics']):
