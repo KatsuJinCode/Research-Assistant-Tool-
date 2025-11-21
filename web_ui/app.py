@@ -77,7 +77,15 @@ def process_queue_worker():
             if queue_item is None:  # Poison pill to stop worker
                 break
 
-            filepath, filename = queue_item
+            # Unpack queue item (backwards compatible: handles both old and new formats)
+            if len(queue_item) == 2:
+                filepath, filename = queue_item
+                discovered_by, discovered_by_agent_id = None, None
+            elif len(queue_item) == 4:
+                filepath, filename, discovered_by, discovered_by_agent_id = queue_item
+            else:
+                logger.error(f"[QUEUE] Invalid queue item format: {queue_item}")
+                continue
 
             with processing_lock:
                 is_processing = True
@@ -92,6 +100,11 @@ def process_queue_worker():
                 f'Processing document: {filename}'
             )
             transcript_manager.log(agent_id, 'info', f'Started processing: {filename}')
+            if discovered_by:
+                transcript_manager.log(agent_id, 'info', f'Document discovered by: {discovered_by}', {
+                    'discovered_by': discovered_by,
+                    'discovered_by_agent_id': discovered_by_agent_id
+                })
 
             # Emit queue status
             with app.app_context():
@@ -120,7 +133,12 @@ def process_queue_worker():
                             'data': data
                         })
 
-                processor = LiveDocumentProcessor(progress_callback=progress_callback, agent_id=agent_id)
+                processor = LiveDocumentProcessor(
+                    progress_callback=progress_callback,
+                    agent_id=agent_id,
+                    discovered_by=discovered_by,
+                    discovered_by_agent_id=discovered_by_agent_id
+                )
                 doc_id = processor.process_document_live(filepath)
 
                 logger.info(f"[QUEUE] Completed: {filename} -> {doc_id}")
@@ -799,7 +817,8 @@ def upload_document():
 
     if source == 'user':
         # User uploads are auto-approved - add directly to processing queue
-        processing_queue.put((filepath, filename))
+        # No discovered_by since user manually uploaded (not agent-discovered)
+        processing_queue.put((filepath, filename, None, None))
         queue_position = processing_queue.qsize()
 
         logger.info(f"[QUEUE] User upload added to queue: {filename} (position: {queue_position})")
@@ -887,11 +906,13 @@ def approve_document(approval_id):
     try:
         import hashlib
 
-        # Get pending document details
+        # Get pending document details including provenance
         query = """
         MATCH (d:PendingDocument {id: $approval_id})
         WHERE d.status = 'pending_approval'
-        RETURN d.filename as filename, d.filepath as filepath
+        RETURN d.filename as filename, d.filepath as filepath,
+               d.created_by as discovered_by,
+               d.created_by_agent_id as discovered_by_agent_id
         """
         result = db.execute_query(query, {'approval_id': approval_id})
 
@@ -900,6 +921,8 @@ def approve_document(approval_id):
 
         filename = result[0]['filename']
         filepath = result[0]['filepath']
+        discovered_by = result[0].get('discovered_by')
+        discovered_by_agent_id = result[0].get('discovered_by_agent_id')
 
         # Update status to approved
         update_query = """
@@ -908,8 +931,8 @@ def approve_document(approval_id):
         """
         db.execute_query(update_query, {'approval_id': approval_id})
 
-        # Add to processing queue
-        processing_queue.put((filepath, filename))
+        # Add to processing queue with provenance metadata
+        processing_queue.put((filepath, filename, discovered_by, discovered_by_agent_id))
         queue_position = processing_queue.qsize()
 
         logger.info(f"[APPROVAL] Document approved and queued: {filename}")
@@ -1293,7 +1316,9 @@ def process_chat_message(message, context):
                     query = """
                     MATCH (d:PendingDocument)
                     WHERE d.status = 'pending_approval'
-                    RETURN d.id as id, d.filename as filename, d.filepath as filepath
+                    RETURN d.id as id, d.filename as filename, d.filepath as filepath,
+                           d.created_by as discovered_by,
+                           d.created_by_agent_id as discovered_by_agent_id
                     """
                     pending_docs = db.execute_query(query)
 
@@ -1307,8 +1332,13 @@ def process_chat_message(message, context):
                             """
                             db.execute_query(update_query, {'approval_id': doc['id']})
 
-                            # Add to processing queue
-                            processing_queue.put((doc['filepath'], doc['filename']))
+                            # Add to processing queue with provenance
+                            processing_queue.put((
+                                doc['filepath'],
+                                doc['filename'],
+                                doc.get('discovered_by'),
+                                doc.get('discovered_by_agent_id')
+                            ))
                             approved_count += 1
 
                             # Emit events
@@ -1348,11 +1378,13 @@ def process_chat_message(message, context):
 
                 if number_match or id_match:
                     try:
-                        # Get pending documents
+                        # Get pending documents with provenance
                         query = """
                         MATCH (d:PendingDocument)
                         WHERE d.status = 'pending_approval'
-                        RETURN d.id as id, d.filename as filename, d.filepath as filepath
+                        RETURN d.id as id, d.filename as filename, d.filepath as filepath,
+                               d.created_by as discovered_by,
+                               d.created_by_agent_id as discovered_by_agent_id
                         ORDER BY d.created_at DESC
                         """
                         pending_docs = db.execute_query(query)
@@ -1378,8 +1410,13 @@ def process_chat_message(message, context):
                             """
                             db.execute_query(update_query, {'approval_id': doc['id']})
 
-                            # Add to processing queue
-                            processing_queue.put((doc['filepath'], doc['filename']))
+                            # Add to processing queue with provenance
+                            processing_queue.put((
+                                doc['filepath'],
+                                doc['filename'],
+                                doc.get('discovered_by'),
+                                doc.get('discovered_by_agent_id')
+                            ))
 
                             # Emit events
                             with app.app_context():
@@ -1737,22 +1774,44 @@ def process_chat_message(message, context):
                         # Run search and download
                         results = agent.search_and_download()
 
-                        # Add found papers to approval queue
+                        # Add found papers to approval queue with provenance
                         if 'papers' in results:
+                            from datetime import datetime
                             for paper in results['papers']:
                                 if 'local_path' in paper:
-                                    # Add to pending documents
-                                    pending_doc = {
-                                        'id': f"pending_{paper['source']}_{paper.get('arxiv_id', paper.get('pmid', 'unknown'))}",
+                                    # Create PendingDocument node in Neo4j with provenance tracking
+                                    approval_id = f"pending_{paper['source']}_{paper.get('arxiv_id', paper.get('pmid', 'unknown'))}"
+
+                                    create_query = """
+                                    CREATE (d:PendingDocument {
+                                        id: $approval_id,
+                                        filename: $filename,
+                                        filepath: $filepath,
+                                        title: $title,
+                                        authors: $authors,
+                                        source: $source,
+                                        status: 'pending_approval',
+                                        created_at: datetime(),
+                                        created_by: 'document_finder',
+                                        created_by_agent_id: $agent_id
+                                    })
+                                    RETURN d.id as id
+                                    """
+
+                                    db.execute_query(create_query, {
+                                        'approval_id': approval_id,
                                         'filename': os.path.basename(paper['local_path']),
                                         'filepath': paper['local_path'],
                                         'title': paper['title'],
                                         'authors': ', '.join(paper.get('authors', [])[:3]),
                                         'source': paper['source'],
-                                        'added_at': datetime.now().isoformat(),
-                                        'status': 'pending'
-                                    }
-                                    pending_documents[pending_doc['id']] = pending_doc
+                                        'agent_id': agent_id
+                                    })
+
+                                    transcript_manager.log(agent_id, 'success', f"Added to approval queue: {paper['title']}", {
+                                        'approval_id': approval_id,
+                                        'source': paper['source']
+                                    })
 
                         # Mark agent as completed
                         transcript_manager.complete_agent(agent_id, results)

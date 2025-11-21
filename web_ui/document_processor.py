@@ -51,16 +51,20 @@ logger = logging.getLogger(__name__)
 class LiveDocumentProcessor:
     """Process documents with real-time progress updates."""
 
-    def __init__(self, progress_callback: Callable[[str, float, Dict], None] = None, agent_id: str = None):
+    def __init__(self, progress_callback: Callable[[str, float, Dict], None] = None, agent_id: str = None, discovered_by: str = None, discovered_by_agent_id: str = None):
         """
         Initialize processor with provenance tracking.
 
         Args:
             progress_callback: Function called with (status_message, progress_percent, data)
             agent_id: Agent transcript ID for provenance tracking (optional)
+            discovered_by: Who discovered this document (e.g., 'document_finder')
+            discovered_by_agent_id: Agent ID of discoverer (for full lineage)
         """
         self.progress_callback = progress_callback or self._default_callback
         self.agent_id = agent_id  # Store for provenance tracking
+        self.discovered_by = discovered_by  # Store discovery provenance
+        self.discovered_by_agent_id = discovered_by_agent_id
         self.db = Neo4jDatabase()  # Keep for backward compatibility during migration
 
         # Repository pattern for new code
@@ -1432,10 +1436,20 @@ Find the main title/heading at the top of the document. Return just the title te
         """
         # 1. Create document node in database FIRST to get the real ID
         # Use repository to create document - it will generate the ID
+        # Include full provenance: who processed it (processor) and who discovered it (finder)
+        additional_props = {}
+        if self.discovered_by:
+            additional_props['discovered_by'] = self.discovered_by
+        if self.discovered_by_agent_id:
+            additional_props['discovered_by_agent_id'] = self.discovered_by_agent_id
+
         doc_id = self.doc_repo.create_document(
             title=Path(file_path).name,
             source_file=str(file_path),
-            status='processing'
+            status='processing',
+            created_by='document_processor',
+            created_by_agent_id=self.agent_id,
+            **additional_props
         )
 
         # Now build node data with the ACTUAL database ID
