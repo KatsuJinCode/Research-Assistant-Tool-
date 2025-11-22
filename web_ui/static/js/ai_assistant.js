@@ -811,12 +811,47 @@ const AIAssistant = {
     },
 
     /**
-     * Add selected node to context
+     * Add selected node to context with full details
      */
-    addSelectedNode(nodeId) {
-        if (!this.context.selectedNodes.includes(nodeId)) {
-            this.context.selectedNodes.push(nodeId);
-            console.log('[AIAssistant] Node selected:', nodeId);
+    async addSelectedNode(nodeId) {
+        // Check if already in context
+        if (this.context.selectedNodes.some(n => n.id === nodeId)) {
+            console.log('[AIAssistant] Node already in context:', nodeId);
+            return;
+        }
+
+        try {
+            // Fetch full node details from backend
+            const response = await fetch(`/api/nodes/${nodeId}/full-details`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch node details');
+            }
+
+            const fullDetails = await response.json();
+
+            // Store full node data in context (not just ID)
+            this.context.selectedNodes.push({
+                id: nodeId,
+                ...fullDetails
+            });
+
+            console.log('[AIAssistant] Node added to context with full details:', nodeId);
+
+            // Display visual feedback badge
+            this.displaySelectedNodeBadge(fullDetails);
+
+            // Update suggestions based on selected node
+            this.updateSuggestionsForSelectedNode(fullDetails);
+
+        } catch (error) {
+            console.error('[AIAssistant] Error fetching node details:', error);
+
+            // Fallback: Add just the node ID
+            this.context.selectedNodes.push({ id: nodeId });
+
+            // Show simplified badge
+            this.displaySelectedNodeBadge({ node: { id: nodeId, title: nodeId.substring(0, 8) } });
         }
     },
 
@@ -824,8 +859,192 @@ const AIAssistant = {
      * Remove selected node from context
      */
     removeSelectedNode(nodeId) {
-        this.context.selectedNodes = this.context.selectedNodes.filter(id => id !== nodeId);
+        this.context.selectedNodes = this.context.selectedNodes.filter(n => n.id !== nodeId);
         console.log('[AIAssistant] Node deselected:', nodeId);
+
+        // Remove visual badge
+        const badge = document.querySelector(`.ai-context-node-badge[data-node-id="${nodeId}"]`);
+        if (badge) {
+            badge.remove();
+        }
+
+        // Update suggestions if no nodes remain selected
+        if (this.context.selectedNodes.length === 0) {
+            this.updateContextualSuggestions(this.context.activeTab);
+        }
+    },
+
+    /**
+     * Display visual feedback badge for selected node
+     */
+    displaySelectedNodeBadge(nodeDetails) {
+        const node = nodeDetails.node || {};
+        const nodeId = node.id || nodeDetails.id || 'unknown';
+        const nodeType = (node.labels && node.labels[0]) || 'unknown';
+        const nodeTitle = node.title || node.text?.substring(0, 40) || node.summary?.substring(0, 40) || nodeId.substring(0, 8);
+
+        // Get or create container for node badges
+        let badgeContainer = document.getElementById('ai-selected-nodes-container');
+
+        if (!badgeContainer) {
+            // Create container below the context badge
+            const contextBadge = document.getElementById('ai-context-badge');
+            if (!contextBadge || !contextBadge.parentElement) return;
+
+            badgeContainer = document.createElement('div');
+            badgeContainer.id = 'ai-selected-nodes-container';
+            badgeContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;';
+
+            // Insert after context badge
+            contextBadge.parentElement.insertBefore(badgeContainer, contextBadge.nextSibling);
+        }
+
+        // Check if badge already exists
+        if (badgeContainer.querySelector(`[data-node-id="${nodeId}"]`)) {
+            return;
+        }
+
+        // Create badge
+        const badge = document.createElement('div');
+        badge.className = 'ai-context-node-badge';
+        badge.dataset.nodeId = nodeId;
+
+        // Icon based on node type
+        const icons = {
+            'Document': '📄',
+            'Claim': '💡',
+            'Evidence': '📊',
+            'Agent': '🤖'
+        };
+        const icon = icons[nodeType] || '📌';
+
+        badge.innerHTML = `
+            <span>${icon}</span>
+            <span class="node-title">${nodeTitle}</span>
+            <button onclick="AIAssistant.removeSelectedNode('${nodeId}')" class="remove-node-btn">×</button>
+        `;
+
+        badge.style.cssText = `
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+            border-radius: 12px;
+            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #64B5F6;
+            animation: slideIn 0.3s ease;
+        `;
+
+        const removeBtn = badge.querySelector('.remove-node-btn');
+        removeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: #64B5F6;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0;
+            margin-left: 4px;
+        `;
+
+        badgeContainer.appendChild(badge);
+
+        // Add animation
+        if (!document.querySelector('style#ai-badge-animations')) {
+            const style = document.createElement('style');
+            style.id = 'ai-badge-animations';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { opacity: 0; transform: translateX(-10px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        console.log('[AIAssistant] Displayed badge for node:', nodeId);
+    },
+
+    /**
+     * Update suggestions based on selected node properties
+     */
+    updateSuggestionsForSelectedNode(nodeDetails) {
+        const node = nodeDetails.node || {};
+        const relationships = nodeDetails.relationships || {};
+
+        // Count evidence and relationships
+        const evidenceCount = relationships.HAS_EVIDENCE?.length || 0;
+        const supportsCount = relationships.SUPPORTS?.length || 0;
+        const contradictsCount = relationships.CONTRADICTS?.length || 0;
+
+        const suggestions = [];
+
+        // Determine node type
+        const nodeType = (node.labels && node.labels[0]) || 'unknown';
+
+        // Node-type specific suggestions
+        if (nodeType === 'Claim') {
+            // Orphaned claim (no evidence)
+            if (evidenceCount === 0) {
+                suggestions.push({
+                    icon: '🔍',
+                    text: 'Find evidence for this claim',
+                    prompt: 'Search for evidence supporting this claim'
+                });
+                suggestions.push({
+                    icon: '🤖',
+                    text: 'Spawn evidence research agent',
+                    prompt: 'Spawn an agent to research evidence for this claim'
+                });
+            }
+
+            // Well-supported claim
+            if (evidenceCount > 2) {
+                suggestions.push({
+                    icon: '✅',
+                    text: 'Analyze evidence strength',
+                    prompt: 'Analyze the strength and quality of evidence for this claim'
+                });
+            }
+
+            // Find related claims
+            suggestions.push({
+                icon: '🔗',
+                text: 'Find related claims',
+                prompt: 'Find similar or related claims in the knowledge base'
+                });
+        } else if (nodeType === 'Document') {
+            suggestions.push({
+                icon: '📊',
+                text: 'Summarize this document',
+                prompt: 'Summarize the key findings in this document'
+            });
+            suggestions.push({
+                icon: '💡',
+                text: 'Extract key claims',
+                prompt: 'Show me the key claims from this document'
+            });
+        } else if (nodeType === 'Evidence') {
+            suggestions.push({
+                icon: '🎯',
+                text: 'Assess evidence credibility',
+                prompt: 'Assess the credibility and strength of this evidence'
+            });
+        }
+
+        // Always offer to explain the node
+        suggestions.push({
+            icon: '💬',
+            text: 'Explain this node',
+            prompt: 'Explain this node and its role in my research'
+        });
+
+        // Render the suggestions
+        this.renderSuggestions(suggestions.slice(0, 4));
+
+        console.log('[AIAssistant] Updated suggestions based on selected node');
     },
 
     /**

@@ -2857,13 +2857,49 @@ def assistant_chat():
         active_tab = context.get('activeTab', 'documents')
         selected_nodes = context.get('selectedNodes', [])
 
+        # Build detailed selected nodes context
+        selected_nodes_context = ""
+        if selected_nodes:
+            selected_nodes_context = "\n\n**Selected Nodes:**\n"
+            for node in selected_nodes:
+                node_data = node.get('node', {})
+                node_id = node_data.get('id', 'unknown')
+                node_type = node_data.get('labels', ['Unknown'])[0] if node_data.get('labels') else 'Unknown'
+                node_title = node_data.get('title') or node_data.get('text', '')[:100] or node_data.get('summary', '')[:100] or node_id[:8]
+
+                selected_nodes_context += f"\n{node_type} - {node_title}\n"
+
+                # Add key properties
+                if node_type == 'Claim':
+                    confidence = node_data.get('confidence', 'unknown')
+                    status = node_data.get('status', 'unknown')
+                    selected_nodes_context += f"  - Confidence: {confidence}\n"
+                    selected_nodes_context += f"  - Status: {status}\n"
+
+                # Add relationship counts
+                relationships = node.get('relationships', {})
+                if relationships:
+                    rel_summary = []
+                    for rel_type, rels in relationships.items():
+                        if rels:
+                            rel_summary.append(f"{len(rels)} {rel_type}")
+                    if rel_summary:
+                        selected_nodes_context += f"  - Connected to: {', '.join(rel_summary)}\n"
+
+                # Add agent provenance
+                history = node.get('history', [])
+                if history:
+                    created_by = next((h for h in history if h['event'] == 'Created'), None)
+                    if created_by:
+                        selected_nodes_context += f"  - Created by: {created_by.get('agent_type', 'unknown')} agent\n"
+
         system_prompt = f"""You are an AI research assistant helping users navigate and analyze their research graph database.
 
 **Current Context:**
 - Active Tab: {active_tab}
 - Selected Nodes: {len(selected_nodes)} node(s) selected
 - Available Actions: Search, analyze, create connections, summarize findings
-
+{selected_nodes_context}
 **Your Role:**
 You help users:
 1. Find and analyze documents, claims, and evidence
@@ -2876,9 +2912,9 @@ You help users:
 - Be conversational and helpful
 - Provide specific, actionable responses
 - When suggesting data modifications (creating claims, linking evidence), acknowledge that user approval is required
-- Reference the user's current context (tab, selected nodes)
+- Reference the user's current context (tab, selected nodes) to give personalized suggestions
 - Keep responses concise but informative
-- Suggest concrete next steps
+- Suggest concrete next steps based on what nodes are selected
 
 **User's Message:**
 {user_message}
