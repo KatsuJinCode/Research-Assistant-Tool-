@@ -1784,7 +1784,24 @@
                 <!-- Placeholder tabs - will be populated by TabManager -->
                 <div id="tab-search" class="tab-content" style="display:none;"></div>
                 <div id="tab-agents" class="tab-content" style="display:none;"></div>
-                <div id="tab-projects" class="tab-content" style="display:none;"></div>
+                <div id="tab-projects" class="tab-content" style="display:none;">
+                    <!-- Project Management Section -->
+                    <div style="padding: 20px;">
+                        <h3 style="color: #fff; margin-bottom: 20px;">📁 Project Management</h3>
+                        <p style="color: #999; margin-bottom: 20px;">Manage your research projects. Each project has its own isolated database.</p>
+
+                        <!-- Project Selector Button - Opens full project management modal -->
+                        <div class="project-selector" id="project-selector-tab" onclick="ProjectManager.openProjectModal()" style="display: inline-flex; cursor: pointer; background: #2a2a2a; padding: 12px 20px; border-radius: 8px; border: 2px solid #444; align-items: center; gap: 10px; transition: all 0.2s;">
+                            <span style="font-size: 14px; color: #fff;">Current Project:</span>
+                            <span id="current-project-name-tab" style="font-size: 16px; font-weight: bold; color: #2196F3;">Default Project</span>
+                            <span style="opacity: 0.6; font-size: 12px;">▼</span>
+                        </div>
+
+                        <p style="color: #666; margin-top: 15px; font-size: 12px;">
+                            💡 Click above to create, switch, or delete projects
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- Vertical Divider (Draggable) -->

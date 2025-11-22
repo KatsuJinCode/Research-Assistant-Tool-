@@ -84,6 +84,13 @@ const ProjectManager = {
             projectNameElement.textContent = this.currentProject.name;
             projectNameElement.style.color = this.currentProject.color || '#fff';
         }
+
+        // Also update the Projects tab selector
+        const projectNameTabElement = document.getElementById('current-project-name-tab');
+        if (projectNameTabElement && this.currentProject) {
+            projectNameTabElement.textContent = this.currentProject.name;
+            projectNameTabElement.style.color = this.currentProject.color || '#2196F3';
+        }
     },
 
     /**
