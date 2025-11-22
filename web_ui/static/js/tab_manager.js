@@ -11,6 +11,7 @@
 const TabManager = {
     currentTab: 'documents',
     tabStates: {},
+    currentAgentFilter: 'active', // Track current agent filter
 
     /**
      * Initialize tab manager
@@ -238,28 +239,29 @@ const TabManager = {
         const tabContent = document.getElementById('tab-agents');
         if (!tabContent) return;
 
-        tabContent.innerHTML = `
-            <h2 style="margin-bottom: 15px;">🤖 AI Agents</h2>
+        const activeStyle = 'flex: 1; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;';
+        const inactiveStyle = 'flex: 1; padding: 8px; background: #333; color: #999; border: 1px solid #444; border-radius: 6px; cursor: pointer;';
 
-            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-                <button onclick="TabManager.showActiveAgents()"
-                        style="flex: 1; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        tabContent.innerHTML = `
+            <div style="margin-bottom: 12px; display: flex; gap: 4px;">
+                <button id="agent-filter-active" onclick="TabManager.setAgentFilter('active')"
+                        style="${this.currentAgentFilter === 'active' ? activeStyle : inactiveStyle}">
                     Active (<span id="active-agent-count">0</span>)
                 </button>
-                <button onclick="TabManager.showCompletedAgents()"
-                        style="flex: 1; padding: 8px; background: #555; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Completed
+                <button id="agent-filter-completed" onclick="TabManager.setAgentFilter('completed')"
+                        style="${this.currentAgentFilter === 'completed' ? activeStyle : inactiveStyle}">
+                    Completed (<span id="completed-agent-count">0</span>)
                 </button>
-                <button onclick="TabManager.showFailedAgents()"
-                        style="flex: 1; padding: 8px; background: #555; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Failed
+                <button id="agent-filter-failed" onclick="TabManager.setAgentFilter('failed')"
+                        style="${this.currentAgentFilter === 'failed' ? activeStyle : inactiveStyle}">
+                    Failed (<span id="failed-agent-count">0</span>)
                 </button>
             </div>
 
             <div id="agent-list" style="display: flex; flex-direction: column; gap: 10px;">
                 <div style="text-align: center; padding: 40px 20px; color: #666;">
                     <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
-                    <p>No active agents</p>
+                    <p>No ${this.currentAgentFilter} agents</p>
                     <p style="font-size: 12px; color: #999; margin-top: 10px;">
                         Agents will appear here when processing documents
                     </p>
@@ -406,35 +408,123 @@ const TabManager = {
     },
 
     /**
-     * Update agent list
+     * Update agent list with optional filter
      */
-    updateAgentList() {
-        // This will be populated by AgentMonitor
-        console.log('[TabManager] Updating agent list...');
+    updateAgentList(filter = null) {
+        const filterToUse = filter || this.currentAgentFilter;
+
+        console.log(`[TabManager] Updating agent list (filter: ${filterToUse})...`);
+
+        // Get agent list container
+        const agentList = document.getElementById('agent-list');
+        if (!agentList) return;
+
+        // If AgentMonitor exists, use it to get agents
+        if (window.AgentMonitor && window.AgentMonitor.getAgents) {
+            const allAgents = window.AgentMonitor.getAgents();
+
+            // Filter agents by status
+            const filteredAgents = allAgents.filter(agent => {
+                if (filterToUse === 'active') {
+                    return agent.status === 'active' || agent.status === 'running' || agent.status === 'processing';
+                } else if (filterToUse === 'completed') {
+                    return agent.status === 'completed' || agent.status === 'success' || agent.status === 'done';
+                } else if (filterToUse === 'failed') {
+                    return agent.status === 'failed' || agent.status === 'error';
+                }
+                return false;
+            });
+
+            // Update counts
+            const activeCount = allAgents.filter(a => ['active', 'running', 'processing'].includes(a.status)).length;
+            const completedCount = allAgents.filter(a => ['completed', 'success', 'done'].includes(a.status)).length;
+            const failedCount = allAgents.filter(a => ['failed', 'error'].includes(a.status)).length;
+
+            const activeCountEl = document.getElementById('active-agent-count');
+            const completedCountEl = document.getElementById('completed-agent-count');
+            const failedCountEl = document.getElementById('failed-agent-count');
+
+            if (activeCountEl) activeCountEl.textContent = activeCount;
+            if (completedCountEl) completedCountEl.textContent = completedCount;
+            if (failedCountEl) failedCountEl.textContent = failedCount;
+
+            // Render filtered agents
+            if (filteredAgents.length === 0) {
+                agentList.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+                        <p>No ${filterToUse} agents</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                            Agents will appear here when processing documents
+                        </p>
+                    </div>
+                `;
+            } else {
+                // Render agent cards
+                agentList.innerHTML = filteredAgents.map(agent => `
+                    <div class="agent-card" style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid ${this.getAgentStatusColor(agent.status)};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600; color: white;">${agent.name || 'Agent'}</div>
+                            <div style="font-size: 10px; color: #999; text-transform: uppercase;">${agent.status}</div>
+                        </div>
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 4px;">${agent.type || 'Unknown type'}</div>
+                        <div style="font-size: 11px; color: #999;">${agent.description || 'Processing...'}</div>
+                    </div>
+                `).join('');
+            }
+        } else {
+            // No AgentMonitor - show empty state
+            agentList.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+                    <p>No ${filterToUse} agents</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                        Agents will appear here when processing documents
+                    </p>
+                </div>
+            `;
+        }
     },
 
     /**
-     * Show active agents
+     * Get status color for agent
      */
-    showActiveAgents() {
-        console.log('[TabManager] Showing active agents');
-        // Filter logic here
+    getAgentStatusColor(status) {
+        const statusColors = {
+            'active': '#2196F3',
+            'running': '#2196F3',
+            'processing': '#2196F3',
+            'completed': '#4CAF50',
+            'success': '#4CAF50',
+            'done': '#4CAF50',
+            'failed': '#f44336',
+            'error': '#f44336'
+        };
+        return statusColors[status] || '#666';
     },
 
     /**
-     * Show completed agents
+     * Set agent filter (active, completed, failed)
      */
-    showCompletedAgents() {
-        console.log('[TabManager] Showing completed agents');
-        // Filter logic here
-    },
+    setAgentFilter(filter) {
+        console.log(`[TabManager] Setting agent filter: ${filter}`);
 
-    /**
-     * Show failed agents
-     */
-    showFailedAgents() {
-        console.log('[TabManager] Showing failed agents');
-        // Filter logic here
+        this.currentAgentFilter = filter;
+
+        // Update button styles
+        const activeStyle = 'flex: 1; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;';
+        const inactiveStyle = 'flex: 1; padding: 8px; background: #333; color: #999; border: 1px solid #444; border-radius: 6px; cursor: pointer;';
+
+        const activeBtn = document.getElementById('agent-filter-active');
+        const completedBtn = document.getElementById('agent-filter-completed');
+        const failedBtn = document.getElementById('agent-filter-failed');
+
+        if (activeBtn) activeBtn.style.cssText = filter === 'active' ? activeStyle : inactiveStyle;
+        if (completedBtn) completedBtn.style.cssText = filter === 'completed' ? activeStyle : inactiveStyle;
+        if (failedBtn) failedBtn.style.cssText = filter === 'failed' ? activeStyle : inactiveStyle;
+
+        // Update agent list with filter
+        this.updateAgentList(filter);
     },
 
     /**
