@@ -1277,7 +1277,7 @@ def get_node_provenance(node_id):
 
 @app.route('/api/full-graph')
 def get_full_graph():
-    """Get complete hierarchical graph with arbitrary depth support."""
+    """Get complete hierarchical graph with arbitrary depth support, including agents."""
 
     # Fetch all data using repositories
     documents = doc_repo.get_all_documents_simple()
@@ -1286,6 +1286,26 @@ def get_full_graph():
     evidence_data = claim_repo.get_all_claim_evidence_relationships()
     semantic_links = claim_repo.get_all_semantic_relationships()
     similar_to_links = claim_repo.get_all_similar_to_relationships()  # RAG-detected similar claims
+
+    # Fetch agent data from transcripts
+    from research_agent.transcript_manager import get_transcript_manager
+    transcript_manager = get_transcript_manager()
+    all_transcripts = transcript_manager.list_all_transcripts()
+
+    # Build agent info map
+    agents_map = {}
+    for transcript in all_transcripts:
+        agent_id = transcript.get('agent_id')
+        if agent_id:
+            agents_map[agent_id] = {
+                'id': agent_id,
+                'type': transcript.get('agent_type', 'unknown'),
+                'status': transcript.get('status', 'unknown'),
+                'goal': transcript.get('goal', ''),
+                'created_at': transcript.get('created_at', ''),
+                'completed_at': transcript.get('completed_at', ''),
+                'created_node_ids': []  # Will populate this below
+            }
 
     # Build document-claim mapping
     doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
@@ -1298,6 +1318,11 @@ def get_full_graph():
     for doc in documents:
         doc_id = doc['id']
 
+        # Track which agent created this document
+        doc_created_by = doc.get('created_by_agent_id')
+        if doc_created_by and doc_created_by in agents_map:
+            agents_map[doc_created_by]['created_node_ids'].append(doc_id)
+
         # Get claims for this document
         doc_claim_ids = doc_claim_map.get(doc_id, [])
 
@@ -1307,6 +1332,11 @@ def get_full_graph():
 
         for claim in claims:
             if claim['id'] in doc_claim_ids:
+                # Track which agent created this claim
+                claim_created_by = claim.get('created_by_agent_id')
+                if claim_created_by and claim_created_by in agents_map:
+                    agents_map[claim_created_by]['created_node_ids'].append(claim['id'])
+
                 claim_data = {
                     'id': claim['id'],
                     'text': claim['text'],
@@ -1317,7 +1347,8 @@ def get_full_graph():
                     'quality_score': claim.get('quality_score'),
                     'claim_type': claim.get('claim_type', 'extracted'),
                     'confidence': claim.get('confidence', 0.0),
-                    'child_ids': [cid for cid in claim['child_ids'] if cid]  # Filter None
+                    'child_ids': [cid for cid in claim['child_ids'] if cid],  # Filter None
+                    'created_by_agent_id': claim_created_by
                 }
 
                 if claim['is_super_claim']:
@@ -1328,6 +1359,7 @@ def get_full_graph():
             'doc_id': doc_id,
             'doc_title': doc['title'],
             'doc_status': doc['status'],
+            'created_by_agent_id': doc_created_by,
             'super_claims': super_claims,
             'all_claims': all_claims,  # New: all claims regardless of depth
             'evidence': evidence_map,
@@ -1335,7 +1367,13 @@ def get_full_graph():
             'similar_to_links': similar_to_links  # RAG-detected similar claims
         })
 
-    return jsonify(response)
+    # Add agents data to response (only agents that created nodes)
+    active_agents = [agent for agent in agents_map.values() if len(agent['created_node_ids']) > 0]
+
+    return jsonify({
+        'documents': response,
+        'agents': active_agents
+    })
 
 
 @app.route('/api/upload-document', methods=['POST'])

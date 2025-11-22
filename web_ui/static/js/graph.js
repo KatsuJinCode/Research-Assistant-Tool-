@@ -19,15 +19,37 @@ const GraphRenderer = {
 
     /**
      * Build unified graph from full graph data with arbitrary depth support
+     * Now supports agent nodes and CREATED relationships
      */
     buildUnifiedGraph(graphData) {
         const nodes = [];
         const links = [];
         const addedNodes = new Set();
 
-        console.log('[buildUnifiedGraph] Processing', graphData.length, 'documents');
+        // Handle new data structure: {documents: [], agents: []}
+        const documents = graphData.documents || graphData;  // Backward compatibility
+        const agents = graphData.agents || [];
 
-        graphData.forEach(doc => {
+        console.log('[buildUnifiedGraph] Processing', documents.length, 'documents and', agents.length, 'agents');
+
+        // First pass: Add agent nodes
+        agents.forEach(agent => {
+            const agentId = agent.id;
+            if (!addedNodes.has(agentId)) {
+                nodes.push({
+                    id: agentId,
+                    label: agent.type || 'Agent',
+                    type: 'agent',
+                    fullData: agent,
+                    createdNodeCount: agent.created_node_ids?.length || 0
+                });
+                addedNodes.add(agentId);
+                console.log('[buildUnifiedGraph] Added agent node:', agentId, `(created ${agent.created_node_ids?.length || 0} nodes)`);
+            }
+        });
+
+        // Second pass: Add documents and create CREATED links
+        documents.forEach(doc => {
             // Add document node
             const docId = doc.doc_id;
             console.log('[buildUnifiedGraph] Adding document node:', docId, doc.doc_title);
@@ -40,6 +62,17 @@ const GraphRenderer = {
                 });
                 addedNodes.add(docId);
                 console.log('[buildUnifiedGraph] Document node added to nodes array');
+            }
+
+            // Create CREATED link from agent to document
+            const createdByAgentId = doc.created_by_agent_id;
+            if (createdByAgentId && addedNodes.has(createdByAgentId)) {
+                links.push({
+                    source: createdByAgentId,
+                    target: docId,
+                    type: 'created'
+                });
+                console.log('[buildUnifiedGraph] Added CREATED link:', createdByAgentId, '->', docId);
             }
 
             // Build claim map for easy lookup
@@ -72,6 +105,17 @@ const GraphRenderer = {
                     depth: depth
                 });
                 addedNodes.add(claim.id);
+
+                // Create CREATED link from agent to claim (if applicable)
+                const claimCreatedByAgentId = claim.created_by_agent_id;
+                if (claimCreatedByAgentId && addedNodes.has(claimCreatedByAgentId)) {
+                    links.push({
+                        source: claimCreatedByAgentId,
+                        target: claim.id,
+                        type: 'created'
+                    });
+                    console.log('[buildUnifiedGraph] Added CREATED link for claim:', claimCreatedByAgentId, '->', claim.id);
+                }
 
                 // Add link from document to top-level claims
                 if (depth === 0) {
@@ -228,6 +272,7 @@ const GraphRenderer = {
             .id(d => d.id)
             .distance(d => {
                 // Dynamic distances: longer for parent-child, shorter for evidence
+                if (d.type === 'created') return 180;  // NEW - agent to created node
                 if (d.type === 'contains') return 200;
                 if (d.type === 'has_sub') return 150;
                 if (d.type === 'supports' || d.type === 'contradicts') return 100;
@@ -364,6 +409,12 @@ const GraphRenderer = {
             .attr('clip-path', d => `url(#${d.clipPathId})`)  // Apply clipping
             .style('text-shadow', '0 0 3px rgba(0,0,0,0.9)')
             .text(d => {
+                // Agent nodes get a robot emoji prefix
+                if (d.type === 'agent') {
+                    const agentType = d.fullData?.type || 'Agent';
+                    return `🤖 ${agentType}`;
+                }
+
                 const summary = d.fullData?.summary;
                 if (!summary && d.type !== 'document') {
                     if (d.processing || d.fresh) {
@@ -1054,7 +1105,8 @@ const GraphRenderer = {
             'document': { r: 76, g: 175, b: 80 },    // Green
             'super': { r: 33, g: 150, b: 243 },       // Blue
             'sub': { r: 156, g: 39, b: 176 },         // Purple
-            'evidence': { r: 255, g: 152, b: 0 }      // Orange
+            'evidence': { r: 255, g: 152, b: 0 },     // Orange
+            'agent': { r: 0, g: 188, b: 212 }         // Cyan/Teal - NEW
         };
 
         const base = baseColors[type] || { r: 153, g: 153, b: 153 };
@@ -1079,13 +1131,19 @@ const GraphRenderer = {
             'document': 25,
             'super': 20,
             'sub': 15,
-            'evidence': 12
+            'evidence': 12,
+            'agent': 22  // NEW - slightly larger than claims
         };
 
         let baseRadius = baseRadii[type] || 15;
 
-        // Scale based on descendant count
-        if (node && node.descendantCount !== undefined) {
+        // For agents, scale based on number of created nodes
+        if (type === 'agent' && node && node.createdNodeCount !== undefined) {
+            const scaleFactor = Math.log(node.createdNodeCount + 1) * 3;
+            baseRadius += scaleFactor;
+        }
+        // For other nodes, scale based on descendant count
+        else if (node && node.descendantCount !== undefined) {
             const scaleFactor = Math.log(node.descendantCount + 1) * 3;
             baseRadius += scaleFactor;
         }
@@ -1104,7 +1162,8 @@ const GraphRenderer = {
             'contradicts': '#F44336',   // Red - contradicts
             'duplicate': '#FF6B35',     // Orange - duplicate claim
             'semantic_similar': '#9C27B0',  // Purple - semantically similar across documents
-            'SIMILAR_TO': '#FFC107'     // Amber/Gold - RAG-detected similar claims
+            'SIMILAR_TO': '#FFC107',    // Amber/Gold - RAG-detected similar claims
+            'created': '#00BCD4'        // Cyan/Teal - agent created node - NEW
         };
         return colors[type] || '#999';
     },

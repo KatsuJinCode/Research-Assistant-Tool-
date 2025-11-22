@@ -278,7 +278,16 @@ const App = {
         try {
             const graphData = await API.fetchGraph();
             GraphRenderer.updateGraphSmooth(graphData);
-            console.log(`✓ Loaded graph: ${graphData.length} documents`);
+
+            // Handle new data structure: {documents: [], agents: []}
+            const docCount = graphData.documents?.length || graphData.length || 0;
+            const agentCount = graphData.agents?.length || 0;
+
+            if (agentCount > 0) {
+                console.log(`✓ Loaded graph: ${docCount} documents, ${agentCount} agents`);
+            } else {
+                console.log(`✓ Loaded graph: ${docCount} documents`);
+            }
         } catch (error) {
             console.error('Failed to load graph:', error);
         }
