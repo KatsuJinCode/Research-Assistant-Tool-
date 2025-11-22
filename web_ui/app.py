@@ -43,7 +43,7 @@ app.config['SECRET_KEY'] = 'research-assistant-secret-key'
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
 db = Neo4jDatabase()  # Keep for backward compatibility during migration
 
 # Document processing queue - FIFO queue to prevent interruption

@@ -1,0 +1,85 @@
+{
+  "agent_id": "document_processor_20251121_202509_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: children.pdf",
+  "status": "running",
+  "started_at": "2025-11-21T20:25:09.913637",
+  "completed_at": null,
+  "duration_seconds": null,
+  "entries": [
+    {
+      "timestamp": "2025-11-21T20:25:09.913637",
+      "level": "info",
+      "message": "Started processing: children.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-21T20:25:11.956331",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+        "node_data": {
+          "id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4",
+          "title": "children.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-21T20:25:11.958334",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4",
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-21T20:25:12.001505",
+      "level": "info",
+      "message": "Extracted 280 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4",
+        "char_count": 280,
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-21T20:25:12.002505",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4"
+      }
+    },
+    {
+      "timestamp": "2025-11-21T20:25:12.003506",
+      "level": "info",
+      "message": "Preprocessed 279 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4",
+        "char_count": 279
+      }
+    },
+    {
+      "timestamp": "2025-11-21T20:25:12.004505",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "7c6df5ad-dc60-4411-88c2-5cf7347ee6b4"
+      }
+    }
+  ],
+  "entry_count": 7,
+  "result": null,
+  "error": null
+}
