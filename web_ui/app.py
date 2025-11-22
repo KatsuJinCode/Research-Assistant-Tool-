@@ -702,6 +702,138 @@ def auto_link_evidence():
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================================
+# RAG CONFIGURATION ENDPOINTS
+# ============================================================================
+
+@app.route('/api/rag/config', methods=['GET'])
+def get_rag_config():
+    """
+    Get current RAG configuration including similarity thresholds.
+    """
+    try:
+        from backend.rag import get_rag_config
+
+        config = get_rag_config()
+        thresholds = config.thresholds
+
+        return jsonify({
+            'thresholds': {
+                'identical': thresholds.identical_threshold,
+                'similar': thresholds.similar_threshold,
+                'related': thresholds.related_threshold,
+                'min_confidence': thresholds.min_confidence_for_linking
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting RAG config: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/rag/config', methods=['PUT'])
+def update_rag_config():
+    """
+    Update RAG configuration thresholds.
+
+    Request body:
+        {
+            "identical": 0.95,  // Optional
+            "similar": 0.75,    // Optional
+            "related": 0.60,    // Optional
+            "min_confidence": 0.70  // Optional
+        }
+    """
+    try:
+        from backend.rag import get_rag_config
+
+        data = request.get_json()
+        config = get_rag_config()
+
+        success = config.update_thresholds(
+            identical=data.get('identical'),
+            similar=data.get('similar'),
+            related=data.get('related'),
+            min_confidence=data.get('min_confidence')
+        )
+
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'RAG configuration updated',
+                'thresholds': {
+                    'identical': config.thresholds.identical_threshold,
+                    'similar': config.thresholds.similar_threshold,
+                    'related': config.thresholds.related_threshold,
+                    'min_confidence': config.thresholds.min_confidence_for_linking
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid threshold values'
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Error updating RAG config: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/rag/config/reset', methods=['POST'])
+def reset_rag_config():
+    """
+    Reset RAG configuration to default values.
+    """
+    try:
+        from backend.rag import get_rag_config
+
+        config = get_rag_config()
+        config.reset_to_defaults()
+
+        return jsonify({
+            'success': True,
+            'message': 'RAG configuration reset to defaults',
+            'thresholds': {
+                'identical': config.thresholds.identical_threshold,
+                'similar': config.thresholds.similar_threshold,
+                'related': config.thresholds.related_threshold,
+                'min_confidence': config.thresholds.min_confidence_for_linking
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error resetting RAG config: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claims/<claim_id>/similar', methods=['GET'])
+def get_similar_claims(claim_id):
+    """
+    Get claims with SIMILAR_TO relationships for UI highlighting.
+
+    Returns all claims that have SIMILAR_TO relationships with the specified claim.
+    """
+    try:
+        from backend.rag import ClaimDeduplicator
+
+        deduplicator = ClaimDeduplicator()
+        similar_claims = deduplicator.get_similar_claims_for_ui(claim_id)
+
+        return jsonify({
+            'claim_id': claim_id,
+            'count': len(similar_claims),
+            'similar_claims': similar_claims
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting similar claims: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 # AGENT TRANSCRIPT ENDPOINTS
 @app.route('/api/agents', methods=['GET'])
 def list_agents():

@@ -1583,57 +1583,155 @@ Find the main title/heading at the top of the document. Return just the title te
             'claim_previews': claim_previews
         })
 
-        # 4. Create skeleton claim nodes IMMEDIATELY for real-time visualization
-        logger.info(f"Creating {total_claims} skeleton claim nodes for immediate rendering...")
+        # 4. Check for duplicates and create claims with RAG-aware deduplication
+        logger.info(f"Checking {total_claims} claims for duplicates using RAG...")
+
+        # Import RAG deduplicator
+        try:
+            from backend.rag import ClaimDeduplicator
+            deduplicator = ClaimDeduplicator()
+            rag_enabled = True
+            logger.info("RAG deduplication enabled")
+        except Exception as e:
+            logger.warning(f"RAG deduplication not available: {e}")
+            deduplicator = None
+            rag_enabled = False
 
         claim_ids = []  # Store IDs for processing loop
+        claims_linked = 0  # Track high-similarity links
+        claims_similar = 0  # Track medium-similarity with SIMILAR_TO
+        claims_new = 0  # Track genuinely new claims
 
         for idx, claim_dict in enumerate(claims_list):
-            # Extract text from claim dictionary
-            claim_text = claim_dict.get('text', str(claim_dict))  # Fallback to string representation if no 'text' key
+            # Extract text and metadata from claim dictionary
+            claim_text = claim_dict.get('text', str(claim_dict))
+            claim_confidence = claim_dict.get('confidence', 0.0)
 
-            # Create minimal "skeleton" node with raw claim text using repository
-            # Note: create_claim automatically creates the CONTAINS_CLAIM relationship
-            # CRITICAL: Use the ID returned from repository, not a random UUID!
-            claim_id = self.claim_repo.create_claim(
-                text=claim_text,  # Raw text (will be updated with summary later)
-                original_text=claim_text,
-                doc_id=doc_id,
-                claim_type=claim_dict.get('type', 'extracted'),  # Preserve type from extraction
-                confidence=claim_dict.get('confidence', 0.0),  # Preserve initial confidence
-                status='processing',
-                processing_stage='pending',
-                word_count_original=len(claim_text.split()),
-                # Provenance tracking
-                created_by='document_processor',
-                created_by_agent_id=self.agent_id  # Links to agent transcript for full provenance
-            )
+            # RAG deduplication check
+            claim_id = None
+            action = 'create_new'  # Default action
+
+            if rag_enabled and deduplicator:
+                try:
+                    # Check if this claim is duplicate/similar to existing claims
+                    dup_result = deduplicator.check_claim_duplication(
+                        claim_text=claim_text,
+                        document_id=doc_id,
+                        min_confidence=claim_confidence
+                    )
+                    action = dup_result.action
+
+                    if action == 'link_existing':
+                        # High similarity: Link existing claim to this document
+                        logger.info(
+                            f"Claim {idx+1} is {dup_result.similarity_score:.2%} similar "
+                            f"to existing claim {dup_result.existing_claim_id} - linking instead of creating"
+                        )
+
+                        # Link existing claim to new document (creates EXTRACTED relationship)
+                        success = deduplicator.link_claim_to_document(
+                            claim_id=dup_result.existing_claim_id,
+                            document_id=doc_id,
+                            quote=claim_text,  # Original quote from this document
+                            page_number=claim_dict.get('page_number'),
+                            confidence=claim_confidence
+                        )
+
+                        if success:
+                            claim_id = dup_result.existing_claim_id
+                            claims_linked += 1
+
+                            # Emit event for linked claim (different event type)
+                            progress = 35 + (idx / total_claims) * 15
+                            self._emit(f"Linked existing claim {idx+1}/{total_claims}", progress, {
+                                'event': 'claim_linked',
+                                'doc_id': doc_id,
+                                'claim_id': claim_id,
+                                'similarity_score': dup_result.similarity_score,
+                                'action': 'linked_to_existing'
+                            })
+                        else:
+                            logger.error(f"Failed to link claim {idx+1} - creating new instead")
+                            action = 'create_new'  # Fallback to creating new
+
+                except Exception as e:
+                    logger.error(f"RAG deduplication failed for claim {idx+1}: {e}")
+                    action = 'create_new'  # Fallback to creating new
+
+            # Create new claim if not linked to existing
+            if action in ('create_new', 'create_with_similar'):
+                # Create minimal "skeleton" node with raw claim text
+                claim_id = self.claim_repo.create_claim(
+                    text=claim_text,  # Raw text (will be updated with summary later)
+                    original_text=claim_text,
+                    doc_id=doc_id,
+                    claim_type=claim_dict.get('type', 'extracted'),
+                    confidence=claim_confidence,
+                    status='processing',
+                    processing_stage='pending',
+                    word_count_original=len(claim_text.split()),
+                    # Provenance tracking
+                    created_by='document_processor',
+                    created_by_agent_id=self.agent_id
+                )
+
+                # If medium similarity, create SIMILAR_TO relationships
+                if action == 'create_with_similar' and rag_enabled and deduplicator:
+                    try:
+                        dup_result = deduplicator.check_claim_duplication(
+                            claim_text=claim_text,
+                            document_id=doc_id
+                        )
+
+                        if dup_result.similar_claims:
+                            logger.info(
+                                f"Creating SIMILAR_TO relationships for claim {idx+1} "
+                                f"({len(dup_result.similar_claims)} similar claims)"
+                            )
+
+                            for similar in dup_result.similar_claims:
+                                deduplicator._create_similar_relationship(
+                                    claim_id,
+                                    similar.claim_id,
+                                    similar.similarity_score
+                                )
+                            claims_similar += 1
+                    except Exception as e:
+                        logger.error(f"Failed to create SIMILAR_TO relationships: {e}")
+
+                if action == 'create_new':
+                    claims_new += 1
+
+                # Skeleton node data for event emission
+                skeleton_node = {
+                    'id': claim_id,
+                    'text': claim_text,
+                    'original_text': claim_text,
+                    'status': 'processing',
+                    'processing_stage': 'pending',
+                    'claim_type': claim_dict.get('type', 'extracted'),
+                    'confidence': claim_confidence,
+                    'word_count_original': len(claim_text.split())
+                }
+
+                # Emit event for new claim
+                progress = 35 + (idx / total_claims) * 15
+                self._emit(f"Created claim {idx+1}/{total_claims}", progress, {
+                    'event': 'claim_added',
+                    'doc_id': doc_id,
+                    'claim_id': claim_id,
+                    'node_data': skeleton_node,
+                    'parent_id': doc_id,
+                    'is_skeleton': True,
+                    'has_similar': action == 'create_with_similar'
+                })
+
             claim_ids.append(claim_id)
 
-            # Skeleton node data for event emission with ACTUAL database ID
-            skeleton_node = {
-                'id': claim_id,  # Use the real ID from database!
-                'text': claim_text,
-                'original_text': claim_text,
-                'status': 'processing',
-                'processing_stage': 'pending',
-                'claim_type': claim_dict.get('type', 'extracted'),
-                'confidence': claim_dict.get('confidence', 0.0),
-                'word_count_original': len(claim_text.split())
-            }
-
-            # Emit IMMEDIATELY so user sees claim appear in graph
-            progress = 35 + (idx / total_claims) * 15  # 35% to 50%
-            self._emit(f"Extracted claim {idx+1}/{total_claims}", progress, {
-                'event': 'claim_added',
-                'doc_id': doc_id,
-                'claim_id': claim_id,  # Use the real ID from database!
-                'node_data': skeleton_node,
-                'parent_id': doc_id,
-                'is_skeleton': True  # Flag for frontend to render with "processing" appearance
-            })
-
-        logger.info(f"✓ Created {total_claims} skeleton nodes - user can see claims now!")
+        logger.info(
+            f"✓ Processed {total_claims} claims: "
+            f"{claims_new} new, {claims_similar} with similar, {claims_linked} linked to existing"
+        )
 
         # 5. Now process each claim through 4-stage pipeline and UPDATE existing nodes
         logger.info(f"Processing {total_claims} claims through 4-stage pipeline...")
