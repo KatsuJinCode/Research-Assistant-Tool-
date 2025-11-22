@@ -3411,6 +3411,60 @@ def get_active_project():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/projects/<project_id>/export', methods=['POST'])
+def export_project_markdown(project_id):
+    """Export project to markdown files for git-friendly version control."""
+    try:
+        logger.info(f"[API] Exporting project {project_id} to markdown")
+
+        # Get project details
+        query = """
+        MATCH (p:Project {id: $project_id})
+        RETURN p.name as name, p.database_name as database_name
+        """
+
+        with db_manager.get_session(db_manager.SYSTEM_DATABASE) as session:
+            result = session.run(query, {'project_id': project_id})
+            record = result.single()
+
+            if not record:
+                return jsonify({'error': 'Project not found'}), 404
+
+            project_name = record['name']
+            database_name = record['database_name']
+
+        # Initialize export manager
+        from research_agent.export_manager import get_export_manager
+        export_manager = get_export_manager()
+
+        # Create a temporary database connection for this project's database
+        from research_agent.neo4j_database import Neo4jDatabase
+        project_db = Neo4jDatabase()
+        project_db.database = database_name
+
+        # Perform export
+        export_path = export_manager.export_project(
+            db=project_db,
+            project_name=project_name,
+            include_metadata=True
+        )
+
+        logger.info(f"[API] Export completed: {export_path}")
+
+        return jsonify({
+            'success': True,
+            'export_path': str(export_path),
+            'project_name': project_name,
+            'timestamp': datetime.now().isoformat(),
+            'message': f'Project "{project_name}" exported successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"[API] Error exporting project: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 # ====================== NODE DETAILS API ======================
 
 @app.route('/api/nodes/<node_id>/full-details', methods=['GET'])
