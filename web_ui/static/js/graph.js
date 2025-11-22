@@ -26,13 +26,29 @@ const GraphRenderer = {
         const links = [];
         const addedNodes = new Set();
 
-        // Handle new data structure: {documents: [], agents: []}
+        // Handle new data structure: {documents: [], agents: [], sources: []}
         const documents = graphData.documents || graphData;  // Backward compatibility
         const agents = graphData.agents || [];
+        const sources = graphData.sources || [];
 
-        console.log('[buildUnifiedGraph] Processing', documents.length, 'documents and', agents.length, 'agents');
+        console.log('[buildUnifiedGraph] Processing', documents.length, 'documents,', agents.length, 'agents, and', sources.length, 'sources');
 
-        // First pass: Add agent nodes
+        // First pass: Add source nodes (data sources like URLs, papers, files)
+        sources.forEach(source => {
+            const sourceId = source.id;
+            if (!addedNodes.has(sourceId)) {
+                nodes.push({
+                    id: sourceId,
+                    label: source.label || source.url,
+                    type: 'source',
+                    fullData: source
+                });
+                addedNodes.add(sourceId);
+                console.log('[buildUnifiedGraph] Added source node:', sourceId, `(type: ${source.type})`);
+            }
+        });
+
+        // Second pass: Add agent nodes
         agents.forEach(agent => {
             const agentId = agent.id;
             if (!addedNodes.has(agentId)) {
@@ -48,7 +64,7 @@ const GraphRenderer = {
             }
         });
 
-        // Second pass: Add documents and create CREATED links
+        // Third pass: Add documents and create SOURCED_FROM and CREATED links
         documents.forEach(doc => {
             // Add document node
             const docId = doc.doc_id;
@@ -62,6 +78,17 @@ const GraphRenderer = {
                 });
                 addedNodes.add(docId);
                 console.log('[buildUnifiedGraph] Document node added to nodes array');
+            }
+
+            // Create SOURCED_FROM link from source to document
+            const sourceId = doc.source_id;
+            if (sourceId && addedNodes.has(sourceId)) {
+                links.push({
+                    source: sourceId,
+                    target: docId,
+                    type: 'sourced_from'
+                });
+                console.log('[buildUnifiedGraph] Added SOURCED_FROM link:', sourceId, '->', docId);
             }
 
             // Create CREATED link from agent to document
@@ -272,7 +299,8 @@ const GraphRenderer = {
             .id(d => d.id)
             .distance(d => {
                 // Dynamic distances: longer for parent-child, shorter for evidence
-                if (d.type === 'created') return 180;  // NEW - agent to created node
+                if (d.type === 'sourced_from') return 170;  // NEW - source to document
+                if (d.type === 'created') return 180;  // agent to created node
                 if (d.type === 'contains') return 200;
                 if (d.type === 'has_sub') return 150;
                 if (d.type === 'supports' || d.type === 'contradicts') return 100;
@@ -409,6 +437,20 @@ const GraphRenderer = {
             .attr('clip-path', d => `url(#${d.clipPathId})`)  // Apply clipping
             .style('text-shadow', '0 0 3px rgba(0,0,0,0.9)')
             .text(d => {
+                // Source nodes get appropriate icon based on type
+                if (d.type === 'source') {
+                    const sourceType = d.fullData?.type || 'File';
+                    const sourceLabel = d.fullData?.label || 'Source';
+
+                    // Choose icon based on source type
+                    let icon = '📄';  // Default: file
+                    if (sourceType === 'URL') icon = '🔗';
+                    else if (sourceType === 'ArXiv') icon = '📚';
+
+                    const displayLabel = sourceLabel.length > 20 ? sourceLabel.substring(0, 20) + '...' : sourceLabel;
+                    return `${icon} ${displayLabel}`;
+                }
+
                 // Agent nodes get a robot emoji prefix
                 if (d.type === 'agent') {
                     const agentType = d.fullData?.type || 'Agent';
@@ -1106,7 +1148,8 @@ const GraphRenderer = {
             'super': { r: 33, g: 150, b: 243 },       // Blue
             'sub': { r: 156, g: 39, b: 176 },         // Purple
             'evidence': { r: 255, g: 152, b: 0 },     // Orange
-            'agent': { r: 0, g: 188, b: 212 }         // Cyan/Teal - NEW
+            'agent': { r: 0, g: 188, b: 212 },        // Cyan/Teal
+            'source': { r: 255, g: 235, b: 59 }       // Yellow/Gold - NEW
         };
 
         const base = baseColors[type] || { r: 153, g: 153, b: 153 };
@@ -1132,7 +1175,8 @@ const GraphRenderer = {
             'super': 20,
             'sub': 15,
             'evidence': 12,
-            'agent': 22  // NEW - slightly larger than claims
+            'agent': 22,  // Slightly larger than claims
+            'source': 18   // NEW - between evidence and super claims
         };
 
         let baseRadius = baseRadii[type] || 15;
@@ -1163,7 +1207,8 @@ const GraphRenderer = {
             'duplicate': '#FF6B35',     // Orange - duplicate claim
             'semantic_similar': '#9C27B0',  // Purple - semantically similar across documents
             'SIMILAR_TO': '#FFC107',    // Amber/Gold - RAG-detected similar claims
-            'created': '#00BCD4'        // Cyan/Teal - agent created node - NEW
+            'created': '#00BCD4',       // Cyan/Teal - agent created node
+            'sourced_from': '#FFEB3B'   // Yellow/Gold - source to document - NEW
         };
         return colors[type] || '#999';
     },

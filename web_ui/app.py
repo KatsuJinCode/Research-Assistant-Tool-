@@ -1307,6 +1307,39 @@ def get_full_graph():
                 'created_node_ids': []  # Will populate this below
             }
 
+    # Build sources map (URLs, files, etc.)
+    sources_map = {}
+    for doc in documents:
+        # Extract source information from document
+        source_url = doc.get('source_url') or doc.get('source_file')
+        source_type = doc.get('source_type', 'file')
+
+        if source_url:
+            # Use URL/file path as source ID
+            source_id = source_url
+            if source_id not in sources_map:
+                # Determine source display type
+                if source_url.startswith('http'):
+                    display_type = 'URL'
+                    display_label = source_url.split('/')[-1] or source_url  # Get last part of URL
+                elif source_url.startswith('arxiv'):
+                    display_type = 'ArXiv'
+                    display_label = source_url
+                else:
+                    display_type = 'File'
+                    display_label = source_url.split('\\')[-1].split('/')[-1]  # Get filename
+
+                sources_map[source_id] = {
+                    'id': source_id,
+                    'url': source_url,
+                    'type': display_type,
+                    'label': display_label,
+                    'sourced_doc_ids': []
+                }
+
+            # Track which documents came from this source
+            sources_map[source_id]['sourced_doc_ids'].append(doc['id'])
+
     # Build document-claim mapping
     doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
 
@@ -1355,11 +1388,16 @@ def get_full_graph():
                     super_claims.append(claim_data)
                 all_claims.append(claim_data)
 
+        # Get source for this document
+        doc_source_url = doc.get('source_url') or doc.get('source_file')
+        source_id = doc_source_url if doc_source_url else None
+
         response.append({
             'doc_id': doc_id,
             'doc_title': doc['title'],
             'doc_status': doc['status'],
             'created_by_agent_id': doc_created_by,
+            'source_id': source_id,  # NEW - link to source node
             'super_claims': super_claims,
             'all_claims': all_claims,  # New: all claims regardless of depth
             'evidence': evidence_map,
@@ -1370,9 +1408,13 @@ def get_full_graph():
     # Add agents data to response (only agents that created nodes)
     active_agents = [agent for agent in agents_map.values() if len(agent['created_node_ids']) > 0]
 
+    # Add sources data to response
+    active_sources = list(sources_map.values())
+
     return jsonify({
         'documents': response,
-        'agents': active_agents
+        'agents': active_agents,
+        'sources': active_sources  # NEW - data source nodes
     })
 
 

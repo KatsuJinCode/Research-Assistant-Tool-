@@ -279,15 +279,17 @@ const App = {
             const graphData = await API.fetchGraph();
             GraphRenderer.updateGraphSmooth(graphData);
 
-            // Handle new data structure: {documents: [], agents: []}
+            // Handle new data structure: {documents: [], agents: [], sources: []}
             const docCount = graphData.documents?.length || graphData.length || 0;
             const agentCount = graphData.agents?.length || 0;
+            const sourceCount = graphData.sources?.length || 0;
 
-            if (agentCount > 0) {
-                console.log(`✓ Loaded graph: ${docCount} documents, ${agentCount} agents`);
-            } else {
-                console.log(`✓ Loaded graph: ${docCount} documents`);
-            }
+            // Build summary message
+            let logParts = [`${docCount} documents`];
+            if (agentCount > 0) logParts.push(`${agentCount} agents`);
+            if (sourceCount > 0) logParts.push(`${sourceCount} sources`);
+
+            console.log(`✓ Loaded graph: ${logParts.join(', ')}`);
         } catch (error) {
             console.error('Failed to load graph:', error);
         }
