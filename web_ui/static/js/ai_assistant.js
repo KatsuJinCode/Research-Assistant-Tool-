@@ -963,9 +963,16 @@ const AIAssistant = {
             badge.remove();
         }
 
-        // Update suggestions if no nodes remain selected
+        // Update suggestions based on remaining selection
         if (this.context.selectedNodes.length === 0) {
+            // No nodes selected - return to tab-specific suggestions
             this.updateContextualSuggestions(this.context.activeTab);
+        } else if (this.context.selectedNodes.length === 1) {
+            // One node remaining - show single-node suggestions
+            this.updateSuggestionsForSelectedNode(this.context.selectedNodes[0]);
+        } else {
+            // Multiple nodes still selected - show multi-node suggestions
+            this.updateMultiNodeSuggestions();
         }
     },
 
@@ -1066,6 +1073,12 @@ const AIAssistant = {
      * Update suggestions based on selected node properties
      */
     updateSuggestionsForSelectedNode(nodeDetails) {
+        // Check if multiple nodes are selected
+        if (this.context.selectedNodes.length > 1) {
+            this.updateMultiNodeSuggestions();
+            return;
+        }
+
         const node = nodeDetails.node || {};
         const relationships = nodeDetails.relationships || {};
 
@@ -1140,6 +1153,82 @@ const AIAssistant = {
         this.renderSuggestions(suggestions.slice(0, 4));
 
         console.log('[AIAssistant] Updated suggestions based on selected node');
+    },
+
+    /**
+     * Update suggestions for multiple selected nodes
+     */
+    updateMultiNodeSuggestions() {
+        const nodeCount = this.context.selectedNodes.length;
+        const nodes = this.context.selectedNodes;
+
+        // Analyze node types
+        const nodeTypes = nodes.map(n => (n.node?.labels && n.node.labels[0]) || 'unknown');
+        const uniqueTypes = [...new Set(nodeTypes)];
+
+        const suggestions = [];
+
+        // Check if all nodes are claims
+        const allClaims = uniqueTypes.length === 1 && uniqueTypes[0] === 'Claim';
+        const allDocuments = uniqueTypes.length === 1 && uniqueTypes[0] === 'Document';
+        const mixedTypes = uniqueTypes.length > 1;
+
+        // Comparative analysis
+        suggestions.push({
+            icon: '🔍',
+            text: `Compare ${nodeCount} selected nodes`,
+            prompt: `Compare the ${nodeCount} selected nodes and identify commonalities, differences, and relationships between them`
+        });
+
+        // Type-specific suggestions
+        if (allClaims) {
+            suggestions.push({
+                icon: '🔗',
+                text: 'Find connections between claims',
+                prompt: 'Analyze the relationships between these claims and identify any logical connections or contradictions'
+            });
+
+            suggestions.push({
+                icon: '🤖',
+                text: 'Research knowledge gaps',
+                prompt: 'Identify knowledge gaps between these claims and spawn agents to fill them'
+            });
+
+            suggestions.push({
+                icon: '⚖️',
+                text: 'Assess claim consistency',
+                prompt: 'Evaluate whether these claims are logically consistent with each other or if there are contradictions'
+            });
+        } else if (allDocuments) {
+            suggestions.push({
+                icon: '📊',
+                text: 'Synthesize findings across documents',
+                prompt: 'Synthesize the key findings across these documents and identify common themes'
+            });
+
+            suggestions.push({
+                icon: '🔄',
+                text: 'Cross-reference citations',
+                prompt: 'Check if these documents cite each other or share common references'
+            });
+        } else if (mixedTypes) {
+            suggestions.push({
+                icon: '🧩',
+                text: 'Analyze node relationships',
+                prompt: 'Explain how these different types of nodes relate to each other in my research'
+            });
+
+            suggestions.push({
+                icon: '📈',
+                text: 'Trace evidence chain',
+                prompt: 'Trace the chain of evidence from documents through claims'
+            });
+        }
+
+        // Render suggestions
+        this.renderSuggestions(suggestions.slice(0, 4));
+
+        console.log(`[AIAssistant] Updated suggestions for ${nodeCount} selected nodes (types: ${uniqueTypes.join(', ')})`);
     },
 
     /**

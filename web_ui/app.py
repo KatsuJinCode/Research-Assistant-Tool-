@@ -2870,8 +2870,52 @@ def assistant_chat():
         # Build detailed selected nodes context
         selected_nodes_context = ""
         if selected_nodes:
-            selected_nodes_context = "\n\n**Selected Nodes:**\n"
-            for node in selected_nodes:
+            # Multi-node analysis mode
+            if len(selected_nodes) > 1:
+                selected_nodes_context = f"\n\n**Multi-Node Analysis Mode ({len(selected_nodes)} nodes selected):**\n"
+
+                # Categorize nodes by type
+                node_types = {}
+                for node in selected_nodes:
+                    node_data = node.get('node', {})
+                    node_type = node_data.get('labels', ['Unknown'])[0] if node_data.get('labels') else 'Unknown'
+                    if node_type not in node_types:
+                        node_types[node_type] = []
+                    node_types[node_type].append(node)
+
+                # Summarize by type
+                selected_nodes_context += "\nNode Summary:\n"
+                for node_type, nodes_list in node_types.items():
+                    selected_nodes_context += f"  - {len(nodes_list)} {node_type}(s)\n"
+
+                selected_nodes_context += "\nDetailed Breakdown:\n"
+                for idx, node in enumerate(selected_nodes[:5], 1):  # Limit to 5 for context size
+                    node_data = node.get('node', {})
+                    node_type = node_data.get('labels', ['Unknown'])[0] if node_data.get('labels') else 'Unknown'
+                    node_title = node_data.get('title') or node_data.get('text', '')[:80] or node_data.get('summary', '')[:80] or 'Untitled'
+
+                    selected_nodes_context += f"\n{idx}. {node_type}: {node_title}\n"
+
+                    # Add relationship info for multi-node analysis
+                    relationships = node.get('relationships', {})
+                    if relationships:
+                        rel_counts = {rel_type: len(rels) for rel_type, rels in relationships.items() if rels}
+                        if rel_counts:
+                            selected_nodes_context += f"   Connections: {', '.join(f'{count} {rel_type}' for rel_type, count in rel_counts.items())}\n"
+
+                if len(selected_nodes) > 5:
+                    selected_nodes_context += f"\n... and {len(selected_nodes) - 5} more nodes\n"
+
+                selected_nodes_context += "\n**User expects comparative analysis** of these nodes - look for:\n"
+                selected_nodes_context += "  - Common themes or patterns\n"
+                selected_nodes_context += "  - Contradictions or inconsistencies\n"
+                selected_nodes_context += "  - Knowledge gaps between nodes\n"
+                selected_nodes_context += "  - Potential connections to explore\n"
+
+            # Single node mode
+            else:
+                selected_nodes_context = "\n\n**Selected Node:**\n"
+                node = selected_nodes[0]
                 node_data = node.get('node', {})
                 node_id = node_data.get('id', 'unknown')
                 node_type = node_data.get('labels', ['Unknown'])[0] if node_data.get('labels') else 'Unknown'
