@@ -28,84 +28,81 @@
         }
 
         /* Header Top Row - Title and Project */
+        /* Single-line compact header */
         .header-top {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 12px 24px;
+            gap: 20px;
+            padding: 8px 20px;
             background: rgba(0, 0, 0, 0.1);
         }
 
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
         .header-brand h1 {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 600;
             margin: 0;
-            letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
         .header-brand p {
-            font-size: 11px;
-            opacity: 0.85;
-            margin: 0;
-            font-weight: 400;
+            display: none; /* Remove subtitle to save space */
         }
 
         .project-selector {
-            /* Hidden - moved to Projects tab */
-            display: none !important;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: white;
+            white-space: nowrap;
         }
 
-        /* Header Bottom Row - Stats and Actions */
+        .project-selector:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Header Bottom Row - merged into single line */
         .header-bottom {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 24px;
-            gap: 20px;
+            display: none; /* Merged into header-top */
         }
 
-        /* Stat Cards Container */
+        /* Compact stat cards inline - pushed to right */
         .stats-container {
             display: flex;
-            gap: 12px;
-            flex: 1;
-            justify-content: center;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;  /* Push to right side */
         }
 
-        /* Individual Stat Cards - Clickable */
+        /* Individual Stat Cards - Ultra compact for single-line header */
         .stat-card {
             background: rgba(255, 255, 255, 0.12);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            padding: 6px 12px;  /* More compact */
-            min-width: 100px;   /* Smaller minimum width */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 3px 8px;  /* Very compact */
+            min-width: 70px;   /* Minimal width */
             text-align: center;
-            /* Non-clickable - removed cursor pointer and hover effects */
         }
 
         .stat-value {
-            font-size: 28px;
+            font-size: 18px;  /* Reduced from 28px */
             font-weight: 700;
             color: white;
             margin: 0;
-            line-height: 1;
+            line-height: 1.2;
             position: relative;
             z-index: 1;
         }
 
         .stat-label {
-            font-size: 11px;
+            font-size: 9px;  /* Reduced from 11px */
             color: rgba(255, 255, 255, 0.8);
-            margin-top: 6px;
+            margin-top: 2px;  /* Reduced from 6px */
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             position: relative;
             z-index: 1;
         }
@@ -113,19 +110,19 @@
         /* Action Buttons Container */
         .header-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
 
         .header-btn {
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 10px;  /* Compact */
+            font-size: 12px;
             color: white;
-            padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
-            font-size: 12px;
             transition: all 0.3s;
             white-space: nowrap;
         }
@@ -278,7 +275,7 @@
             flex: 2;
             min-height: 200px;
             overflow-y: auto;
-            padding: 20px;
+            padding: 12px;  /* Reduced from 20px */
             background: #2a2a2a;
         }
 
@@ -330,26 +327,26 @@
             border-top: 2px solid #444;
             display: flex;
             flex-direction: column;
-            padding: 15px;
+            padding: 10px;  /* Reduced from 15px */
         }
 
         /* AI Assistant Styles */
         .ai-header {
-            font-size: 14px;
+            font-size: 13px;  /* Reduced from 14px */
             font-weight: 600;
             color: #2196F3;
-            margin-bottom: 10px;
+            margin-bottom: 6px;  /* Reduced from 10px */
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;  /* Reduced from 8px */
         }
 
         .ai-context-badge {
             background: rgba(33, 150, 243, 0.2);
             color: #64B5F6;
-            padding: 2px 8px;
+            padding: 2px 6px;  /* Reduced from 2px 8px */
             border-radius: 4px;
-            font-size: 10px;
+            font-size: 9px;  /* Reduced from 10px */
             font-weight: 500;
             margin-left: auto;
         }
@@ -357,18 +354,18 @@
         .ai-chat-area {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 10px;
+            margin-bottom: 8px;  /* Reduced from 10px */
+            padding: 8px;  /* Reduced from 10px */
             background: #2a2a2a;
             border-radius: 6px;
             border: 1px solid #333;
         }
 
         .ai-message {
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
+            margin-bottom: 8px;  /* Reduced from 12px */
+            padding: 6px 10px;  /* Reduced from 8px 12px */
+            border-radius: 6px;  /* Reduced from 8px */
+            font-size: 12px;  /* Reduced from 13px */
             line-height: 1.4;
             max-width: 85%;
         }
@@ -395,25 +392,25 @@
 
         .ai-quick-actions {
             display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 4px;  /* Reduced from 8px */
+            margin-bottom: 6px;  /* Reduced from 12px */
             flex-wrap: wrap;
-            padding: 0 4px;
+            padding: 0 2px;  /* Reduced from 4px */
         }
 
         .ai-quick-action {
             background: rgba(33, 150, 243, 0.1);
             border: 1px solid rgba(33, 150, 243, 0.3);
             color: #2196F3;
-            padding: 8px 14px;
-            border-radius: 16px;
-            font-size: 12px;
+            padding: 4px 10px;  /* Reduced from 8px 14px */
+            border-radius: 12px;  /* Reduced from 16px */
+            font-size: 11px;  /* Reduced from 12px */
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;  /* Reduced from 6px */
         }
 
         .ai-quick-action:hover {
@@ -1640,23 +1637,18 @@
 <body>
     <!-- Unified Header System -->
     <div id="unified-header">
-        <!-- Top Row: Brand and Project -->
+        <!-- Single-Line Compact Header -->
         <div class="header-top">
             <div class="header-brand">
-                <div>
-                    <h1>🔍 Research Graph Navigator</h1>
-                    <p>Interactive Claim Exploration & Investigation</p>
-                </div>
+                <h1>🔍 Research Graph Navigator</h1>
             </div>
+
             <div class="project-selector" id="project-selector" onclick="ProjectManager.openProjectModal()">
                 <span id="current-project-name">Default Project</span>
                 <span style="opacity: 0.6;">▼</span>
             </div>
-        </div>
 
-        <!-- Bottom Row: Stats and Actions -->
-        <div class="header-bottom">
-            <!-- Stat Cards - Non-clickable, compact display -->
+            <!-- Stat Cards - Compact inline display -->
             <div class="stats-container">
                 <div class="stat-card" id="stat-card-documents">
                     <div class="stat-value" id="stat-nodes">-</div>
@@ -1719,19 +1711,17 @@
             <!-- Tab Content Area (Top Section - Scrollable) -->
             <div class="tab-content-area" id="tab-content-area">
                 <div id="tab-documents" class="tab-content active">
-                    <h2 style="margin-bottom: 15px;">📄 Documents</h2>
-
-                    <!-- Upload area - Compact -->
-                    <div id="upload-zone" style="background: #9C27B0; border: 2px dashed #BA68C8; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 15px; cursor: pointer; transition: all 0.3s;">
-                        <div style="color: white; font-weight: bold; font-size: 13px; margin-bottom: 6px;">📄 Upload or Drop Files</div>
-                        <div style="color: #E1BEE7; font-size: 11px; margin-bottom: 6px;">PDF, TXT, DOCX</div>
+                    <!-- Upload area - Ultra compact -->
+                    <div id="upload-zone" style="background: #9C27B0; border: 2px dashed #BA68C8; border-radius: 6px; padding: 8px; text-align: center; margin-bottom: 8px; cursor: pointer; transition: all 0.3s;">
+                        <div style="color: white; font-weight: bold; font-size: 12px; margin-bottom: 4px;">📄 Upload or Drop Files</div>
+                        <div style="color: #E1BEE7; font-size: 10px; margin-bottom: 4px;">PDF, TXT, DOCX</div>
                         <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
-                        <input type="text" id="url-input" placeholder="Or paste URL..." style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 6px; font-size: 12px;">
-                        <button id="upload-btn" class="btn btn-primary" style="margin-top: 6px; width: 100%; background: white; color: #9C27B0; font-weight: bold; padding: 6px; font-size: 12px;">Process</button>
+                        <input type="text" id="url-input" placeholder="Or paste URL..." style="width: 100%; padding: 5px; background: rgba(255,255,255,0.1); border: 1px solid #BA68C8; color: white; border-radius: 4px; margin-top: 4px; font-size: 11px;">
+                        <button id="upload-btn" class="btn btn-primary" style="margin-top: 4px; width: 100%; background: white; color: #9C27B0; font-weight: bold; padding: 5px; font-size: 11px;">Process</button>
                     </div>
 
-                    <!-- Filter Panel - Compact -->
-                    <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #333;">
+                    <!-- Filter Panel - Ultra compact -->
+                    <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 8px; margin-bottom: 8px; border: 1px solid #333;">
                         <!-- Search input removed - use Search tab instead -->
                         <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                             <label title="Show/hide document nodes. Search uses text matching on document titles and content."
@@ -1765,19 +1755,19 @@
                         </div>
                     </div>
 
-                    <!-- Queue status -->
-                    <div id="queue-status" style="display: none; background: #2a2a2a; padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #FF9800;">
+                    <!-- Queue status - Compact single-line -->
+                    <div id="queue-status" style="display: none; background: #2a2a2a; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #FF9800;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="font-weight: bold; color: #FF9800;">Queue:</span>
-                                <span id="queue-count" style="color: #999; margin-left: 8px;">0 documents</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: bold; color: #FF9800; font-size: 12px;">Queue:</span>
+                                <span id="queue-count" style="color: #999; font-size: 11px;">0 documents</span>
                             </div>
-                            <div id="queue-processing" style="color: #4CAF50; font-size: 11px;"></div>
+                            <div id="queue-processing" style="color: #4CAF50; font-size: 10px;"></div>
                         </div>
                     </div>
 
-                    <!-- Processing status -->
-                    <div id="processing-status" style="display: none; background: #2a2a2a; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                    <!-- Processing status - Compact -->
+                    <div id="processing-status" style="display: none; background: #2a2a2a; padding: 8px 10px; border-radius: 4px; margin-bottom: 10px;">
                         <div style="font-weight: bold; margin-bottom: 10px;">Processing...</div>
                         <div id="status-text" style="color: #999; font-size: 12px; max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace;"></div>
                         <div style="margin-top: 10px;">
