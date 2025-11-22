@@ -172,6 +172,21 @@ const GraphRenderer = {
                     }
                 });
             }
+
+            // Add SIMILAR_TO relationship links (RAG-detected similar claims)
+            if (doc.similar_to_links && Array.isArray(doc.similar_to_links)) {
+                doc.similar_to_links.forEach(link => {
+                    // Only add if both nodes exist
+                    if (addedNodes.has(link.source_id) && addedNodes.has(link.target_id)) {
+                        links.push({
+                            source: link.source_id,
+                            target: link.target_id,
+                            type: 'SIMILAR_TO',
+                            similarity: link.similarity_score || link.similarity
+                        });
+                    }
+                });
+            }
         });
 
         console.log('[buildUnifiedGraph] Final graph:', nodes.length, 'nodes,', links.length, 'links');
@@ -549,7 +564,8 @@ const GraphRenderer = {
             'contains': 3,
             'has_sub': 2,
             'supports': 2.5,
-            'contradicts': 2.5
+            'contradicts': 2.5,
+            'SIMILAR_TO': 2  // RAG-detected similar claims
         };
         return widths[type] || 2;
     },
@@ -566,6 +582,9 @@ const GraphRenderer = {
         }
         if (type === 'semantic_similar') {
             return '2,2';  // Dotted line for semantic similarity
+        }
+        if (type === 'SIMILAR_TO') {
+            return '4,2';  // Dash-dot pattern for RAG-detected similarity
         }
         return 'none';  // Solid line for everything else
     },
@@ -1084,7 +1103,8 @@ const GraphRenderer = {
             'supports': '#4CAF50',      // Green - supports
             'contradicts': '#F44336',   // Red - contradicts
             'duplicate': '#FF6B35',     // Orange - duplicate claim
-            'semantic_similar': '#9C27B0'  // Purple - semantically similar across documents
+            'semantic_similar': '#9C27B0',  // Purple - semantically similar across documents
+            'SIMILAR_TO': '#FFC107'     // Amber/Gold - RAG-detected similar claims
         };
         return colors[type] || '#999';
     },

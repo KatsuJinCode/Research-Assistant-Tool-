@@ -535,3 +535,21 @@ class ClaimRepository(BaseRepository):
         """
 
         return self.execute_query(query)
+
+    def get_all_similar_to_relationships(self) -> List[Dict[str, Any]]:
+        """
+        Get all SIMILAR_TO relationships between claims (RAG-detected similarities).
+
+        Returns:
+            List of {source_id, target_id, similarity_score} relationships
+        """
+        query = """
+        MATCH (c1:Claim)-[r:SIMILAR_TO]-(c2:Claim)
+        RETURN DISTINCT
+            c1.id as source_id,
+            c2.id as target_id,
+            r.similarity as similarity_score
+        WHERE id(c1) < id(c2)
+        """
+
+        return self.execute_query(query)

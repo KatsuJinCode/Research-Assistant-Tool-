@@ -1137,6 +1137,7 @@ def get_full_graph():
     doc_claims = doc_repo.get_all_document_claim_relationships()
     evidence_data = claim_repo.get_all_claim_evidence_relationships()
     semantic_links = claim_repo.get_all_semantic_relationships()
+    similar_to_links = claim_repo.get_all_similar_to_relationships()  # RAG-detected similar claims
 
     # Build document-claim mapping
     doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
@@ -1182,7 +1183,8 @@ def get_full_graph():
             'super_claims': super_claims,
             'all_claims': all_claims,  # New: all claims regardless of depth
             'evidence': evidence_map,
-            'semantic_links': semantic_links  # Cross-document semantic relationships
+            'semantic_links': semantic_links,  # Cross-document semantic relationships
+            'similar_to_links': similar_to_links  # RAG-detected similar claims
         })
 
     return jsonify(response)
