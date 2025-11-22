@@ -208,11 +208,17 @@ const HeaderManager = {
      * Create new project (placeholder for future implementation)
      */
     createNewProject() {
-        if (window.UI && UI.showNotification) {
-            UI.showNotification('Project creation coming soon!', 'info');
-        }
+        console.log('[HeaderManager] Opening project management modal');
 
-        console.log('[HeaderManager] Create new project clicked (not yet implemented)');
+        // Open the project management modal (which has create functionality)
+        if (window.ProjectManager && ProjectManager.openProjectModal) {
+            ProjectManager.openProjectModal();
+        } else {
+            console.error('[HeaderManager] ProjectManager not available');
+            if (window.UI && UI.showNotification) {
+                UI.showNotification('Project manager not loaded', 'error');
+            }
+        }
     },
 
     /**

@@ -441,19 +441,38 @@ def get_agent_status():
 
 @app.route('/api/graph-stats')
 def get_graph_stats():
-    """Get overall graph statistics."""
-    stats = db.stats()
+    """Get overall graph statistics for the active project database."""
+    try:
+        # Use DatabaseManager to get stats from the active database
+        active_db = neo4j_client.active_database
+        stats = db_manager.get_database_stats(active_db)
 
-    # Get research stats
-    agent_tracker = AgentTracker()
-    research_stats = agent_tracker.get_research_stats(db)
+        # Get research stats
+        agent_tracker = AgentTracker()
+        research_stats = agent_tracker.get_research_stats(db)
 
-    return jsonify({
-        'nodes': stats['total_nodes'],
-        'relationships': stats['total_relationships'],
-        'node_types': stats['node_labels'],
-        'research': research_stats
-    })
+        return jsonify({
+            'nodes': stats.get('total_nodes', 0),
+            'relationships': stats.get('total_relationships', 0),
+            'node_types': stats.get('label_counts', {}),
+            'document_count': stats.get('document_count', 0),
+            'claim_count': stats.get('claim_count', 0),
+            'evidence_count': stats.get('evidence_count', 0),
+            'research': research_stats,
+            'active_database': active_db
+        })
+    except Exception as e:
+        logger.error(f"Error getting graph stats: {e}")
+        return jsonify({
+            'nodes': 0,
+            'relationships': 0,
+            'node_types': {},
+            'document_count': 0,
+            'claim_count': 0,
+            'evidence_count': 0,
+            'research': {},
+            'error': str(e)
+        })
 
 
 # ============================================================================
