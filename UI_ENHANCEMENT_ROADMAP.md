@@ -181,11 +181,16 @@ Would you like me to:
 
 ### 📋 Pending
 - Graph filters relocation (needs user decision)
-- Advanced context-aware AI (node selection)
 - Framework YAML System
 - Workflow Engine
-- Periodic Markdown exports
-- Agent Graph Visualization (4 phases)
+- **Game-Like Agent Animation System** (NEW - 5 phases, see AGENT_ANIMATION_SPEC.md)
+  - Phase 1: Agent Movement System (12-16h)
+  - Phase 2: Real-Time Processing Indicators (10-14h)
+  - Phase 3: Multi-Agent Debate Framework (20-24h)
+  - Phase 4: API Nodes & Search Visualization (14-18h)
+  - Phase 5: Game Modes & Profiles (12-16h)
+- Agent Graph Visualization - Phase 3: Enhanced info cards
+- Agent Graph Visualization - Phase 4: Auto follow-up system
 
 ---
 
