@@ -47,6 +47,34 @@ const API = {
     },
 
     /**
+     * Upload a URL for processing
+     */
+    async uploadURL(url) {
+        const response = await fetch('/api/upload-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) throw new Error(`URL upload failed: ${response.statusText}`);
+        return await response.json();
+    },
+
+    /**
+     * Create a manual claim
+     */
+    async createManualClaim(text) {
+        const response = await fetch('/api/create-manual-claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) throw new Error(`Manual claim creation failed: ${response.statusText}`);
+        return await response.json();
+    },
+
+    /**
      * Clear all data from the database
      */
     async clearAll() {

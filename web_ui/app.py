@@ -1284,6 +1284,31 @@ def upload_document():
         })
 
 
+@app.route('/api/upload-url', methods=['POST'])
+def upload_url():
+    """
+    Handle URL upload for processing.
+    Downloads content from URL and adds to processing queue.
+    """
+    data = request.get_json()
+    if not data or 'url' not in data:
+        return jsonify({'error': 'No URL provided'}), 400
+
+    url = data['url'].strip()
+    if not url:
+        return jsonify({'error': 'URL cannot be empty'}), 400
+
+    # TODO: Implement URL downloading and processing
+    # For now, return success message indicating feature is coming
+    logger.info(f"[URL UPLOAD] URL submitted: {url}")
+
+    return jsonify({
+        'status': 'not_implemented',
+        'message': 'URL upload feature is not yet implemented',
+        'url': url
+    }), 501
+
+
 @app.route('/api/pending-documents')
 def get_pending_documents():
     """Get list of documents awaiting approval."""

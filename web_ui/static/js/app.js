@@ -329,36 +329,63 @@ const App = {
      * Setup UI event listeners
      */
     setupEventListeners() {
-        // Upload button - triggers file input
+        // Upload elements
         const uploadBtn = document.getElementById('upload-btn');
         const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+        const inputTypeSelector = document.getElementById('input-type-selector');
         const uploadZone = document.getElementById('upload-zone');
 
         console.log('Upload button found:', uploadBtn);
         console.log('File input found:', fileInput);
         console.log('Upload zone found:', uploadZone);
 
-        if (uploadBtn && fileInput) {
-            // Main upload button click handler
-            uploadBtn.addEventListener('click', (e) => {
-                // CRITICAL: Don't call preventDefault() or stopPropagation() before fileInput.click()
-                // Browser security requires file picker to be triggered in same call stack as user event
-                fileInput.click();
+        // Input type selector - changes placeholder text
+        if (inputTypeSelector && urlInput) {
+            inputTypeSelector.addEventListener('change', (e) => {
+                if (e.target.value === 'url') {
+                    urlInput.placeholder = 'Paste URL...';
+                } else if (e.target.value === 'manual') {
+                    urlInput.placeholder = 'Enter claim text...';
+                }
             });
+        }
 
-            // Also allow clicking the upload zone (except the button itself)
-            if (uploadZone) {
-                uploadZone.addEventListener('click', (e) => {
-                    // Don't trigger if clicking the button or URL input
-                    if (e.target === uploadBtn || e.target.id === 'url-input') {
-                        return;
+        // Process button - handles URL or manual claim
+        if (uploadBtn && urlInput) {
+            uploadBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const inputValue = urlInput.value.trim();
+                const inputType = inputTypeSelector ? inputTypeSelector.value : 'url';
+
+                if (inputValue) {
+                    if (inputType === 'url') {
+                        // Process URL
+                        console.log('Processing URL:', inputValue);
+                        try {
+                            await API.uploadURL(inputValue);
+                            UI.showNotification('URL submitted for processing', 'success');
+                        } catch (error) {
+                            console.error('URL upload failed:', error);
+                            UI.showNotification(`URL upload failed: ${error.message}`, 'error');
+                        }
+                    } else if (inputType === 'manual') {
+                        // Process manual claim
+                        console.log('Processing manual claim:', inputValue);
+                        try {
+                            await API.createManualClaim(inputValue);
+                            UI.showNotification('Manual claim created', 'success');
+                        } catch (error) {
+                            console.error('Manual claim creation failed:', error);
+                            UI.showNotification(`Manual claim creation failed: ${error.message}`, 'error');
+                        }
                     }
+                    urlInput.value = '';
+                }
+            });
+        }
 
-                    // CRITICAL: Don't call preventDefault() or stopPropagation() before fileInput.click()
-                    // Browser security requires file picker to be triggered in same call stack as user event
-                    fileInput.click();
-                });
-            }
+        if (fileInput) {
 
             // File upload handler (supports multiple files)
             fileInput.addEventListener('change', (e) => {

@@ -151,11 +151,11 @@ const ProjectManager = {
                                 <label class="form-label">Project Color</label>
                                 <input type="color" id="new-project-color" value="#2196F3" class="color-picker" />
                             </div>
-                            <div class="form-row">
-                                <button class="btn btn-primary" onclick="ProjectManager.createProject()">
+                            <div class="form-row" style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-primary" onclick="ProjectManager.createProject()" style="flex: 0 0 auto;">
                                     ➕ Create Project
                                 </button>
-                                <button class="btn btn-secondary" onclick="ProjectManager.toggleCreateForm()">
+                                <button class="btn btn-sm btn-secondary" onclick="ProjectManager.toggleCreateForm()" style="flex: 0 0 auto;">
                                     Cancel
                                 </button>
                             </div>
