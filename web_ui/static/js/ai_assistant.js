@@ -554,6 +554,21 @@ const AIAssistant = {
             const statsResponse = await fetch('/api/graph-stats');
             const stats = statsResponse.ok ? await statsResponse.json() : {};
 
+            // First check for workflow patterns that override tab-specific suggestions
+            const workflowSuggestions = await this.detectWorkflowPatterns(stats);
+
+            if (workflowSuggestions.length > 0) {
+                console.log('[AIAssistant] Workflow pattern detected, using workflow suggestions');
+                this.renderSuggestions(workflowSuggestions);
+                return;
+            }
+
+            // If nodes are selected, use node-specific suggestions
+            if (this.context.selectedNodes.length > 0) {
+                console.log('[AIAssistant] Nodes selected, maintaining node-specific suggestions');
+                return; // Keep current node-specific suggestions
+            }
+
             // Generate tab-specific suggestions
             let suggestions = [];
 
@@ -582,6 +597,86 @@ const AIAssistant = {
             // Fall back to default suggestions
             this.renderSuggestions(this.getDefaultSuggestions());
         }
+    },
+
+    /**
+     * Detect workflow patterns and return priority suggestions
+     * Returns high-priority suggestions if critical patterns detected, otherwise empty array
+     */
+    async detectWorkflowPatterns(stats) {
+        const prioritySuggestions = [];
+
+        // Pattern 1: Multiple pending documents (urgent action needed)
+        if (stats.documents_pending >= 3) {
+            prioritySuggestions.push({
+                icon: '⚡',
+                text: `Process ${stats.documents_pending} pending documents`,
+                prompt: `I have ${stats.documents_pending} pending documents. Process them all and extract claims.`
+            });
+        }
+
+        // Pattern 2: Agent failures (needs investigation)
+        if (stats.agents_failed >= 2) {
+            prioritySuggestions.push({
+                icon: '⚠️',
+                text: `Investigate ${stats.agents_failed} failed agents`,
+                prompt: `${stats.agents_failed} agents have failed. Help me investigate what went wrong.`
+            });
+        }
+
+        // Pattern 3: Many orphaned claims (research gaps)
+        if (stats.claims_without_evidence >= 5) {
+            prioritySuggestions.push({
+                icon: '🔍',
+                text: `${stats.claims_without_evidence} claims need evidence`,
+                prompt: `I have ${stats.claims_without_evidence} claims without evidence. Help me prioritize which to research first.`
+            });
+        }
+
+        // Pattern 4: Empty database (onboarding)
+        if (stats.total_documents === 0 && stats.total_claims === 0) {
+            return this.getOnboardingSuggestions();
+        }
+
+        // Pattern 5: First-time user (show welcome)
+        if (stats.total_documents > 0 && stats.total_documents < 3 && stats.total_claims < 10) {
+            prioritySuggestions.push({
+                icon: '👋',
+                text: 'Take a tour of features',
+                prompt: 'Show me what I can do with this research assistant'
+            });
+        }
+
+        // Return priority suggestions if any critical patterns detected
+        return prioritySuggestions.slice(0, 4);
+    },
+
+    /**
+     * Get onboarding suggestions for new users with empty database
+     */
+    getOnboardingSuggestions() {
+        return [
+            {
+                icon: '📄',
+                text: 'Upload your first document',
+                prompt: 'I want to upload a research paper to get started'
+            },
+            {
+                icon: '💡',
+                text: 'Create a manual claim',
+                prompt: 'How do I manually create a claim?'
+            },
+            {
+                icon: '🎓',
+                text: 'Explain how this works',
+                prompt: 'Explain how the research assistant works and what it can do'
+            },
+            {
+                icon: '📊',
+                text: 'Import existing data',
+                prompt: 'I have existing research data. How can I import it?'
+            }
+        ];
     },
 
     /**

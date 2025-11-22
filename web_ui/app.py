@@ -484,6 +484,15 @@ def get_graph_stats():
             elif status == 'completed':
                 documents_completed = count
 
+        # Get claims without evidence (orphaned claims)
+        orphaned_claims_query = """
+        MATCH (c:Claim)
+        WHERE NOT (c)-[:HAS_EVIDENCE]->()
+        RETURN count(c) as orphaned_count
+        """
+        orphaned_result = db.execute_query(orphaned_claims_query)
+        claims_without_evidence = orphaned_result[0].get('orphaned_count', 0) if orphaned_result else 0
+
         return jsonify({
             'nodes': stats.get('total_nodes', 0),
             'relationships': stats.get('total_relationships', 0),
@@ -501,6 +510,7 @@ def get_graph_stats():
             'total_claims': stats.get('claim_count', 0),
             'evidence_count': stats.get('evidence_count', 0),
             'total_evidence': stats.get('evidence_count', 0),
+            'claims_without_evidence': claims_without_evidence,
 
             # Agent stats
             'agents_active': agents_active,
