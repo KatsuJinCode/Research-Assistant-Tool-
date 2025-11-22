@@ -57,23 +57,8 @@
         }
 
         .project-selector {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 8px 16px;
-            color: white;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .project-selector:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
+            /* Hidden - moved to Projects tab */
+            display: none !important;
         }
 
         /* Header Bottom Row - Stats and Actions */
@@ -98,41 +83,10 @@
             background: rgba(255, 255, 255, 0.12);
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            padding: 12px 20px;
-            min-width: 120px;
+            padding: 6px 12px;  /* More compact */
+            min-width: 100px;   /* Smaller minimum width */
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:hover {
-            background: rgba(255, 255, 255, 0.22);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-card:active {
-            transform: translateY(0px);
-        }
-
-        /* Stat Card Glow Effect on Hover */
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .stat-card:hover::before {
-            opacity: 1;
+            /* Non-clickable - removed cursor pointer and hover effects */
         }
 
         .stat-value {
@@ -1693,21 +1647,21 @@
 
         <!-- Bottom Row: Stats and Actions -->
         <div class="header-bottom">
-            <!-- Clickable Stat Cards -->
+            <!-- Stat Cards - Non-clickable, compact display -->
             <div class="stats-container">
-                <div class="stat-card" id="stat-card-documents" onclick="HeaderManager.navigateToStat('documents')" title="Click to view all documents">
+                <div class="stat-card" id="stat-card-documents">
                     <div class="stat-value" id="stat-nodes">-</div>
                     <div class="stat-label">Documents</div>
                 </div>
-                <div class="stat-card" id="stat-card-claims" onclick="HeaderManager.navigateToStat('claims')" title="Click to view all claims">
+                <div class="stat-card" id="stat-card-claims">
                     <div class="stat-value" id="stat-claims">-</div>
                     <div class="stat-label">Claims</div>
                 </div>
-                <div class="stat-card" id="stat-card-evidence" onclick="HeaderManager.navigateToStat('evidence')" title="Click to view evidence links">
+                <div class="stat-card" id="stat-card-evidence">
                     <div class="stat-value" id="stat-evidence">-</div>
                     <div class="stat-label">Evidence</div>
                 </div>
-                <div class="stat-card" id="stat-card-pending" onclick="HeaderManager.navigateToStat('pending')" title="Click to view pending documents">
+                <div class="stat-card" id="stat-card-pending">
                     <div class="stat-value" id="stat-research">-</div>
                     <div class="stat-label">Pending Docs</div>
                 </div>
@@ -1729,7 +1683,12 @@
 
         <!-- Tab Navigation Bar -->
         <div class="tab-bar" id="tab-bar">
-            <div class="tab active" data-tab="documents" onclick="TabManager.switchTab('documents')">
+            <!-- Projects tab moved to leftmost position -->
+            <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
+                <span class="tab-icon">📁</span>
+                <span class="tab-label">Projects</span>
+            </div>
+            <div class="tab" data-tab="documents" onclick="TabManager.switchTab('documents')">
                 <span class="tab-icon">📄</span>
                 <span class="tab-label">Documents</span>
             </div>
@@ -1741,10 +1700,6 @@
                 <span class="tab-icon">🤖</span>
                 <span class="tab-label">Agents</span>
                 <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
-            </div>
-            <div class="tab" data-tab="projects" onclick="TabManager.switchTab('projects')">
-                <span class="tab-icon">📁</span>
-                <span class="tab-label">Projects</span>
             </div>
         </div>
     </div>
@@ -1766,12 +1721,9 @@
                         <button id="upload-btn" class="btn btn-primary" style="margin-top: 6px; width: 100%; background: white; color: #9C27B0; font-weight: bold; padding: 6px; font-size: 12px;">Process</button>
                     </div>
 
-                    <!-- Search and Filter Panel - Compact -->
+                    <!-- Filter Panel - Compact -->
                     <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #333;">
-                        <div style="margin-bottom: 8px;">
-                            <input type="text" id="search-input" placeholder="Search..." style="width: 100%; padding: 6px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 12px;">
-                            <div id="search-results-count" style="margin-top: 3px; font-size: 10px; color: #999;"></div>
-                        </div>
+                        <!-- Search input removed - use Search tab instead -->
                         <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                             <label title="Show/hide document nodes. Search uses text matching on document titles and content."
                                    style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
@@ -2128,6 +2080,8 @@
     <style>
         /* Agent Monitor Panel Styles */
         #agent-monitor-panel {
+            /* Hidden - moved to Agents tab */
+            display: none !important;
             position: fixed;
             top: 80px;
             right: 20px;
@@ -2241,6 +2195,8 @@
 
         /* Chat Panel Styles */
         #chat-panel {
+            /* Hidden - moved to Agents tab */
+            display: none !important;
             position: fixed;
             bottom: 80px;
             right: 20px;
