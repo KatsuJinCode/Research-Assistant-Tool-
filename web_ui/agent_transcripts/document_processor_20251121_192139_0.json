@@ -1,0 +1,46 @@
+{
+  "agent_id": "document_processor_20251121_192139_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: SHORT-The-Myth-of-Mental-Illness.pdf",
+  "status": "running",
+  "started_at": "2025-11-21T19:21:39.507906",
+  "completed_at": null,
+  "duration_seconds": null,
+  "entries": [
+    {
+      "timestamp": "2025-11-21T19:21:39.507906",
+      "level": "info",
+      "message": "Started processing: SHORT-The-Myth-of-Mental-Illness.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-21T19:21:41.579550",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "6eb64cdb-1fb2-4f70-ab86-696bc4366e31",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\SHORT-The-Myth-of-Mental-Illness.pdf",
+        "node_data": {
+          "id": "6eb64cdb-1fb2-4f70-ab86-696bc4366e31",
+          "title": "SHORT-The-Myth-of-Mental-Illness.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\SHORT-The-Myth-of-Mental-Illness.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-21T19:21:41.593632",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "6eb64cdb-1fb2-4f70-ab86-696bc4366e31",
+        "file_type": ".pdf"
+      }
+    }
+  ],
+  "entry_count": 3,
+  "result": null,
+  "error": null
+}

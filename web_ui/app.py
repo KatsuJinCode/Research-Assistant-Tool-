@@ -53,6 +53,7 @@ import threading
 processing_queue = queue.Queue()
 processing_lock = threading.Lock()
 is_processing = False
+current_processing_filename = None  # Track currently processing file
 
 # Register WebSocket event emitter callback for real-time updates
 # CRITICAL: Wrap socketio.emit with app context for background thread safety
@@ -79,7 +80,7 @@ except Exception as e:
 
 def process_queue_worker():
     """Background worker that processes documents from queue one at a time."""
-    global is_processing
+    global is_processing, current_processing_filename
 
     while True:
         try:
@@ -101,6 +102,7 @@ def process_queue_worker():
 
             with processing_lock:
                 is_processing = True
+                current_processing_filename = filename
 
             logger.info(f"[QUEUE] Starting processing: {filename}")
 
@@ -175,6 +177,7 @@ def process_queue_worker():
                 with processing_lock:
                     if processing_queue.empty():
                         is_processing = False
+                        current_processing_filename = None
 
                 # Emit updated queue status
                 with app.app_context():
@@ -1230,7 +1233,7 @@ def upload_document():
         # Emit queue update
         with app.app_context():
             socketio.emit('queue_update', {
-                'processing': None if not is_processing else 'unknown',
+                'processing': current_processing_filename,
                 'queue_size': queue_position
             })
 
@@ -1348,7 +1351,7 @@ def approve_document(approval_id):
                 'filename': filename
             })
             socketio.emit('queue_update', {
-                'processing': None if not is_processing else 'unknown',
+                'processing': current_processing_filename,
                 'queue_size': queue_position
             })
 

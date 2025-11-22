@@ -32,13 +32,13 @@
         .header-top {
             display: flex;
             align-items: center;
-            gap: 20px;
-            padding: 8px 20px;
+            gap: 8px;  /* Reduced from 20px */
+            padding: 6px 12px;  /* Reduced from 8px 20px */
             background: rgba(0, 0, 0, 0.1);
         }
 
         .header-brand h1 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             margin: 0;
             white-space: nowrap;
@@ -71,40 +71,33 @@
         /* Compact stat cards inline - pushed to right */
         .stats-container {
             display: flex;
-            gap: 8px;
+            gap: 4px;
             align-items: center;
             margin-left: auto;  /* Push to right side */
         }
 
-        /* Individual Stat Cards - Ultra compact for single-line header */
+        /* Individual Stat Cards - Horizontal layout with spans */
         .stat-card {
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            padding: 3px 8px;  /* Very compact */
-            min-width: 70px;   /* Minimal width */
-            text-align: center;
+            border-radius: 4px;
+            padding: 2px 6px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
         }
 
         .stat-value {
-            font-size: 18px;  /* Reduced from 28px */
+            font-size: 13px;
             font-weight: 700;
             color: white;
-            margin: 0;
-            line-height: 1.2;
-            position: relative;
-            z-index: 1;
         }
 
         .stat-label {
-            font-size: 9px;  /* Reduced from 11px */
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 2px;  /* Reduced from 6px */
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.7);
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            position: relative;
-            z-index: 1;
         }
 
         /* Action Buttons Container */
@@ -163,54 +156,46 @@
             border-color: rgba(156, 39, 176, 0.7);
         }
 
-        /* ===== TAB NAVIGATION BAR ===== */
+        /* ===== TAB NAVIGATION BAR - INLINE IN HEADER ===== */
         .tab-bar {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 0 24px;
             display: flex;
-            gap: 4px;
-            align-items: flex-end;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
+            gap: 2px;
+            align-items: center;
+            padding: 0;
+            background: none;
         }
 
         .tab {
-            padding: 12px 24px;
-            border-radius: 8px 8px 0 0;
+            padding: 4px 8px;  /* Dramatically reduced from 12px 24px */
+            border-radius: 4px;
             background: rgba(255, 255, 255, 0.08);
             cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
+            transition: background 0.2s;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 13px;
+            gap: 4px;
+            font-size: 11px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.7);
-            border: 1px solid transparent;
-            border-bottom: none;
+            white-space: nowrap;
         }
 
         .tab:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.12);
-            color: rgba(255, 255, 255, 0.9);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .tab.active {
-            background: #2a2a2a;
+            background: rgba(33, 150, 243, 0.3);
             color: white;
-            transform: translateY(0);
-            border-color: rgba(255, 255, 255, 0.2);
-            border-bottom: 2px solid #2a2a2a;
+            border: 1px solid rgba(33, 150, 243, 0.5);
         }
 
         .tab-icon {
-            font-size: 16px;
+            font-size: 12px;
         }
 
         .tab-label {
-            font-size: 13px;
+            font-size: 11px;
         }
 
         .tab-badge {
@@ -226,7 +211,7 @@
         /* ===== DRAGGABLE PANEL SYSTEM ===== */
         #container {
             display: flex;
-            height: calc(100vh - 180px); /* Adjusted for 3-row header with tabs */
+            height: calc(100vh - 40px); /* Adjusted for single-line compact header */
             position: relative;
         }
 
@@ -1635,36 +1620,52 @@
     </style>
 </head>
 <body>
-    <!-- Unified Header System -->
+    <!-- Unified Header System - TRUE SINGLE LINE -->
     <div id="unified-header">
-        <!-- Single-Line Compact Header -->
         <div class="header-top">
+            <!-- Title -->
             <div class="header-brand">
                 <h1>🔍 Research Graph Navigator</h1>
             </div>
 
-            <div class="project-selector" id="project-selector" onclick="ProjectManager.openProjectModal()">
-                <span id="current-project-name">Default Project</span>
-                <span style="opacity: 0.6;">▼</span>
+            <!-- Tabs (moved from separate row) -->
+            <div class="tab-bar" id="tab-bar">
+                <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
+                    <span class="tab-icon">📁</span>
+                    <span class="tab-label">Projects</span>
+                </div>
+                <div class="tab" data-tab="documents" onclick="TabManager.switchTab('documents')">
+                    <span class="tab-icon">📄</span>
+                    <span class="tab-label">Documents</span>
+                </div>
+                <div class="tab" data-tab="search" onclick="TabManager.switchTab('search')">
+                    <span class="tab-icon">🔍</span>
+                    <span class="tab-label">Search</span>
+                </div>
+                <div class="tab" data-tab="agents" onclick="TabManager.switchTab('agents')">
+                    <span class="tab-icon">🤖</span>
+                    <span class="tab-label">Agents</span>
+                    <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
+                </div>
             </div>
 
-            <!-- Stat Cards - Compact inline display -->
+            <!-- Stat Cards - Ultra compact inline with tabs -->
             <div class="stats-container">
                 <div class="stat-card" id="stat-card-documents">
-                    <div class="stat-value" id="stat-nodes">-</div>
-                    <div class="stat-label">Documents</div>
+                    <span class="stat-value" id="stat-nodes">-</span>
+                    <span class="stat-label">Docs</span>
                 </div>
                 <div class="stat-card" id="stat-card-claims">
-                    <div class="stat-value" id="stat-claims">-</div>
-                    <div class="stat-label">Claims</div>
+                    <span class="stat-value" id="stat-claims">-</span>
+                    <span class="stat-label">Claims</span>
                 </div>
                 <div class="stat-card" id="stat-card-evidence">
-                    <div class="stat-value" id="stat-evidence">-</div>
-                    <div class="stat-label">Evidence</div>
+                    <span class="stat-value" id="stat-evidence">-</span>
+                    <span class="stat-label">Evidence</span>
                 </div>
                 <div class="stat-card" id="stat-card-pending">
-                    <div class="stat-value" id="stat-research">-</div>
-                    <div class="stat-label">Pending Docs</div>
+                    <span class="stat-value" id="stat-research">-</span>
+                    <span class="stat-label">Pending</span>
                 </div>
             </div>
 
@@ -1679,28 +1680,6 @@
                 <button class="header-btn btn-danger" id="clear-all-btn" title="Clear all data">
                     🗑️ Clear
                 </button>
-            </div>
-        </div>
-
-        <!-- Tab Navigation Bar -->
-        <div class="tab-bar" id="tab-bar">
-            <!-- Projects tab moved to leftmost position -->
-            <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
-                <span class="tab-icon">📁</span>
-                <span class="tab-label">Projects</span>
-            </div>
-            <div class="tab" data-tab="documents" onclick="TabManager.switchTab('documents')">
-                <span class="tab-icon">📄</span>
-                <span class="tab-label">Documents</span>
-            </div>
-            <div class="tab" data-tab="search" onclick="TabManager.switchTab('search')">
-                <span class="tab-icon">🔍</span>
-                <span class="tab-label">Search</span>
-            </div>
-            <div class="tab" data-tab="agents" onclick="TabManager.switchTab('agents')">
-                <span class="tab-icon">🤖</span>
-                <span class="tab-label">Agents</span>
-                <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
             </div>
         </div>
     </div>
@@ -1722,7 +1701,7 @@
 
                     <!-- Filter Panel - Ultra compact -->
                     <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 8px; margin-bottom: 8px; border: 1px solid #333;">
-                        <!-- Search input removed - use Search tab instead -->
+                        <div style="font-size: 10px; color: #999; margin-bottom: 6px; font-weight: 600;">🎯 GRAPH FILTERS</div>
                         <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                             <label title="Show/hide document nodes. Search uses text matching on document titles and content."
                                    style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
