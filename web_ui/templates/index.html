@@ -326,6 +326,29 @@
             gap: 6px;  /* Reduced from 8px */
         }
 
+        .ai-help-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #64B5F6;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .ai-help-btn:hover {
+            background: rgba(33, 150, 243, 0.3);
+            border-color: #2196F3;
+            transform: scale(1.1);
+        }
+
         .ai-context-badge {
             background: rgba(33, 150, 243, 0.2);
             color: #64B5F6;
@@ -1800,6 +1823,7 @@
                 <div class="ai-header">
                     <span class="tab-icon">🤖</span>
                     <span>AI Research Assistant</span>
+                    <button class="ai-help-btn" onclick="AIAssistant.showHelp()" title="How to use the AI Assistant">?</button>
                     <span class="ai-context-badge" id="ai-context-badge">Documents</span>
                 </div>
 

@@ -942,6 +942,102 @@ const AIAssistant = {
         }
 
         this.displayWelcomeMessage();
+    },
+
+    /**
+     * Show help modal with AI assistant usage instructions
+     */
+    showHelp() {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+        modal.innerHTML = `
+            <div style="background: #2a2a2a; padding: 32px; border-radius: 12px; max-width: 700px; max-height: 80vh; overflow-y: auto; color: white; border: 1px solid #444;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #2196F3;">🤖 AI Research Assistant Help</h2>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; color: #999; font-size: 28px; cursor: pointer; padding: 0; width: 32px; height: 32px; line-height: 28px;">×</button>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 12px;">📝 What is the AI Assistant?</h3>
+                    <p style="color: #ccc; line-height: 1.6; margin: 0;">
+                        Your AI Research Assistant helps you navigate, analyze, and organize your research.
+                        It provides context-aware suggestions based on your current tab and can answer questions
+                        about your documents, claims, evidence, and agents.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 12px;">💡 Context-Aware Suggestions</h3>
+                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 12px;">
+                        The AI assistant provides different suggestions based on which tab you're viewing:
+                    </p>
+                    <ul style="color: #ccc; line-height: 1.8; margin: 0; padding-left: 24px;">
+                        <li><strong style="color: #64B5F6;">Documents:</strong> Upload, process, and search for papers</li>
+                        <li><strong style="color: #64B5F6;">Graph:</strong> Find connections, contradictions, and unsupported claims</li>
+                        <li><strong style="color: #64B5F6;">Agents:</strong> Monitor active agents, review results, fix failures</li>
+                        <li><strong style="color: #64B5F6;">Projects:</strong> Create projects, export data, generate reports</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 12px;">🎯 How to Use</h3>
+                    <ol style="color: #ccc; line-height: 1.8; margin: 0; padding-left: 24px;">
+                        <li><strong style="color: white;">Click suggested prompts</strong> - Suggestion buttons auto-fill the input box. Edit if needed before sending.</li>
+                        <li><strong style="color: white;">Type your own questions</strong> - Ask naturally in plain English. Examples:
+                            <ul style="margin-top: 8px; margin-bottom: 8px;">
+                                <li>"Find documents about transformers"</li>
+                                <li>"Summarize the key claims"</li>
+                                <li>"What are agents working on?"</li>
+                            </ul>
+                        </li>
+                        <li><strong style="color: white;">Use the context badge</strong> - The blue badge shows your current tab context</li>
+                    </ol>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 12px;">🔧 Example Commands</h3>
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+                        <div style="margin-bottom: 8px;"><span style="color: #4CAF50;">▸</span> "Find claims that contradict each other"</div>
+                        <div style="margin-bottom: 8px;"><span style="color: #4CAF50;">▸</span> "Show me the strongest evidence"</div>
+                        <div style="margin-bottom: 8px;"><span style="color: #4CAF50;">▸</span> "Process all pending documents"</div>
+                        <div style="margin-bottom: 8px;"><span style="color: #4CAF50;">▸</span> "What are the research gaps?"</div>
+                        <div><span style="color: #4CAF50;">▸</span> "Spawn a research agent to find evidence"</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 12px;">⚡ Tips & Tricks</h3>
+                    <ul style="color: #ccc; line-height: 1.8; margin: 0; padding-left: 24px;">
+                        <li>Suggestions update automatically when you switch tabs</li>
+                        <li>Suggestions show real counts (e.g., "Process 3 pending documents")</li>
+                        <li>Click suggested prompts to edit them before sending</li>
+                        <li>The assistant remembers recent conversations</li>
+                        <li>Ask follow-up questions for deeper analysis</li>
+                    </ul>
+                </div>
+
+                <div style="background: rgba(33, 150, 243, 0.1); padding: 16px; border-radius: 6px; border-left: 3px solid #2196F3;">
+                    <p style="color: #64B5F6; margin: 0; font-size: 13px;">
+                        <strong>💬 Need more help?</strong> Just ask! Type "help" in the chat for assistance
+                        or ask specific questions about features you want to understand.
+                    </p>
+                </div>
+
+                <button onclick="this.closest('div[style*=fixed]').remove()" style="width: 100%; padding: 12px; margin-top: 24px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                    Got it, thanks!
+                </button>
+            </div>
+        `;
+
+        // Close on click outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        document.body.appendChild(modal);
     }
 };
 
