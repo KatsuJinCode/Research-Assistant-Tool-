@@ -154,7 +154,7 @@ class DatabaseManager:
             logger.error(f"[DatabaseManager] Error checking if database exists: {e}")
             return False
 
-    def create_database(self, database_name: str, wait: bool = True) -> bool:
+    def create_database(self, database_name: str, wait: bool = True) -> tuple[bool, Optional[str]]:
         """
         Create a new Neo4j database.
 
@@ -163,13 +163,13 @@ class DatabaseManager:
             wait: Wait for database to be online (default: True)
 
         Returns:
-            True if successful, False otherwise
+            Tuple of (success: bool, error_message: Optional[str])
         """
         try:
             # Check if already exists
             if self.database_exists(database_name):
                 logger.warning(f"[DatabaseManager] Database {database_name} already exists")
-                return True
+                return True, None
 
             # Create database
             logger.info(f"[DatabaseManager] Creating database: {database_name}")
@@ -182,14 +182,22 @@ class DatabaseManager:
                 session.run(query)
 
             logger.info(f"[DatabaseManager] Database {database_name} created successfully")
-            return True
+            return True, None
 
         except ClientError as e:
-            logger.error(f"[DatabaseManager] Client error creating database: {e}")
-            return False
+            error_msg = str(e)
+            logger.error(f"[DatabaseManager] Client error creating database: {error_msg}")
+
+            # Check if it's a multi-database not available error
+            if "Unsupported administration command" in error_msg or "does not support multiple databases" in error_msg:
+                return False, "Multi-database not available. Neo4j Enterprise or Desktop required. Consider using Neo4j Community Edition with single-database mode."
+
+            return False, f"Database error: {error_msg}"
+
         except Exception as e:
-            logger.error(f"[DatabaseManager] Error creating database: {e}")
-            return False
+            error_msg = str(e)
+            logger.error(f"[DatabaseManager] Error creating database: {error_msg}")
+            return False, f"Unexpected error: {error_msg}"
 
     def drop_database(self, database_name: str) -> bool:
         """

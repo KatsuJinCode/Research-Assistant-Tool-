@@ -2877,9 +2877,11 @@ def create_project():
         logger.info(f"[API] Creating project: {name} (ID: {project_id}, DB: {database_name})")
 
         # Step 1: Create the actual Neo4j database
-        success = db_manager.create_database(database_name, wait=True)
+        success, error_message = db_manager.create_database(database_name, wait=True)
         if not success:
-            return jsonify({'error': 'Failed to create database'}), 500
+            detailed_error = error_message or 'Failed to create database'
+            logger.error(f"[API] Database creation failed: {detailed_error}")
+            return jsonify({'error': detailed_error}), 500
 
         logger.info(f"[API] Database created: {database_name}")
 
