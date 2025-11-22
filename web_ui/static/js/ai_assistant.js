@@ -111,6 +111,24 @@ const AIAssistant = {
     },
 
     /**
+     * Fill the input field with a suggested prompt (doesn't submit)
+     * User can edit the prompt before sending
+     */
+    fillPrompt(promptText) {
+        const input = document.getElementById('ai-input');
+        if (!input) return;
+
+        // Fill the input with the suggested prompt
+        input.value = promptText;
+
+        // Focus the input so user can edit if desired
+        input.focus();
+
+        // Move cursor to end of text
+        input.setSelectionRange(promptText.length, promptText.length);
+    },
+
+    /**
      * Send user message
      */
     sendMessage() {

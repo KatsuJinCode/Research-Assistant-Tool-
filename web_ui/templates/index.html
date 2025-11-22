@@ -395,27 +395,36 @@
 
         .ai-quick-actions {
             display: flex;
-            gap: 6px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
+            padding: 0 4px;
         }
 
         .ai-quick-action {
-            background: #444;
-            border: 1px solid #555;
-            color: #e0e0e0;
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-size: 11px;
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+            padding: 8px 14px;
+            border-radius: 16px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .ai-quick-action:hover {
-            background: #555;
-            border-color: #2196F3;
-            color: white;
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+        }
+
+        .ai-quick-action:active {
+            transform: translateY(0);
         }
 
         .ai-input-container {
@@ -1822,10 +1831,20 @@
                     </div>
                 </div>
 
+                <!-- Suggested Prompts - Click to auto-fill input -->
                 <div class="ai-quick-actions" id="ai-quick-actions">
-                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('find-similar')">🔗 Find Similar</button>
-                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('analyze')">📊 Analyze</button>
-                    <button class="ai-quick-action" onclick="AIAssistant.quickAction('suggest')">💡 Suggest</button>
+                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Summarize the key claims in this document')">
+                        <span>💬</span> Summarize key claims
+                    </button>
+                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Find claims that contradict each other')">
+                        <span>⚡</span> Find contradictions
+                    </button>
+                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Show me the strongest evidence for this claim')">
+                        <span>🎯</span> Show strongest evidence
+                    </button>
+                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('What are the research gaps in this topic?')">
+                        <span>🔍</span> Identify research gaps
+                    </button>
                 </div>
 
                 <div class="ai-input-container">
