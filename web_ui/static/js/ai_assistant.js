@@ -43,6 +43,9 @@ const AIAssistant = {
         // Send welcome message
         this.displayWelcomeMessage();
 
+        // Initialize contextual suggestions for current tab
+        this.updateContextualSuggestions(this.context.activeTab);
+
         console.log('[AIAssistant] ✓ AI assistant initialized');
     },
 
@@ -534,7 +537,277 @@ const AIAssistant = {
             badge.textContent = labels[tabId] || tabId;
         }
 
+        // Update contextual suggestions based on tab
+        this.updateContextualSuggestions(tabId);
+
         console.log('[AIAssistant] Context updated:', this.context);
+    },
+
+    /**
+     * Update contextual suggestions based on active tab and data state
+     */
+    async updateContextualSuggestions(tabId) {
+        console.log('[AIAssistant] Updating suggestions for tab:', tabId);
+
+        try {
+            // Fetch current graph stats to make suggestions intelligent
+            const statsResponse = await fetch('/api/graph-stats');
+            const stats = statsResponse.ok ? await statsResponse.json() : {};
+
+            // Generate tab-specific suggestions
+            let suggestions = [];
+
+            switch (tabId) {
+                case 'documents':
+                    suggestions = this.getDocumentsSuggestions(stats);
+                    break;
+                case 'graph':
+                    suggestions = this.getGraphSuggestions(stats);
+                    break;
+                case 'agents':
+                    suggestions = this.getAgentsSuggestions(stats);
+                    break;
+                case 'projects':
+                    suggestions = this.getProjectsSuggestions(stats);
+                    break;
+                default:
+                    suggestions = this.getDefaultSuggestions();
+            }
+
+            // Render suggestions
+            this.renderSuggestions(suggestions);
+
+        } catch (error) {
+            console.error('[AIAssistant] Error updating suggestions:', error);
+            // Fall back to default suggestions
+            this.renderSuggestions(this.getDefaultSuggestions());
+        }
+    },
+
+    /**
+     * Get context-aware suggestions for Documents tab
+     */
+    getDocumentsSuggestions(stats) {
+        const suggestions = [];
+
+        // Check if there are pending documents
+        if (stats.documents_pending > 0) {
+            suggestions.push({
+                icon: '⚡',
+                text: `Process ${stats.documents_pending} pending document${stats.documents_pending > 1 ? 's' : ''}`,
+                prompt: `Process all pending documents and extract claims`
+            });
+        }
+
+        // Upload suggestion
+        suggestions.push({
+            icon: '📄',
+            text: 'Upload new document',
+            prompt: 'I want to upload a new research document'
+        });
+
+        // Search suggestion
+        if (stats.total_documents > 0) {
+            suggestions.push({
+                icon: '🔍',
+                text: 'Search for related papers',
+                prompt: 'Search for papers related to my current documents'
+            });
+        }
+
+        // Summarization suggestion
+        if (stats.total_claims > 5) {
+            suggestions.push({
+                icon: '💬',
+                text: 'Summarize key findings',
+                prompt: 'Summarize the key claims across all documents'
+            });
+        }
+
+        return suggestions.slice(0, 4); // Max 4 suggestions
+    },
+
+    /**
+     * Get context-aware suggestions for Graph tab
+     */
+    getGraphSuggestions(stats) {
+        const suggestions = [];
+
+        // Find unsupported claims
+        if (stats.total_claims > 0) {
+            suggestions.push({
+                icon: '🎯',
+                text: 'Find unsupported claims',
+                prompt: 'Show me claims that need more evidence'
+            });
+        }
+
+        // Explore connections
+        if (stats.total_claims > 3) {
+            suggestions.push({
+                icon: '🔗',
+                text: 'Explore claim connections',
+                prompt: 'Find relationships between claims'
+            });
+        }
+
+        // Find contradictions
+        if (stats.total_claims > 5) {
+            suggestions.push({
+                icon: '⚡',
+                text: 'Find contradictions',
+                prompt: 'Find claims that contradict each other'
+            });
+        }
+
+        // Analyze evidence quality
+        if (stats.total_evidence > 0) {
+            suggestions.push({
+                icon: '📊',
+                text: 'Analyze evidence strength',
+                prompt: 'Analyze the strength of evidence for each claim'
+            });
+        }
+
+        return suggestions.slice(0, 4);
+    },
+
+    /**
+     * Get context-aware suggestions for Agents tab
+     */
+    getAgentsSuggestions(stats) {
+        const suggestions = [];
+
+        // Check active agents
+        if (stats.agents_active > 0) {
+            suggestions.push({
+                icon: '👀',
+                text: `Monitor ${stats.agents_active} active agent${stats.agents_active > 1 ? 's' : ''}`,
+                prompt: 'Show me what active agents are working on'
+            });
+        }
+
+        // Spawn research agent
+        suggestions.push({
+            icon: '🤖',
+            text: 'Spawn research agent',
+            prompt: 'Spawn a new research agent to find evidence'
+        });
+
+        // Review completed agents
+        if (stats.agents_completed > 0) {
+            suggestions.push({
+                icon: '✅',
+                text: `Review ${stats.agents_completed} completed agent${stats.agents_completed > 1 ? 's' : ''}`,
+                prompt: 'Show me results from completed agents'
+            });
+        }
+
+        // Check for failed agents
+        if (stats.agents_failed > 0) {
+            suggestions.push({
+                icon: '⚠️',
+                text: `Fix ${stats.agents_failed} failed agent${stats.agents_failed > 1 ? 's' : ''}`,
+                prompt: 'Investigate why agents failed and retry'
+            });
+        }
+
+        return suggestions.slice(0, 4);
+    },
+
+    /**
+     * Get context-aware suggestions for Projects tab
+     */
+    getProjectsSuggestions(stats) {
+        const suggestions = [];
+
+        // Create new project
+        suggestions.push({
+            icon: '➕',
+            text: 'Create new project',
+            prompt: 'Create a new research project'
+        });
+
+        // Export project
+        if (stats.total_documents > 0) {
+            suggestions.push({
+                icon: '💾',
+                text: 'Export project data',
+                prompt: 'Export current project as markdown or JSON'
+            });
+        }
+
+        // Organize documents
+        if (stats.total_documents > 5) {
+            suggestions.push({
+                icon: '📂',
+                text: 'Organize documents',
+                prompt: 'Help me organize documents into projects'
+            });
+        }
+
+        // Generate report
+        if (stats.total_claims > 10) {
+            suggestions.push({
+                icon: '📄',
+                text: 'Generate research report',
+                prompt: 'Generate a comprehensive research report from all claims'
+            });
+        }
+
+        return suggestions.slice(0, 4);
+    },
+
+    /**
+     * Get default suggestions when tab is unknown or no data
+     */
+    getDefaultSuggestions() {
+        return [
+            {
+                icon: '💬',
+                text: 'Summarize key claims',
+                prompt: 'Summarize the key claims in this document'
+            },
+            {
+                icon: '⚡',
+                text: 'Find contradictions',
+                prompt: 'Find claims that contradict each other'
+            },
+            {
+                icon: '🎯',
+                text: 'Show strongest evidence',
+                prompt: 'Show me the strongest evidence for this claim'
+            },
+            {
+                icon: '🔍',
+                text: 'Identify research gaps',
+                prompt: 'What are the research gaps in this topic?'
+            }
+        ];
+    },
+
+    /**
+     * Render suggestion buttons
+     */
+    renderSuggestions(suggestions) {
+        const container = document.getElementById('ai-quick-actions');
+        if (!container) return;
+
+        // Clear existing suggestions
+        container.innerHTML = '';
+
+        // Render each suggestion
+        suggestions.forEach(suggestion => {
+            const button = document.createElement('button');
+            button.className = 'ai-quick-action';
+            button.onclick = () => this.fillPrompt(suggestion.prompt);
+            button.innerHTML = `
+                <span>${suggestion.icon}</span> ${suggestion.text}
+            `;
+            container.appendChild(button);
+        });
+
+        console.log(`[AIAssistant] Rendered ${suggestions.length} suggestions`);
     },
 
     /**

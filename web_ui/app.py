@@ -454,25 +454,83 @@ def get_graph_stats():
         agent_tracker = AgentTracker()
         research_stats = agent_tracker.get_research_stats(db)
 
+        # Get agent counts by status from transcript manager
+        from research_agent.transcript_manager import get_transcript_manager
+        transcript_manager = get_transcript_manager()
+        all_transcripts = transcript_manager.list_all_transcripts()
+
+        agents_active = sum(1 for t in all_transcripts if t.get('status') in ['active', 'running', 'processing'])
+        agents_completed = sum(1 for t in all_transcripts if t.get('status') in ['completed', 'success', 'done'])
+        agents_failed = sum(1 for t in all_transcripts if t.get('status') in ['failed', 'error'])
+
+        # Get document counts by status
+        doc_status_query = """
+        MATCH (d:Document)
+        RETURN d.status as status, count(*) as count
+        """
+        doc_status_result = db.execute_query(doc_status_query)
+
+        documents_pending = 0
+        documents_processing = 0
+        documents_completed = 0
+
+        for record in doc_status_result:
+            status = record.get('status', 'unknown')
+            count = record.get('count', 0)
+            if status == 'pending':
+                documents_pending = count
+            elif status == 'processing':
+                documents_processing = count
+            elif status == 'completed':
+                documents_completed = count
+
         return jsonify({
             'nodes': stats.get('total_nodes', 0),
             'relationships': stats.get('total_relationships', 0),
             'node_types': stats.get('label_counts', {}),
+
+            # Document stats
             'document_count': stats.get('document_count', 0),
+            'total_documents': stats.get('document_count', 0),
+            'documents_pending': documents_pending,
+            'documents_processing': documents_processing,
+            'documents_completed': documents_completed,
+
+            # Claim and evidence stats
             'claim_count': stats.get('claim_count', 0),
+            'total_claims': stats.get('claim_count', 0),
             'evidence_count': stats.get('evidence_count', 0),
+            'total_evidence': stats.get('evidence_count', 0),
+
+            # Agent stats
+            'agents_active': agents_active,
+            'agents_completed': agents_completed,
+            'agents_failed': agents_failed,
+            'total_agents': len(all_transcripts),
+
             'research': research_stats,
             'active_database': active_db
         })
     except Exception as e:
         logger.error(f"Error getting graph stats: {e}")
+        logger.error(traceback.format_exc())
         return jsonify({
             'nodes': 0,
             'relationships': 0,
             'node_types': {},
             'document_count': 0,
+            'total_documents': 0,
+            'documents_pending': 0,
+            'documents_processing': 0,
+            'documents_completed': 0,
             'claim_count': 0,
+            'total_claims': 0,
             'evidence_count': 0,
+            'total_evidence': 0,
+            'agents_active': 0,
+            'agents_completed': 0,
+            'agents_failed': 0,
+            'total_agents': 0,
             'research': {},
             'error': str(e)
         })
@@ -975,6 +1033,83 @@ def get_agent_created_nodes(agent_id):
 
     except Exception as e:
         logger.error(f"Error retrieving agent created nodes: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agent/<agent_id>', methods=['GET'])
+def get_agent_full_info(agent_id):
+    """
+    Get comprehensive information about an agent including:
+    - Full transcript
+    - Created nodes
+    - Provenance (who/what created it)
+    - Timestamps
+    - Action log
+    """
+    try:
+        from research_agent.transcript_manager import get_transcript_manager
+
+        transcript_manager = get_transcript_manager()
+
+        # Get transcript and basic info
+        transcript = transcript_manager.get_transcript(agent_id)
+        if transcript is None:
+            return jsonify({'error': 'Agent not found'}), 404
+
+        # Get created nodes
+        nodes_query = """
+        OPTIONAL MATCH (d:Document)
+        WHERE d.created_by_agent_id = $agent_id
+        WITH collect({
+            type: 'Document',
+            id: d.id,
+            title: d.title,
+            status: d.status,
+            created_at: d.created_at
+        }) as documents
+
+        OPTIONAL MATCH (c:Claim)
+        WHERE c.created_by_agent_id = $agent_id
+        WITH documents, collect({
+            type: 'Claim',
+            id: c.id,
+            text: c.text,
+            status: c.status,
+            created_at: c.created_at
+        }) as claims
+
+        RETURN documents, claims
+        """
+
+        nodes_result = db.execute_query(nodes_query, {'agent_id': agent_id})
+
+        spawned_nodes = []
+        if nodes_result:
+            record = nodes_result[0]
+            spawned_nodes.extend([d for d in record.get('documents', []) if d.get('id')])
+            spawned_nodes.extend([c for c in record.get('claims', []) if c.get('id')])
+
+        # Combine all information
+        agent_info = {
+            'id': agent_id,
+            'name': transcript.get('agent_name', transcript.get('agent_type', 'Agent')),
+            'type': transcript.get('agent_type'),
+            'status': transcript.get('status'),
+            'created_at': transcript.get('created_at'),
+            'completed_at': transcript.get('completed_at'),
+            'created_by': transcript.get('created_by'),
+            'created_by_agent_id': transcript.get('created_by_agent_id'),
+            'transcript': transcript.get('transcript', transcript.get('full_transcript', '')),
+            'action_log': transcript.get('action_log', []),
+            'spawned_nodes': spawned_nodes,
+            'total_spawned': len(spawned_nodes)
+        }
+
+        return jsonify(agent_info)
+
+    except Exception as e:
+        logger.error(f"Error retrieving agent info: {e}")
         logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 

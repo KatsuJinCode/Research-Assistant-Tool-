@@ -460,9 +460,12 @@ const TabManager = {
                     </div>
                 `;
             } else {
-                // Render agent cards
+                // Render agent cards with click handlers
                 agentList.innerHTML = filteredAgents.map(agent => `
-                    <div class="agent-card" style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid ${this.getAgentStatusColor(agent.status)};">
+                    <div class="agent-card" data-agent-id="${agent.id || agent.agent_id}"
+                         onclick="TabManager.showAgentInfo('${agent.id || agent.agent_id}')"
+                         style="background: #333; padding: 12px; border-radius: 6px; border-left: 4px solid ${this.getAgentStatusColor(agent.status)}; cursor: pointer; transition: background 0.2s;"
+                         onmouseover="this.style.background='#3a3a3a'" onmouseout="this.style.background='#333'">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight: 600; color: white;">${agent.name || 'Agent'}</div>
                             <div style="font-size: 10px; color: #999; text-transform: uppercase;">${agent.status}</div>
@@ -501,6 +504,101 @@ const TabManager = {
             'error': '#f44336'
         };
         return statusColors[status] || '#666';
+    },
+
+    /**
+     * Show agent info panel when agent card is clicked
+     */
+    async showAgentInfo(agentId) {
+        console.log(`[TabManager] Showing info for agent: ${agentId}`);
+
+        try {
+            // Fetch full agent details from backend
+            const response = await fetch(`/api/agent/${agentId}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch agent: ${response.statusText}`);
+            }
+
+            const agent = await response.json();
+
+            // Display agent info in property viewer (reuse existing panel)
+            if (window.PropertyViewer) {
+                PropertyViewer.showAgentInfo(agent);
+            } else {
+                // Fallback: show in a modal or alert
+                this.showAgentInfoModal(agent);
+            }
+        } catch (error) {
+            console.error('[TabManager] Error fetching agent info:', error);
+            if (window.UI && UI.showNotification) {
+                UI.showNotification(`Failed to load agent info: ${error.message}`, 'error');
+            }
+        }
+    },
+
+    /**
+     * Show agent info in a modal (fallback if PropertyViewer not available)
+     */
+    showAgentInfoModal(agent) {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+        modal.innerHTML = `
+            <div style="background: #2a2a2a; padding: 24px; border-radius: 12px; max-width: 800px; max-height: 80vh; overflow-y: auto; color: white; border: 1px solid #444;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🤖 ${agent.name || 'Agent Details'}</h2>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; color: #999; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px;">×</button>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3;">Status:</strong> <span style="text-transform: uppercase; color: ${this.getAgentStatusColor(agent.status)};">${agent.status}</span>
+                </div>
+
+                ${agent.created_at ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3;">Created:</strong> ${new Date(agent.created_at).toLocaleString()}
+                </div>` : ''}
+
+                ${agent.completed_at ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3;">Completed:</strong> ${new Date(agent.completed_at).toLocaleString()}
+                </div>` : ''}
+
+                ${agent.created_by ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3;">Created By:</strong> ${agent.created_by}
+                </div>` : ''}
+
+                ${agent.transcript ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3; display: block; margin-bottom: 8px;">Transcript:</strong>
+                    <pre style="background: #1a1a1a; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; max-height: 300px;">${agent.transcript}</pre>
+                </div>` : ''}
+
+                ${agent.action_log && agent.action_log.length > 0 ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3; display: block; margin-bottom: 8px;">Action Log:</strong>
+                    <div style="background: #1a1a1a; padding: 12px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                        ${agent.action_log.map(log => `
+                            <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333;">
+                                <div style="font-size: 11px; color: #666;">${new Date(log.timestamp).toLocaleString()}</div>
+                                <div style="font-size: 13px;">${log.action}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>` : ''}
+
+                ${agent.spawned_nodes && agent.spawned_nodes.length > 0 ? `<div style="margin-bottom: 16px;">
+                    <strong style="color: #2196F3; display: block; margin-bottom: 8px;">Created Nodes:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${agent.spawned_nodes.map(node => `
+                            <span style="background: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${node.type}: ${node.id}</span>
+                        `).join('')}
+                    </div>
+                </div>` : ''}
+
+                <button onclick="this.closest('div[style*=fixed]').remove()" style="width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Close
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
     },
 
     /**
