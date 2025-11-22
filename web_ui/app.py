@@ -151,7 +151,7 @@ def process_queue_worker():
                     discovered_by=discovered_by,
                     discovered_by_agent_id=discovered_by_agent_id
                 )
-                doc_id = processor.process_document_live(filepath)
+                doc_id = processor.process_document(filepath)
 
                 logger.info(f"[QUEUE] Completed: {filename} -> {doc_id}")
                 transcript_manager.complete_agent(agent_id, {'document_id': doc_id, 'filename': filename})

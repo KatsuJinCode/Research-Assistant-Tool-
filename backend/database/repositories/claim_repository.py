@@ -545,11 +545,11 @@ class ClaimRepository(BaseRepository):
         """
         query = """
         MATCH (c1:Claim)-[r:SIMILAR_TO]-(c2:Claim)
+        WHERE id(c1) < id(c2)
         RETURN DISTINCT
             c1.id as source_id,
             c2.id as target_id,
             r.similarity as similarity_score
-        WHERE id(c1) < id(c2)
         """
 
         return self.execute_query(query)
