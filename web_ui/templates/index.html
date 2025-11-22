@@ -27,18 +27,27 @@
             z-index: 100;
         }
 
-        /* Header Top Row - Title and Project */
-        /* Single-line compact header */
+        /* Header Top Row - Centered Title */
         .header-top {
             display: flex;
-            align-items: center;
-            gap: 8px;  /* Reduced from 20px */
-            padding: 6px 12px;  /* Reduced from 8px 20px */
+            flex-direction: column;
             background: rgba(0, 0, 0, 0.1);
         }
 
+        .header-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            gap: 12px;
+        }
+
+        .header-brand {
+            flex: 0 0 auto;
+        }
+
         .header-brand h1 {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             margin: 0;
             white-space: nowrap;
@@ -46,6 +55,14 @@
 
         .header-brand p {
             display: none; /* Remove subtitle to save space */
+        }
+
+        .header-tabs-row {
+            display: flex;
+            align-items: flex-end;
+            padding: 0 12px;
+            gap: 2px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
         }
 
         .project-selector {
@@ -156,38 +173,47 @@
             border-color: rgba(156, 39, 176, 0.7);
         }
 
-        /* ===== TAB NAVIGATION BAR - INLINE IN HEADER ===== */
+        /* ===== TAB NAVIGATION BAR - BROWSER-STYLE TABS ===== */
         .tab-bar {
             display: flex;
-            gap: 2px;
-            align-items: center;
+            gap: 4px;
+            align-items: flex-end;
             padding: 0;
             background: none;
         }
 
         .tab {
-            padding: 4px 8px;  /* Dramatically reduced from 12px 24px */
-            border-radius: 4px;
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
             background: rgba(255, 255, 255, 0.08);
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 11px;
+            gap: 6px;
+            font-size: 12px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.7);
             white-space: nowrap;
+            min-height: 38px;
+            border-top: 2px solid transparent;
+            position: relative;
         }
 
         .tab:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.95);
+            border-top-color: rgba(255, 255, 255, 0.3);
         }
 
         .tab.active {
-            background: rgba(33, 150, 243, 0.3);
+            background: #1a1a1a;
             color: white;
-            border: 1px solid rgba(33, 150, 243, 0.5);
+            font-weight: 600;
+            border-top-color: #2196F3;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .tab-icon {
@@ -1643,37 +1669,41 @@
     </style>
 </head>
 <body>
-    <!-- Unified Header System - TRUE SINGLE LINE -->
+    <!-- Unified Header System - TWO ROWS -->
     <div id="unified-header">
         <div class="header-top">
-            <!-- Title -->
-            <div class="header-brand">
-                <h1>🔍 Research Graph Navigator</h1>
-            </div>
-
-            <!-- Tabs (moved from separate row) -->
-            <div class="tab-bar" id="tab-bar">
-                <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
-                    <span class="tab-icon">📁</span>
-                    <span class="tab-label">Projects</span>
-                </div>
-                <div class="tab" data-tab="documents" onclick="TabManager.switchTab('documents')">
-                    <span class="tab-icon">📄</span>
-                    <span class="tab-label">Documents</span>
-                </div>
-                <div class="tab" data-tab="search" onclick="TabManager.switchTab('search')">
-                    <span class="tab-icon">🔍</span>
-                    <span class="tab-label">Search</span>
-                </div>
-                <div class="tab" data-tab="agents" onclick="TabManager.switchTab('agents')">
-                    <span class="tab-icon">🤖</span>
-                    <span class="tab-label">Agents</span>
-                    <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
+            <!-- Row 1: Centered Title -->
+            <div class="header-title-row">
+                <div class="header-brand">
+                    <h1>🔍 Research Graph Navigator</h1>
                 </div>
             </div>
 
-            <!-- Stat Cards - Ultra compact inline with tabs -->
-            <div class="stats-container">
+            <!-- Row 2: Left-Aligned Tabs + Stats + Actions -->
+            <div class="header-tabs-row">
+                <!-- Browser-Style Tabs -->
+                <div class="tab-bar" id="tab-bar">
+                    <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
+                        <span class="tab-icon">📁</span>
+                        <span class="tab-label">Projects</span>
+                    </div>
+                    <div class="tab" data-tab="documents" onclick="TabManager.switchTab('documents')">
+                        <span class="tab-icon">📄</span>
+                        <span class="tab-label">Documents</span>
+                    </div>
+                    <div class="tab" data-tab="search" onclick="TabManager.switchTab('search')">
+                        <span class="tab-icon">🔍</span>
+                        <span class="tab-label">Search</span>
+                    </div>
+                    <div class="tab" data-tab="agents" onclick="TabManager.switchTab('agents')">
+                        <span class="tab-icon">🤖</span>
+                        <span class="tab-label">Agents</span>
+                        <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
+                    </div>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="stats-container">
                 <div class="stat-card" id="stat-card-documents">
                     <span class="stat-value" id="stat-nodes">-</span>
                     <span class="stat-label">Docs</span>
@@ -1692,17 +1722,18 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="header-actions">
-                <button class="header-btn btn-success" id="run-clustering-btn" title="Refresh claim clustering">
-                    🔗 Cluster
-                </button>
-                <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
-                    ⚙️ Settings
-                </button>
-                <button class="header-btn btn-danger" id="clear-all-btn" title="Clear all data">
-                    🗑️ Clear
-                </button>
+                <!-- Action Buttons -->
+                <div class="header-actions">
+                    <button class="header-btn btn-success" id="run-clustering-btn" title="Refresh claim clustering">
+                        🔗 Cluster
+                    </button>
+                    <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
+                        ⚙️ Settings
+                    </button>
+                    <button class="header-btn btn-danger" id="clear-all-btn" title="Clear all data">
+                        🗑️ Clear
+                    </button>
+                </div>
             </div>
         </div>
     </div>
