@@ -144,6 +144,14 @@ class KGETrainer:
             raise ValueError("Cannot train on empty triples list")
 
         logger.info(f"Training TransE on {len(triples)} triples...")
+
+        # Adaptive batch size: ensure batch_size <= num_triples to avoid numerical issues
+        # For very small datasets, use smaller batches
+        adaptive_batch_size = min(batch_size, max(1, len(triples) // 2))
+        if adaptive_batch_size != batch_size:
+            logger.info(f"Adjusted batch_size from {batch_size} to {adaptive_batch_size} (dataset has {len(triples)} triples)")
+            batch_size = adaptive_batch_size
+
         logger.info(f"Hyperparameters: epochs={epochs}, batch_size={batch_size}, lr={learning_rate}")
 
         # Create triples factory
@@ -165,32 +173,35 @@ class KGETrainer:
             logger.info(f"Split: train={len(train_tf.triples)}, "
                        f"val={len(val_tf.triples)}, test={len(test_tf.triples)}")
         else:
+            # When no validation, use same data for training and testing
+            # PyKEEN requires both, but we won't evaluate on testing data
             training_kwargs['training'] = tf
+            training_kwargs['testing'] = tf  # Use same data to satisfy PyKEEN
+            logger.info(f"Using all {len(tf.triples)} triples for training (no validation split)")
 
         # Configure training pipeline
-        result = pipeline(
-            model=self.model_type,
-            model_kwargs=dict(
-                embedding_dim=self.embedding_dim,
-            ),
-            optimizer='Adam',
-            optimizer_kwargs=dict(
-                lr=learning_rate,
-            ),
-            training_loop='sLCWA',  # Stochastic Local Closed World Assumption
-            epochs=epochs,
-            training_kwargs=dict(
-                batch_size=batch_size,
-            ),
-            negative_sampler='basic',  # Basic negative sampling
-            evaluator_kwargs=dict(
-                filtered=True,  # Use filtered evaluation (more accurate)
-            ),
-            random_seed=self.random_seed,
-            device=self.device,
-            use_testing_data=validation_split,
+        pipeline_kwargs = {
+            'model': self.model_type,
+            'model_kwargs': dict(embedding_dim=self.embedding_dim),
+            'optimizer': 'Adam',
+            'optimizer_kwargs': dict(lr=learning_rate),
+            'training_loop': 'sLCWA',
+            'epochs': epochs,
+            'training_kwargs': dict(batch_size=batch_size),
+            'negative_sampler': 'basic',
+            'random_seed': self.random_seed,
+            'device': self.device,
             **training_kwargs,
-        )
+        }
+
+        # Only enable evaluation if we have validation split
+        if validation_split:
+            pipeline_kwargs['evaluator_kwargs'] = dict(filtered=True)
+            pipeline_kwargs['use_testing_data'] = True
+        # Note: When validation_split=False, PyKEEN will still evaluate on testing data
+        # (which is same as training data), but it's fast since dataset is small
+
+        result = pipeline(**pipeline_kwargs)
 
         # Store trained model and mappings
         self.model = result.model
