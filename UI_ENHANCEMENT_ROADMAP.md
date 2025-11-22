@@ -183,6 +183,9 @@ Would you like me to:
 - Graph filters relocation (needs user decision)
 - Framework YAML System
 - Workflow Engine
+- **Advanced Graph RAG Upgrades** (NEW - see GRAPH_RAG_UPGRADE_PLAN.md)
+  - Tier 1 MVP: KGE + Hierarchical Attention (36-44h, 2-3x better retrieval)
+  - Tier 2 Advanced: GNN + TreeLSTM + Sparse Retrieval (64-68h, state-of-the-art)
 - **Game-Like Agent Animation System** (NEW - 5 phases, see AGENT_ANIMATION_SPEC.md)
   - Phase 1: Agent Movement System (12-16h)
   - Phase 2: Real-Time Processing Indicators (10-14h)
