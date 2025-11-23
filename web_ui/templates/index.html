@@ -4047,6 +4047,10 @@
             <button class="pv-tab" data-tab="relationships" onclick="PropertyViewer.switchTab('relationships')">Relationships</button>
             <button class="pv-tab" data-tab="history" onclick="PropertyViewer.switchTab('history')">History</button>
             <button class="pv-tab" data-tab="provenance" onclick="PropertyViewer.switchTab('provenance')">Provenance</button>
+            <button class="pv-tab" data-tab="comments" onclick="PropertyViewer.switchTab('comments')">
+                Comments
+                <span id="comment-count-badge" class="badge" style="display: none;">0</span>
+            </button>
         </div>
 
         <div class="pv-content">
@@ -4054,6 +4058,26 @@
             <div id="pv-tab-relationships" class="pv-tab-content"></div>
             <div id="pv-tab-history" class="pv-tab-content"></div>
             <div id="pv-tab-provenance" class="pv-tab-content"></div>
+            <div id="pv-tab-comments" class="pv-tab-content">
+                <div class="comments-section">
+                    <div class="comment-input-container">
+                        <div id="reply-indicator" class="reply-indicator" style="display: none;"></div>
+                        <textarea id="comment-text" placeholder="Write a comment (Markdown supported)..." rows="3"></textarea>
+                        <div class="comment-input-actions">
+                            <button id="toggle-markdown-preview" class="btn btn-secondary btn-sm">Preview</button>
+                            <div style="flex: 1;"></div>
+                            <button id="cancel-comment-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancel</button>
+                            <button id="submit-comment-btn" class="btn btn-primary btn-sm">Add Comment</button>
+                        </div>
+                        <div id="markdown-preview" class="markdown-preview" style="display: none;"></div>
+                    </div>
+                    <div id="comments-container" class="comments-container">
+                        <div class="no-comments">
+                            <p>No comments yet. Be the first to comment!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -4175,6 +4199,410 @@
 
         .pv-tab-content.active {
             display: block;
+        }
+
+        /* Comment System Styles */
+        .comments-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 16px;
+        }
+
+        .comment-input-container {
+            background: #333;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .reply-indicator {
+            background: #2a2a2a;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #comment-text {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #comment-text:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .comment-input-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        .markdown-preview {
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            margin-top: 8px;
+            min-height: 60px;
+            font-size: 13px;
+        }
+
+        .comments-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .comment {
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+        }
+
+        .comment:hover {
+            background: #3a3a3a;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #444;
+        }
+
+        .comment-timestamp {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .comment-content {
+            color: #e0e0e0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .comment-content code {
+            background: #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .comment-content strong {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .comment-snippet {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+            padding: 6px;
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+
+        .no-comments {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .badge {
+            background: #f44336;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            margin-left: 4px;
+            font-weight: 600;
+        }
+
+        /* Activity Feed Styles */
+        .activity-feed-sidebar {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100vh;
+            background: #2a2a2a;
+            border-left: 2px solid #2196F3;
+            box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
+            z-index: 6000;
+            transition: right 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .activity-feed-sidebar.collapsed {
+            right: -350px;
+        }
+
+        .activity-feed-sidebar:not(.collapsed) {
+            right: 0;
+        }
+
+        .activity-feed-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-feed-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .activity-feed-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .activity-filter-panel {
+            background: #333;
+            padding: 12px;
+            border-bottom: 1px solid #444;
+        }
+
+        .filter-group {
+            margin-bottom: 12px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .activity-feed-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .activity-group {
+            margin-bottom: 20px;
+        }
+
+        .activity-group-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2196F3;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            background: #333;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: #3a3a3a;
+        }
+
+        .activity-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .activity-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .activity-description {
+            font-size: 13px;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .activity-timestamp {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .no-activities {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        /* Activity Stats Modal */
+        .activity-stats-modal {
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #333;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .stat-card h3 {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #2196F3;
+        }
+
+        .stats-section {
+            margin-bottom: 24px;
+        }
+
+        .stats-section h3 {
+            font-size: 14px;
+            color: #2196F3;
+            margin-bottom: 12px;
+        }
+
+        .stats-chart {
+            background: #333;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .chart-label {
+            font-size: 12px;
+            color: #e0e0e0;
+            min-width: 120px;
+        }
+
+        .chart-bar-container {
+            flex: 1;
+            background: #2a2a2a;
+            height: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .chart-bar-fill {
+            background: linear-gradient(90deg, #1976D2, #2196F3);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .chart-value {
+            font-size: 12px;
+            color: #999;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .stats-list {
+            background: #333;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .stats-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #444;
+        }
+
+        .stats-list-item:last-child {
+            border-bottom: none;
         }
 
         .pv-section {
@@ -5206,6 +5634,8 @@
     <script src="{{ url_for('static', filename='js/agent_monitor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/property-viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/comment-system.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/activity-feed.js') }}"></script>
 
     <!-- Agent Animation System -->
     <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>

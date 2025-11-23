@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Builder - Research Assistant</title>
+    <link rel="stylesheet" href="/static/css/agent-builder.css">
+</head>
+<body>
+    <div id="agent-builder-container"></div>
+
+    <script src="/static/js/agent-builder.js"></script>
+    <script>
+        // Initialize agent builder when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            agentBuilder = new AgentBuilder('agent-builder-container');
+        });
+    </script>
+</body>
+</html>

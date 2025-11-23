@@ -158,6 +158,16 @@ def process_queue_worker():
                 logger.info(f"[QUEUE] Completed: {filename} -> {doc_id}")
                 transcript_manager.complete_agent(agent_id, {'document_id': doc_id, 'filename': filename})
 
+                # Track activity
+                try:
+                    from web_ui.activity_routes import track_activity, ActivityType
+                    track_activity(db, socketio, ActivityType.DOCUMENT_PROCESSED,
+                                 f'Processed document: {filename}',
+                                 doc_id, 'document',
+                                 {'filename': filename, 'agent_id': agent_id})
+                except Exception as e:
+                    logger.warning(f"Failed to track processing activity: {e}")
+
                 with app.app_context():
                     socketio.emit('document_processed', {'document_id': doc_id, 'agent_id': agent_id})
 
@@ -1466,6 +1476,16 @@ def upload_document():
         queue_position = processing_queue.qsize()
 
         logger.info(f"[QUEUE] User upload added to queue: {filename} (position: {queue_position})")
+
+        # Track activity
+        try:
+            from web_ui.activity_routes import track_activity, ActivityType
+            track_activity(db, socketio, ActivityType.DOCUMENT_UPLOADED,
+                         f'Uploaded document: {filename}',
+                         filename, 'document',
+                         {'filename': filename, 'queue_position': queue_position})
+        except Exception as e:
+            logger.warning(f"Failed to track upload activity: {e}")
 
         # Emit queue update
         with app.app_context():
@@ -4652,6 +4672,22 @@ try:
     logger.info("Workflow routes registered successfully")
 except Exception as e:
     logger.warning(f"Failed to register workflow routes: {e}")
+
+# Register comment system routes
+try:
+    from web_ui.comment_routes import register_comment_routes
+    register_comment_routes(app, db, socketio)
+    logger.info("Comment routes registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to register comment routes: {e}")
+
+# Register activity feed routes
+try:
+    from web_ui.activity_routes import register_activity_routes, track_activity
+    register_activity_routes(app, db, socketio)
+    logger.info("Activity feed routes registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to register activity feed routes: {e}")
 
 
 if __name__ == '__main__':

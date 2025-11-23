@@ -412,6 +412,13 @@ const PropertyViewer = {
                 content.classList.remove('active');
             }
         });
+
+        // Load comments when switching to Comments tab
+        if (tabName === 'comments' && this.currentNodeId) {
+            if (typeof CommentSystem !== 'undefined') {
+                CommentSystem.loadComments(this.currentNodeId);
+            }
+        }
     },
 
     /**

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Analysis - Research Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .analysis-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .analysis-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .analysis-card h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .analysis-card p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .results {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge.high { background: #f44336; color: white; }
+        .badge.medium { background: #ff9800; color: white; }
+        .badge.low { background: #4caf50; color: white; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔬 ML Analysis Dashboard</h1>
+        <p>Advanced Machine Learning Features for Research Analysis</p>
+    </div>
+
+    <div class="container">
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <h3>📊 Claim Classification</h3>
+                <p>Automatically classify claims into categories: factual, opinion, hypothesis, prediction, or definition.</p>
+                <button class="btn" onclick="runClassification()">Classify Claims</button>
+            </div>
+
+            <div class="analysis-card">
+                <h3>💎 Investigation Value</h3>
+                <p>Predict which claims are most valuable to investigate based on novelty, evidence gaps, and impact.</p>
+                <button class="btn" onclick="runValuePrediction()">Predict Value</button>
+            </div>
+
+            <div class="analysis-card">
+                <h3>🔍 Anomaly Detection</h3>
+                <p>Detect unusual or outlier claims that warrant special attention or verification.</p>
+                <button class="btn" onclick="runAnomalyDetection()">Detect Anomalies</button>
+            </div>
+
+            <div class="analysis-card">
+                <h3>📈 Trend Analysis</h3>
+                <p>Analyze emerging and declining topics, identify clusters, and predict future trends.</p>
+                <button class="btn" onclick="runTrendAnalysis()">Analyze Trends</button>
+            </div>
+        </div>
+
+        <div id="results" class="results">
+            <h2>Analysis Results</h2>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runClassification() {
+            showLoading();
+            try {
+                // Get sample claims (in production, get from database)
+                const claims = await getSampleClaims();
+
+                const response = await fetch('/api/ml/classify-claims', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claims, update_database: false })
+                });
+
+                const data = await response.json();
+                displayClassificationResults(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function runValuePrediction() {
+            showLoading();
+            try {
+                const claims = await getSampleClaims();
+
+                const response = await fetch('/api/ml/predict-value', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claims, update_database: false })
+                });
+
+                const data = await response.json();
+                displayValueResults(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function runAnomalyDetection() {
+            showLoading();
+            try {
+                const claims = await getSampleClaims();
+
+                const response = await fetch('/api/ml/detect-anomalies', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claims, flag_in_database: false, min_score: 50.0 })
+                });
+
+                const data = await response.json();
+                displayAnomalyResults(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function runTrendAnalysis() {
+            showLoading();
+            try {
+                const claims = await getSampleClaims();
+
+                const response = await fetch('/api/ml/analyze-trends', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claims, time_window_days: 90 })
+                });
+
+                const data = await response.json();
+                displayTrendResults(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function getSampleClaims() {
+            // TODO: Fetch from actual database
+            return [
+                { id: "1", text: "Water boils at 100°C at sea level", created_at: new Date().toISOString() },
+                { id: "2", text: "I think Python is the best language", created_at: new Date().toISOString() },
+                { id: "3", text: "Climate change will affect coastal cities", created_at: new Date().toISOString() }
+            ];
+        }
+
+        function displayClassificationResults(data) {
+            const html = `
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">${data.total_claims}</div>
+                        <div class="stat-label">Total Claims</div>
+                    </div>
+                    ${Object.entries(data.distribution).map(([cat, count]) => `
+                        <div class="stat">
+                            <div class="stat-value">${count}</div>
+                            <div class="stat-label">${cat}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <h3>Classification Results</h3>
+                ${data.results.map(r => `
+                    <div class="result-item">
+                        <strong>${r.claim_text}</strong><br>
+                        <span class="badge low">${r.category}</span>
+                        Confidence: ${(r.confidence * 100).toFixed(0)}%<br>
+                        <small>${r.reasoning}</small>
+                    </div>
+                `).join('')}
+            `;
+            showResults(html);
+        }
+
+        function displayValueResults(data) {
+            const html = `
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">${data.total_claims}</div>
+                        <div class="stat-label">Total Claims</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.high_priority}</div>
+                        <div class="stat-label">High Priority</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.avg_score.toFixed(0)}</div>
+                        <div class="stat-label">Avg Score</div>
+                    </div>
+                </div>
+                <h3>Top Priority Claims</h3>
+                ${data.top_priority_claims.map(p => `
+                    <div class="result-item">
+                        <strong>${p.claim_text}</strong><br>
+                        <span class="badge ${p.recommendation}">${p.recommendation}</span>
+                        Score: ${p.value_score.toFixed(0)}/100<br>
+                        <small>${p.explanation}</small>
+                    </div>
+                `).join('')}
+            `;
+            showResults(html);
+        }
+
+        function displayAnomalyResults(data) {
+            const html = `
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">${data.statistics.total_claims}</div>
+                        <div class="stat-label">Total Claims</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.statistics.anomalous_claims}</div>
+                        <div class="stat-label">Anomalies</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${(data.statistics.anomaly_rate * 100).toFixed(0)}%</div>
+                        <div class="stat-label">Anomaly Rate</div>
+                    </div>
+                </div>
+                <h3>Detected Anomalies</h3>
+                ${data.significant_anomalies.map(a => `
+                    <div class="result-item">
+                        <strong>${a.claim_text}</strong><br>
+                        <span class="badge ${a.severity}">${a.severity}</span>
+                        Score: ${a.anomaly_score.toFixed(0)}/100<br>
+                        Types: ${a.anomaly_types.join(', ')}<br>
+                        <small>${a.explanation}</small>
+                    </div>
+                `).join('')}
+            `;
+            showResults(html);
+        }
+
+        function displayTrendResults(data) {
+            const html = `
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">${data.summary.total_topics}</div>
+                        <div class="stat-label">Total Topics</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.summary.emerging_topics_count}</div>
+                        <div class="stat-label">Emerging</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${data.summary.declining_topics_count}</div>
+                        <div class="stat-label">Declining</div>
+                    </div>
+                </div>
+                <h3>Emerging Topics</h3>
+                ${data.emerging_topics.slice(0, 10).map(topic => `
+                    <div class="result-item">
+                        <span class="badge high">emerging</span> ${topic}
+                    </div>
+                `).join('')}
+                <h3>Topic Clusters</h3>
+                ${data.topic_clusters.slice(0, 5).map(c => `
+                    <div class="result-item">
+                        <strong>${c.primary_topic}</strong> (${c.claim_count} claims)<br>
+                        Related: ${c.related_topics.join(', ')}<br>
+                        Keywords: ${c.keywords.join(', ')}
+                    </div>
+                `).join('')}
+            `;
+            showResults(html);
+        }
+
+        function showResults(html) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('results-content');
+            contentDiv.innerHTML = html;
+            resultsDiv.classList.add('active');
+        }
+
+        function showLoading() {
+            showResults('<div class="loading">⏳ Analyzing...</div>');
+        }
+
+        function showError(message) {
+            showResults(`<div class="loading">❌ Error: ${message}</div>`);
+        }
+    </script>
+</body>
+</html>
