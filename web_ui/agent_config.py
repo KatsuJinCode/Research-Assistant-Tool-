@@ -174,26 +174,35 @@ class ClaudeCodeAdapter(AgentAdapter):
 
 
 class ClaudeSDKAdapter(AgentAdapter):
-    """Adapter for Claude API via Anthropic SDK (direct API calls)"""
+    """Adapter for Claude API via Anthropic SDK (direct API calls using login credentials)"""
 
     def __init__(self, api_key: Optional[str] = None, model: str = "claude-sonnet-4-20250514"):
         """
         Initialize Claude SDK adapter.
 
         Args:
-            api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+            api_key: Anthropic API key (optional - uses login credentials if not provided)
             model: Claude model to use
         """
         if not ANTHROPIC_SDK_AVAILABLE:
             raise RuntimeError("Anthropic SDK not installed. Run: pip install anthropic")
 
-        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
-        if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-
         self.model = model
-        self.client = Anthropic(api_key=self.api_key)
-        logger.info(f"🚀 Claude SDK adapter initialized (model: {model})")
+
+        # Try API key first (env var or parameter), then fall back to login credentials
+        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
+
+        if self.api_key:
+            # Use API key if available
+            self.client = Anthropic(api_key=self.api_key)
+            logger.info(f"🚀 Claude SDK adapter initialized with API key (model: {model})")
+        else:
+            # Use login credentials (Agent SDK default)
+            try:
+                self.client = Anthropic()  # Uses ~/.anthropic credentials
+                logger.info(f"🚀 Claude SDK adapter initialized with login credentials (model: {model})")
+            except Exception as e:
+                raise ValueError(f"Claude SDK initialization failed. Please run 'claude login' or set ANTHROPIC_API_KEY. Error: {str(e)}")
 
     def invoke(self, prompt: str, tools: Optional[List[Dict]] = None, timeout: int = 120) -> str:
         """Invoke Claude via SDK"""
