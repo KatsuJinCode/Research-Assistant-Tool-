@@ -321,13 +321,18 @@ class DebugAgent:
             return True
 
         # Check if running with --debug flag
-        # This is a heuristic - not perfect
         import sys
         if '--debug' in sys.argv or '--reload' in sys.argv:
             return True
 
-        # Check config file for debug flag
-        # (You can add a config.py check here)
+        # Check Flask debug mode (if Flask app available)
+        try:
+            from flask import current_app
+            if current_app and current_app.debug:
+                return True
+        except (ImportError, RuntimeError):
+            # Flask not available or not in application context
+            pass
 
         return False
 

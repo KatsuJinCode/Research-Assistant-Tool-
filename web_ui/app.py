@@ -80,11 +80,8 @@ except Exception as e:
     logger.warning(f"DatabaseManager not available: {e}")
     db_manager = None
 
-# Initialize debugging agent (auto-enables in development mode)
+# Initialize debugging agent (will be enabled in debug mode before server starts)
 debug_agent = get_debug_agent(socketio=socketio)
-if debug_agent.is_dev_mode:
-    debug_agent.enable()
-    logger.info("🐛 Debugging agent auto-enabled (development mode)")
 
 
 def process_queue_worker():
@@ -4761,5 +4758,9 @@ if __name__ == '__main__':
     print("\nOpen your browser to: http://localhost:5000")
     print("\nPress Ctrl+C to stop")
     print("=" * 80)
+
+    # Enable debugging agent in debug mode
+    debug_agent.enable()
+    logger.info("🐛 Debugging agent enabled (development mode)")
 
     socketio.run(app, debug=True, port=5000)
