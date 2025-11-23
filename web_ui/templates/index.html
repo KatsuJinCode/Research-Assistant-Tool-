@@ -1665,6 +1665,1407 @@
             padding: 6px 12px;
             font-size: 12px;
         }
+
+        /* ===== TUTORIAL SYSTEM STYLES ===== */
+
+        /* Tutorial Overlay Container */
+        #tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        /* Backdrop - dims everything */
+        .tutorial-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            pointer-events: all;
+        }
+
+        /* Spotlight - highlights target element */
+        .tutorial-spotlight {
+            position: absolute;
+            border: 3px solid #2196F3;
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75),
+                        0 0 30px rgba(33, 150, 243, 0.9);
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10001;
+        }
+
+        /* Pulse animation for spotlight */
+        .tutorial-spotlight.pulse {
+            animation: tutorial-pulse-glow 2s infinite;
+        }
+
+        @keyframes tutorial-pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75),
+                            0 0 30px rgba(33, 150, 243, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75),
+                            0 0 50px rgba(33, 150, 243, 1);
+            }
+        }
+
+        /* Tutorial Panel - floating instruction box */
+        .tutorial-panel {
+            position: absolute;
+            background: #2a2a2a;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6),
+                        0 0 20px rgba(33, 150, 243, 0.3);
+            pointer-events: all;
+            z-index: 10002;
+            animation: tutorial-fadeIn 0.3s ease;
+        }
+
+        @keyframes tutorial-fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Tutorial Header */
+        .tutorial-header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tutorial-title {
+            font-size: 16px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .tutorial-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .tutorial-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Tutorial Content */
+        .tutorial-content {
+            padding: 24px 20px;
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tutorial-content p {
+            margin: 0 0 10px 0;
+        }
+
+        .tutorial-content ul {
+            margin: 10px 0;
+        }
+
+        /* Tutorial Footer */
+        .tutorial-footer {
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0 0 10px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .tutorial-progress {
+            font-size: 12px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .tutorial-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Tutorial Buttons */
+        .tutorial-btn {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tutorial-btn:hover {
+            background: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .tutorial-btn:active {
+            transform: translateY(0);
+        }
+
+        .tutorial-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tutorial-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Help Button in Header */
+        .help-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 14px;
+            font-size: 13px;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .help-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .help-button span:first-child {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Context Help Icons */
+        .context-help {
+            display: inline-flex;
+            width: 18px;
+            height: 18px;
+            background: #2196F3;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .context-help:hover {
+            background: #1976D2;
+            transform: scale(1.2);
+        }
+
+        /* Help Modal Styles */
+        .tutorial-help-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            color: #e0e0e0;
+        }
+
+        .tutorial-help-option:hover {
+            background: rgba(33, 150, 243, 0.1);
+            border-color: #2196F3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+        }
+
+        /* Validation Message */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Slide in animation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== ENHANCED SEARCH STYLES ===== */
+        .mode-btn {
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #2196F3 !important;
+            border-color: #2196F3 !important;
+        }
+
+        .mode-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Search Results */
+        .search-result {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .search-result:hover {
+            border-color: #2196F3;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .result-type-icon {
+            font-size: 24px;
+        }
+
+        .result-title {
+            flex: 1;
+            margin: 0;
+            font-size: 16px;
+            color: #e0e0e0;
+        }
+
+        .relevance-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .meta-item {
+            display: flex;
+            gap: 4px;
+        }
+
+        .relevance-breakdown {
+            margin: 12px 0;
+        }
+
+        .breakdown-bar {
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 6px;
+        }
+
+        .bar-segment {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .bar-segment.keyword {
+            background: #4CAF50;
+        }
+
+        .bar-segment.semantic {
+            background: #2196F3;
+        }
+
+        .bar-segment.confidence {
+            background: #FF9800;
+        }
+
+        .breakdown-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #999;
+        }
+
+        .legend-item.keyword::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 2px;
+        }
+
+        .legend-item.semantic::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #2196F3;
+            border-radius: 2px;
+        }
+
+        .legend-item.confidence::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #FF9800;
+            border-radius: 2px;
+        }
+
+        .result-content {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #333;
+            border-color: #2196F3;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .btn-small:hover {
+            background: #333;
+            border-color: #2196F3;
+        }
+
+        /* Preview Cards */
+        .preview-card {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .preview-card:hover {
+            background: #2a2a2a;
+        }
+
+        .preview-card:last-child {
+            border-bottom: none;
+        }
+
+        .preview-type {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .preview-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .preview-snippet {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .preview-meta {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .preview-footer {
+            padding: 12px;
+            border-top: 1px solid #333;
+            text-align: center;
+        }
+
+        .preview-footer button {
+            padding: 8px 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .preview-loading {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .preview-empty {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* Search Highlighting */
+        mark {
+            background: #FFC107;
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
+
+        /* History & Saved Searches */
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: #2a2a2a;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-query {
+            font-size: 13px;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .history-meta {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .saved-search-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+
+        .saved-search-name {
+            flex: 1;
+            font-size: 12px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+
+        .saved-search-name:hover {
+            color: #2196F3;
+        }
+
+        .btn-delete {
+            padding: 4px 8px;
+            background: transparent;
+            color: #f44336;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-delete:hover {
+            color: #ff6b6b;
+        }
+
+        /* Results Header */
+        .search-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+
+        .results-count strong {
+            color: #2196F3;
+            font-size: 18px;
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Loading & Empty States */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        /* Dropdown Content */
+        .dropdown-content {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Filter Section Styling */
+        .filter-section h4 {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Search Results List */
+        .search-results-list {
+            /* Container for all result cards */
+        }
+
+        /* ===== DOCUMENT COMPARISON TOOL STYLES ===== */
+        .comparison-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .comparison-modal-content {
+            background: #1a1a1a;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            width: 95%;
+            height: 95%;
+            max-width: 1800px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+        }
+
+        .comparison-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .comparison-header h2 {
+            margin: 0;
+            font-size: 20px;
+            white-space: nowrap;
+        }
+
+        .document-selector {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .document-selector select {
+            flex: 1;
+            max-width: 300px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .document-selector select:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .add-doc-btn {
+            padding: 8px 16px;
+            background: rgba(76, 175, 80, 0.8);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .add-doc-btn:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+
+        .comparison-toolbar {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .view-mode {
+            display: flex;
+            gap: 5px;
+            background: #333;
+            padding: 3px;
+            border-radius: 6px;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: #444;
+            color: white;
+        }
+
+        .mode-btn.active {
+            background: #2196F3;
+            color: white;
+        }
+
+        .comparison-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .comparison-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+
+        .comparison-options input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .comparison-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: #2196F3;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-btn:hover {
+            background: #1976D2;
+        }
+
+        .comparison-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #1a1a1a;
+            padding: 20px;
+        }
+
+        .document-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            height: 100%;
+        }
+
+        .document-panel {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #333;
+            padding: 12px 15px;
+            border-bottom: 2px solid #2196F3;
+        }
+
+        .panel-header h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #2196F3;
+        }
+
+        .panel-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            padding: 3px 8px;
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.4);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #90CAF9;
+        }
+
+        .stat-badge.unique {
+            background: rgba(255, 152, 0, 0.2);
+            border-color: rgba(255, 152, 0, 0.4);
+            color: #FFB74D;
+        }
+
+        .stat-badge.shared {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.4);
+            color: #81C784;
+        }
+
+        .stat-badge.similar {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.4);
+            color: #64B5F6;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .claim-item {
+            background: #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #666;
+            position: relative;
+        }
+
+        .claim-item.unique {
+            background: rgba(255, 152, 0, 0.1);
+            border-left-color: #FF9800;
+        }
+
+        .claim-item.shared {
+            background: rgba(76, 175, 80, 0.1);
+            border-left-color: #4CAF50;
+        }
+
+        .claim-item.similar {
+            background: rgba(33, 150, 243, 0.1);
+            border-left-color: #2196F3;
+        }
+
+        .claim-item.contradicting {
+            background: rgba(244, 67, 54, 0.1);
+            border-left-color: #F44336;
+        }
+
+        .claim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .claim-type-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .claim-item.unique .claim-type-badge {
+            background: #FF9800;
+            color: white;
+        }
+
+        .claim-item.shared .claim-type-badge {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .claim-item.similar .claim-type-badge {
+            background: #2196F3;
+            color: white;
+        }
+
+        .claim-item.contradicting .claim-type-badge {
+            background: #F44336;
+            color: white;
+        }
+
+        .confidence-badge {
+            padding: 2px 8px;
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.4);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #90CAF9;
+        }
+
+        .claim-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .sub-claims {
+            margin-top: 10px;
+            padding-left: 15px;
+            border-left: 2px solid #555;
+        }
+
+        .sub-claim-item {
+            padding: 6px 0;
+            font-size: 13px;
+            color: #bbb;
+            display: flex;
+            gap: 8px;
+        }
+
+        .sub-claim-bullet {
+            color: #2196F3;
+        }
+
+        .comparison-footer {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            border-top: 1px solid #444;
+            flex-shrink: 0;
+        }
+
+        .comparison-footer .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .comparison-footer .stats span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .comparison-footer .stats strong {
+            color: #2196F3;
+            font-size: 16px;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 16px;
+            font-style: italic;
+        }
+
+        .unified-panel,
+        .claims-only-panel {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .unified-panel h3,
+        .claims-only-panel h3 {
+            color: #2196F3;
+            margin-bottom: 20px;
+        }
+
+        .claim-group {
+            background: #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #666;
+        }
+
+        .claim-group.unique { border-left-color: #FF9800; }
+        .claim-group.shared { border-left-color: #4CAF50; }
+        .claim-group.similar { border-left-color: #2196F3; }
+
+        .group-header {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #555;
+        }
+
+        .group-number {
+            background: #2196F3;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .group-type {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #2196F3;
+        }
+
+        .similarity-score {
+            margin-left: auto;
+            padding: 2px 8px;
+            background: rgba(33, 150, 243, 0.2);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #90CAF9;
+        }
+
+        .group-claims {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .unified-claim {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .unified-claim strong {
+            color: #2196F3;
+            font-size: 12px;
+        }
+
+        .unified-claim p {
+            margin: 5px 0 0 0;
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Consensus Modal Styles */
+        .consensus-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .consensus-modal-content {
+            background: #1a1a1a;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .consensus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2196F3;
+        }
+
+        .consensus-header h2 {
+            margin: 0;
+            color: #2196F3;
+        }
+
+        .consensus-report {
+            color: #e0e0e0;
+        }
+
+        .consensus-score-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .score-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .score-description {
+            font-size: 16px;
+            color: #aaa;
+        }
+
+        .consensus-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .metric-label {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .consensus-breakdown {
+            margin-top: 30px;
+        }
+
+        .consensus-breakdown h4 {
+            color: #2196F3;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #444;
+        }
+
+        .consensus-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .consensus-item {
+            background: #2a2a2a;
+            border-left: 4px solid #666;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .consensus-item.agreement {
+            border-left-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .consensus-item.disagreement {
+            border-left-color: #F44336;
+            background: rgba(244, 67, 54, 0.05);
+        }
+
+        .consensus-item.partial {
+            border-left-color: #FF9800;
+            background: rgba(255, 152, 0, 0.05);
+        }
+
+        .consensus-item.unique {
+            border-left-color: #9C27B0;
+            background: rgba(156, 39, 176, 0.05);
+        }
+
+        .item-header {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .item-number {
+            background: #2196F3;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .item-content {
+            color: #e0e0e0;
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+
+        .item-sources {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        .variant-list {
+            list-style: none;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .variant-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #e0e0e0;
+        }
+
+        .type-badge,
+        .severity-badge,
+        .source-badge,
+        .support-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .type-badge {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .severity-badge {
+            background: #F44336;
+            color: white;
+        }
+
+        .source-badge {
+            background: #2196F3;
+            color: white;
+        }
+
+        .support-badge {
+            background: #FF9800;
+            color: white;
+        }
+
+        .consensus-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            text-align: center;
+        }
+
+        .consensus-footer button {
+            padding: 10px 24px;
+            background: #2196F3;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .consensus-footer button:hover {
+            background: #1976D2;
+        }
     </style>
 </head>
 <body>
@@ -1721,8 +3122,14 @@
 
                 <!-- Action Buttons -->
                 <div class="header-actions">
+                    <button class="help-button" onclick="TutorialManager.showHelp()" title="Show help and tutorial">
+                        <span>?</span> Help
+                    </button>
                     <button class="header-btn btn-success" id="run-clustering-btn" title="Refresh claim clustering">
                         🔗 Cluster
+                    </button>
+                    <button class="header-btn btn-info" onclick="ComparisonTool.open()" title="Compare documents side-by-side">
+                        📊 Compare
                     </button>
                     <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
                         ⚙️ Settings
@@ -1744,12 +3151,13 @@
                     <!-- Upload area - Compact horizontal layout -->
                     <div id="upload-zone" style="background: #2a2a2a; border-radius: 6px; padding: 8px; margin-bottom: 8px; border: 1px solid #444;">
                         <!-- File upload button -->
-                        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
                             <button onclick="document.getElementById('file-input').click()" style="flex: 0 0 auto; padding: 4px 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 📄 Upload Files
                             </button>
                             <input type="file" id="file-input" accept=".pdf,.txt,.docx" multiple style="display: none;">
                             <span style="color: #666; font-size: 9px; line-height: 24px;">PDF, TXT, DOCX</span>
+                            <span class="context-help" onclick="TutorialManager.showContextHelp('upload')" title="How to upload documents">?</span>
                         </div>
 
                         <!-- URL or Manual Claim input -->
@@ -1789,7 +3197,155 @@
                 </div>
 
                 <!-- Placeholder tabs - will be populated by TabManager -->
-                <div id="tab-search" class="tab-content" style="display:none;"></div>
+                <div id="tab-search" class="tab-content" style="display:none;">
+                    <!-- Enhanced Search Tab -->
+                    <div class="search-container" style="padding: 16px;">
+                        <!-- Search Mode Toggle -->
+                        <div class="search-mode-toggle" style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <button class="mode-btn active" data-mode="simple" style="flex: 1; padding: 8px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Simple
+                            </button>
+                            <button class="mode-btn" data-mode="advanced" style="flex: 1; padding: 8px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Advanced
+                            </button>
+                            <button class="mode-btn" data-mode="semantic" style="flex: 1; padding: 8px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Semantic
+                            </button>
+                            <button class="mode-btn" data-mode="natural" style="flex: 1; padding: 8px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Natural Language
+                            </button>
+                        </div>
+
+                        <!-- Search Bar with History -->
+                        <div class="search-controls" style="display: flex; gap: 8px; margin-bottom: 12px; position: relative;">
+                            <div style="flex: 1; position: relative;">
+                                <input type="text" id="search-input" placeholder="Search claims, documents, evidence..."
+                                       style="width: 100%; padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; font-size: 14px;">
+                                <!-- Real-time preview dropdown -->
+                                <div id="search-preview" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1a1a1a; border: 2px solid #2196F3; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 400px; overflow-y: auto; z-index: 1000; margin-top: 4px;"></div>
+                            </div>
+                            <button id="search-btn" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                Search
+                            </button>
+                            <button id="advanced-search-btn" style="padding: 10px 16px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                Filters
+                            </button>
+                            <div class="search-history-dropdown" style="position: relative;">
+                                <button onclick="toggleHistoryDropdown()" style="padding: 10px 16px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    📜
+                                </button>
+                                <div id="history-list" class="dropdown-content" style="display: none; position: absolute; top: 100%; right: 0; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; min-width: 300px; max-height: 300px; overflow-y: auto; z-index: 1000; margin-top: 4px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Natural Language Examples (shown in NL mode) -->
+                        <div id="nl-examples" style="display: none; background: #2a2a2a; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">EXAMPLE QUERIES</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <button class="example-query" onclick="document.getElementById('search-input').value = this.textContent; EnhancedSearch.executeSearch();" style="padding: 4px 8px; background: #333; color: #ccc; border: 1px solid #555; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    Find claims about climate change from 2023
+                                </button>
+                                <button class="example-query" onclick="document.getElementById('search-input').value = this.textContent; EnhancedSearch.executeSearch();" style="padding: 4px 8px; background: #333; color: #ccc; border: 1px solid #555; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    Show me contradicting claims
+                                </button>
+                                <button class="example-query" onclick="document.getElementById('search-input').value = this.textContent; EnhancedSearch.executeSearch();" style="padding: 4px 8px; background: #333; color: #ccc; border: 1px solid #555; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    High confidence evidence about vaccines
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Semantic Options (shown in semantic mode) -->
+                        <div id="semantic-options" style="display: none; background: #2a2a2a; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">SEMANTIC SEARCH OPTIONS</div>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc;">
+                                    <span>Similarity Threshold:</span>
+                                    <input type="range" id="semantic-threshold" min="0.5" max="0.95" step="0.05" value="0.7" style="width: 100px;">
+                                    <span id="semantic-threshold-value">0.7</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Faceted Filters Panel -->
+                        <div id="faceted-filters" class="faceted-filters" style="display: none; background: #2a2a2a; border-radius: 8px; padding: 15px; margin-bottom: 12px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <!-- Type Filter -->
+                                <div class="filter-section">
+                                    <h4 style="font-size: 12px; color: #999; margin-bottom: 8px; font-weight: 600;">TYPE</h4>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #ccc; cursor: pointer;">
+                                        <input type="checkbox" value="claim" checked> Claims
+                                    </label>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #ccc; cursor: pointer;">
+                                        <input type="checkbox" value="document" checked> Documents
+                                    </label>
+                                    <label style="display: block; margin-bottom: 4px; font-size: 12px; color: #ccc; cursor: pointer;">
+                                        <input type="checkbox" value="evidence" checked> Evidence
+                                    </label>
+                                </div>
+
+                                <!-- Date Range Filter -->
+                                <div class="filter-section">
+                                    <h4 style="font-size: 12px; color: #999; margin-bottom: 8px; font-weight: 600;">DATE RANGE</h4>
+                                    <input type="date" id="date-from" placeholder="From" style="width: 100%; padding: 6px; margin-bottom: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 12px;">
+                                    <input type="date" id="date-to" placeholder="To" style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 12px;">
+                                </div>
+
+                                <!-- Confidence Filter -->
+                                <div class="filter-section">
+                                    <h4 style="font-size: 12px; color: #999; margin-bottom: 8px; font-weight: 600;">MIN CONFIDENCE</h4>
+                                    <input type="range" id="confidence-min" min="0" max="100" value="0" style="width: 100%; margin-bottom: 4px;">
+                                    <span id="confidence-min-value" style="font-size: 12px; color: #ccc;">0%</span>
+                                </div>
+
+                                <!-- Investigation Value Filter -->
+                                <div class="filter-section">
+                                    <h4 style="font-size: 12px; color: #999; margin-bottom: 8px; font-weight: 600;">MIN INVESTIGATION VALUE</h4>
+                                    <input type="range" id="investigation-min" min="0" max="100" value="0" style="width: 100%; margin-bottom: 4px;">
+                                    <span id="investigation-min-value" style="font-size: 12px; color: #ccc;">0%</span>
+                                </div>
+
+                                <!-- Author Filter -->
+                                <div class="filter-section">
+                                    <h4 style="font-size: 12px; color: #999; margin-bottom: 8px; font-weight: 600;">AUTHOR/SOURCE</h4>
+                                    <select id="author-filter" multiple style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 12px; min-height: 80px;">
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                                <button id="apply-filters-btn" style="flex: 1; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                    Apply Filters
+                                </button>
+                                <button id="reset-filters-btn" style="flex: 1; padding: 8px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Saved Searches Panel -->
+                        <div class="saved-searches-panel" style="background: #2a2a2a; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h4 style="font-size: 12px; color: #999; font-weight: 600;">SAVED SEARCHES</h4>
+                                <button onclick="EnhancedSearch.saveCurrentSearch()" style="padding: 4px 8px; background: #FF9800; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                    ⭐ Save This Search
+                                </button>
+                            </div>
+                            <div id="saved-searches-list" style="max-height: 150px; overflow-y: auto;">
+                                <div class="empty-state" style="text-align: center; padding: 20px; color: #666; font-size: 12px;">No saved searches</div>
+                            </div>
+                        </div>
+
+                        <!-- Search Results -->
+                        <div id="search-results" style="background: #1a1a1a; border-radius: 4px; padding: 16px;">
+                            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
+                                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                                <div style="font-size: 18px; margin-bottom: 8px;">Start searching</div>
+                                <div style="font-size: 14px;">Enter a query above to find claims, documents, and evidence</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="tab-agents" class="tab-content" style="display:none;">
                     <!-- Agent Animation Controls - Compact Tab Version -->
                     <div style="padding: 8px;">
@@ -2012,6 +3568,102 @@
         <!-- Graph Area -->
         <div id="graph-area">
             <svg id="graph-svg"></svg>
+
+            <!-- Visualization Controls Panel -->
+            <div id="visualization-controls" class="viz-controls">
+                <div class="viz-controls-header">
+                    <h3>Visualization</h3>
+                    <button class="viz-toggle-btn" onclick="toggleVizControls()">−</button>
+                </div>
+
+                <div class="viz-controls-body">
+                    <div class="control-section">
+                        <h4>Layout</h4>
+                        <select id="layout-selector" onchange="LayoutManager.setLayout(this.value)">
+                            <option value="force" selected>Force-Directed</option>
+                            <option value="hierarchical">Hierarchical Tree</option>
+                            <option value="circular">Circular</option>
+                            <option value="grid">Grid</option>
+                            <option value="radial">Radial (by Type)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-section">
+                        <h4>Clustering</h4>
+                        <select id="cluster-method" onchange="handleClusterChange(this.value)">
+                            <option value="none" selected>No Clustering</option>
+                            <option value="embedding">By Similarity</option>
+                            <option value="type">By Type</option>
+                            <option value="confidence">By Confidence</option>
+                        </select>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-cluster-hulls" onchange="toggleClusterHulls(this.checked)">
+                            Show Boundaries
+                        </label>
+                    </div>
+
+                    <div class="control-section">
+                        <h4>Color Scheme</h4>
+                        <select id="heatmap-scheme" onchange="handleHeatmapChange(this.value)">
+                            <option value="type" selected>By Type (default)</option>
+                            <option value="confidence">Confidence Heatmap</option>
+                            <option value="quality">Quality Score</option>
+                            <option value="investigation">Investigation Value</option>
+                            <option value="recency">Recency</option>
+                            <option value="connectivity">Connections</option>
+                        </select>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-legend" onchange="toggleLegend(this.checked)">
+                            Show Legend
+                        </label>
+                    </div>
+
+                    <div class="control-section">
+                        <h4>Timeline</h4>
+                        <button class="viz-btn" onclick="initTimeline()">Enable Timeline</button>
+                    </div>
+
+                    <div class="control-section">
+                        <h4>Export</h4>
+                        <div class="export-buttons">
+                            <button class="viz-btn viz-btn-sm" onclick="ExportManager.exportAsPNG()" title="Export as PNG image">📷 PNG</button>
+                            <button class="viz-btn viz-btn-sm" onclick="ExportManager.exportAsSVG()" title="Export as SVG vector">📊 SVG</button>
+                            <button class="viz-btn viz-btn-sm" onclick="ExportManager.exportAsPDF()" title="Export as PDF document">📄 PDF</button>
+                            <button class="viz-btn viz-btn-sm" onclick="ExportManager.exportAsJSON()" title="Export data as JSON">💾 JSON</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap Legend -->
+            <div id="heatmap-legend" class="heatmap-legend" style="display: none;">
+                <div class="legend-title">Color Scale: <span id="legend-scheme-name">Confidence</span></div>
+                <div class="legend-gradient" id="legend-gradient"></div>
+                <div class="legend-labels">
+                    <span class="legend-min">Low</span>
+                    <span class="legend-max">High</span>
+                </div>
+            </div>
+
+            <!-- Timeline Controls -->
+            <div id="timeline-controls" class="timeline-controls" style="display: none;">
+                <button class="timeline-btn" id="timeline-play" onclick="playTimeline()">▶</button>
+                <button class="timeline-btn" id="timeline-pause" onclick="pauseTimeline()" style="display: none;">⏸</button>
+                <button class="timeline-btn" id="timeline-reset" onclick="resetTimeline()">⏮</button>
+
+                <input type="range" id="timeline-slider" min="0" max="100" value="0"
+                       oninput="seekTimelinePercent(this)">
+
+                <select id="timeline-speed" onchange="changeTimelineSpeed(this)">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                </select>
+
+                <span id="timeline-date" class="timeline-date">-</span>
+            </div>
 
             <div id="detail-panel">
                 <div class="detail-section">
@@ -2258,6 +3910,58 @@
         </div>
     </div>
 
+    <!-- Document Comparison Modal -->
+    <div id="document-comparison-modal" class="comparison-modal" style="display: none;">
+        <div class="comparison-modal-content">
+            <div class="comparison-header">
+                <h2>📊 Document Comparison</h2>
+                <div class="document-selector">
+                    <select id="doc-select-1" onchange="ComparisonTool.loadDocument(1, this.value)">
+                        <option value="">Select Document 1...</option>
+                    </select>
+                    <select id="doc-select-2" onchange="ComparisonTool.loadDocument(2, this.value)">
+                        <option value="">Select Document 2...</option>
+                    </select>
+                    <button class="add-doc-btn" onclick="ComparisonTool.addDocument()">+ Add Document</button>
+                </div>
+                <button class="close-btn" onclick="ComparisonTool.close()">×</button>
+            </div>
+
+            <div class="comparison-toolbar">
+                <div class="view-mode">
+                    <button class="mode-btn active" data-mode="side-by-side">Side by Side</button>
+                    <button class="mode-btn" data-mode="unified">Unified</button>
+                    <button class="mode-btn" data-mode="claims-only">Claims Only</button>
+                </div>
+
+                <div class="comparison-options">
+                    <label><input type="checkbox" id="show-unique" checked> Unique</label>
+                    <label><input type="checkbox" id="show-shared" checked> Shared</label>
+                    <label><input type="checkbox" id="show-similar" checked> Similar</label>
+                    <label><input type="checkbox" id="align-claims" checked> Auto-align</label>
+                </div>
+
+                <div class="comparison-actions">
+                    <button class="action-btn" onclick="ComparisonTool.analyzeConsensus()">🔍 Analyze Consensus</button>
+                    <button class="action-btn" onclick="ComparisonTool.exportReport()">📄 Export Report</button>
+                </div>
+            </div>
+
+            <div class="comparison-content">
+                <div class="document-panels" id="document-panels">
+                    <div class="empty-state">Select documents to compare</div>
+                </div>
+            </div>
+
+            <div class="comparison-footer">
+                <div class="stats" id="comparison-stats">
+                    <span><strong>0</strong> documents</span>
+                    <span><strong>0</strong> claims</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Version Indicator (bottom-right corner) -->
     <div id="version-indicator">
         <span id="version-build">Build: loading...</span>
@@ -2305,7 +4009,493 @@
         </div>
     </div>
 
+    <!-- Property Viewer Side Panel -->
+    <div id="property-viewer-panel" class="property-viewer">
+        <div class="pv-header">
+            <h3>Node Properties</h3>
+            <button class="pv-close-btn" onclick="PropertyViewer.hide()">&times;</button>
+        </div>
+
+        <div class="pv-tabs">
+            <button class="pv-tab active" data-tab="properties" onclick="PropertyViewer.switchTab('properties')">Properties</button>
+            <button class="pv-tab" data-tab="relationships" onclick="PropertyViewer.switchTab('relationships')">Relationships</button>
+            <button class="pv-tab" data-tab="history" onclick="PropertyViewer.switchTab('history')">History</button>
+            <button class="pv-tab" data-tab="provenance" onclick="PropertyViewer.switchTab('provenance')">Provenance</button>
+        </div>
+
+        <div class="pv-content">
+            <div id="pv-tab-properties" class="pv-tab-content active"></div>
+            <div id="pv-tab-relationships" class="pv-tab-content"></div>
+            <div id="pv-tab-history" class="pv-tab-content"></div>
+            <div id="pv-tab-provenance" class="pv-tab-content"></div>
+        </div>
+    </div>
+
     <style>
+        /* Property Viewer Panel Styles */
+        .property-viewer {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: #2a2a2a;
+            border-left: 2px solid #2196F3;
+            box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
+            z-index: 5000;
+            transition: right 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .property-viewer.visible {
+            right: 0;
+        }
+
+        .pv-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1976D2;
+        }
+
+        .pv-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .pv-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+            line-height: 1;
+        }
+
+        .pv-close-btn:hover {
+            opacity: 0.7;
+        }
+
+        .pv-tabs {
+            display: flex;
+            background: #333;
+            border-bottom: 2px solid #444;
+        }
+
+        .pv-tab {
+            flex: 1;
+            padding: 12px 8px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            text-transform: uppercase;
+        }
+
+        .pv-tab:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .pv-tab.active {
+            background: #2a2a2a;
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+
+        .pv-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .pv-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .pv-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .pv-content::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .pv-content::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .pv-tab-content {
+            display: none;
+        }
+
+        .pv-tab-content.active {
+            display: block;
+        }
+
+        .pv-section {
+            margin-bottom: 20px;
+        }
+
+        .pv-section h4 {
+            color: #2196F3;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .pv-node-type {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pv-label-badge {
+            background: #2196F3;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pv-text {
+            background: #333;
+            padding: 12px;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 13px;
+            line-height: 1.6;
+            border: 1px solid #444;
+        }
+
+        .pv-editable-field {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #333;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+
+        .pv-editable-field input[type="range"] {
+            flex: 1;
+        }
+
+        .pv-editable-field span {
+            min-width: 50px;
+            text-align: right;
+            color: #2196F3;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .pv-notes-input {
+            width: 100%;
+            min-height: 80px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            color: #e0e0e0;
+            font-size: 13px;
+            font-family: 'Segoe UI', sans-serif;
+            resize: vertical;
+        }
+
+        .pv-notes-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .pv-metadata {
+            background: #333;
+            border-radius: 6px;
+            border: 1px solid #444;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .pv-metadata-row {
+            padding: 8px 12px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .pv-metadata-row:last-child {
+            border-bottom: none;
+        }
+
+        .pv-metadata-key {
+            color: #999;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .pv-metadata-value {
+            color: #e0e0e0;
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .pv-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #444;
+        }
+
+        .pv-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pv-btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .pv-btn-primary:hover {
+            background: #45a049;
+        }
+
+        .pv-btn-secondary {
+            background: #666;
+            color: white;
+        }
+
+        .pv-btn-secondary:hover {
+            background: #777;
+        }
+
+        .pv-loading,
+        .pv-error,
+        .pv-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .pv-error {
+            color: #f44336;
+        }
+
+        /* Relationships Tab */
+        .pv-relationships {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pv-rel-group {
+            background: #333;
+            border-radius: 6px;
+            border: 1px solid #444;
+            padding: 12px;
+        }
+
+        .pv-rel-type {
+            color: #2196F3;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .pv-rel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pv-rel-item {
+            background: #2a2a2a;
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .pv-rel-item:hover {
+            background: #3a3a3a;
+            transform: translateX(4px);
+        }
+
+        .pv-rel-direction {
+            color: #FF9800;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .pv-rel-node-type {
+            background: #2196F3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .pv-rel-node-label {
+            color: #e0e0e0;
+            flex: 1;
+        }
+
+        /* History Tab */
+        .pv-history {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pv-history-item {
+            background: #333;
+            border-left: 3px solid #2196F3;
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .pv-history-timestamp {
+            color: #999;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .pv-history-event {
+            color: #e0e0e0;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .pv-history-agent {
+            color: #2196F3;
+            font-size: 12px;
+        }
+
+        .pv-history-agent a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        .pv-history-agent a:hover {
+            text-decoration: underline;
+        }
+
+        /* Provenance Tab */
+        .pv-provenance {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pv-prov-section {
+            background: #333;
+            border-radius: 6px;
+            border: 1px solid #444;
+            padding: 12px;
+        }
+
+        .pv-prov-section h4 {
+            color: #2196F3;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .pv-prov-agent {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }
+
+        .pv-prov-agent-type {
+            background: #2196F3;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .pv-prov-agent a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+        }
+
+        .pv-prov-agent a:hover {
+            text-decoration: underline;
+        }
+
+        .pv-prov-time {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .pv-prov-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pv-prov-chain-item {
+            background: #2a2a2a;
+            padding: 8px 10px;
+            border-radius: 4px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .pv-prov-chain-step {
+            color: #2196F3;
+            font-weight: bold;
+            min-width: 20px;
+        }
+
+        .pv-prov-chain-desc {
+            color: #e0e0e0;
+            font-size: 12px;
+            flex: 1;
+        }
+
         /* Agent Monitor Panel Styles */
         #agent-monitor-panel {
             /* Hidden - moved to Agents tab */
@@ -2636,18 +4826,360 @@
                 opacity: 1;
             }
         }
+
+        /* ===== ADVANCED VISUALIZATION CONTROLS ===== */
+        .viz-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 0;
+            max-width: 280px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .viz-controls-header {
+            background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+            padding: 10px 15px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .viz-controls-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .viz-toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .viz-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .viz-controls-body {
+            padding: 12px 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .viz-controls.collapsed .viz-controls-body {
+            display: none;
+        }
+
+        .control-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .control-section h4 {
+            margin: 0 0 8px 0;
+            color: #2196F3;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-section select {
+            width: 100%;
+            padding: 6px 8px;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .control-section select:hover {
+            border-color: #2196F3;
+        }
+
+        .control-section select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #ddd;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .viz-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: #2196F3;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .viz-btn:hover {
+            background: #1976D2;
+            transform: translateY(-1px);
+        }
+
+        .viz-btn:active {
+            transform: translateY(0);
+        }
+
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .viz-btn-sm {
+            width: auto;
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        /* Heatmap Legend */
+        .heatmap-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 12px 15px;
+            min-width: 180px;
+            z-index: 90;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .legend-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #2196F3;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .legend-gradient {
+            height: 20px;
+            margin: 8px 0;
+            border-radius: 4px;
+            background: linear-gradient(to right, #f44336, #ffeb3b, #4caf50);
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        /* Timeline Controls */
+        .timeline-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 90;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .timeline-btn {
+            background: #2196F3;
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-btn:hover {
+            background: #1976D2;
+            transform: scale(1.05);
+        }
+
+        #timeline-slider {
+            width: 300px;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #1a1a1a;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2196F3;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #timeline-slider::-webkit-slider-thumb:hover {
+            background: #1976D2;
+            transform: scale(1.2);
+        }
+
+        #timeline-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #2196F3;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #timeline-slider::-moz-range-thumb:hover {
+            background: #1976D2;
+            transform: scale(1.2);
+        }
+
+        #timeline-speed {
+            padding: 4px 8px;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        #timeline-speed:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .timeline-date {
+            font-size: 11px;
+            color: #ddd;
+            min-width: 140px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Cluster Hulls */
+        .cluster-hull {
+            pointer-events: none;
+            transition: all 0.5s;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .viz-controls {
+                max-width: 240px;
+                font-size: 11px;
+            }
+
+            .timeline-controls {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 10px 15px;
+            }
+
+            #timeline-slider {
+                width: 200px;
+            }
+        }
     </style>
 
     <!-- Animation System CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
 
+    <!-- Tutorial Overlay -->
+    <div id="tutorial-overlay" style="display: none;">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-spotlight" id="tutorial-spotlight"></div>
+        <div class="tutorial-panel" id="tutorial-panel">
+            <div class="tutorial-header">
+                <span class="tutorial-title" id="tutorial-title"></span>
+                <button class="tutorial-close" onclick="TutorialManager.skip()">×</button>
+            </div>
+            <div class="tutorial-content" id="tutorial-content"></div>
+            <div class="tutorial-footer">
+                <span class="tutorial-progress" id="tutorial-progress">Step 1 of 8</span>
+                <div class="tutorial-buttons">
+                    <button class="tutorial-btn tutorial-btn-secondary" id="tutorial-prev-btn" onclick="TutorialManager.previousStep()">Previous</button>
+                    <button class="tutorial-btn tutorial-btn-secondary" id="tutorial-skip-btn" onclick="TutorialManager.skip()">Skip Tour</button>
+                    <button class="tutorial-btn" id="tutorial-next-btn" onclick="TutorialManager.nextStep()">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modular JavaScript -->
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
     <script src="{{ url_for('static', filename='js/graph.js') }}"></script>
+
+    <!-- Advanced Visualization Modules -->
+    <script src="{{ url_for('static', filename='js/layout-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/clustering.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/heatmap-colorizer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timeline-player.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/export-manager.js') }}"></script>
+
     <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/agent_monitor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/property-viewer.js') }}"></script>
 
     <!-- Agent Animation System -->
     <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>
@@ -2673,6 +5205,14 @@
             const toggle = document.getElementById('chat-toggle');
             panel.classList.toggle('collapsed');
             toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
+        }
+
+        // Visualization controls toggle
+        function toggleVizControls() {
+            const panel = document.getElementById('visualization-controls');
+            const toggle = panel.querySelector('.viz-toggle-btn');
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '+' : '−';
         }
 
         // Investigate claim function for detail panel buttons
@@ -3059,6 +5599,18 @@ Databases: ${fw.source_preferences.databases.join(', ')}
     <!-- Project Manager -->
     <script src="{{ url_for('static', filename='js/project_manager.js') }}"></script>
 
+    <!-- Tutorial Manager -->
+    <script src="{{ url_for('static', filename='js/tutorial-manager.js') }}"></script>
+
+    <!-- Enhanced Search System -->
+    <script src="{{ url_for('static', filename='js/search-enhanced.js') }}"></script>
+
+    <!-- Document Comparison Tool -->
+    <script src="{{ url_for('static', filename='js/text-differ.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/consensus-analyzer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/comparison-report.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/comparison-tool.js') }}"></script>
+
     <!-- Agent Animation Control Panel Functions -->
     <script>
         // Control Panel Functions
@@ -3211,6 +5763,27 @@ Databases: ${fw.source_preferences.databases.join(', ')}
         window.addEventListener('beforeunload', () => {
             if (statsUpdateInterval) {
                 clearInterval(statsUpdateInterval);
+            }
+        });
+
+        // Enhanced Search Helper Functions
+        function toggleHistoryDropdown() {
+            const dropdown = document.getElementById('history-list');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                if (dropdown.style.display === 'block') {
+                    EnhancedSearch.refreshHistoryUI();
+                }
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const historyBtn = event.target.closest('.search-history-dropdown');
+            const historyDropdown = document.getElementById('history-list');
+
+            if (!historyBtn && historyDropdown && historyDropdown.style.display === 'block') {
+                historyDropdown.style.display = 'none';
             }
         });
     </script>

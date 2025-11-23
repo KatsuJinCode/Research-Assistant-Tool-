@@ -437,6 +437,11 @@ const UI = {
                 console.log(`Upload ${i+1}/${files.length} successful!`);
                 this.updateProcessingStatus(`Uploaded ${file.name}${fileNum}! Processing...`, ((i+1) / files.length) * 10);
 
+                // Dispatch document uploaded event for tutorial
+                document.dispatchEvent(new CustomEvent('documentUploaded', {
+                    detail: { fileName: file.name }
+                }));
+
                 // Brief delay between uploads to avoid overwhelming the server
                 if (i < files.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 500));

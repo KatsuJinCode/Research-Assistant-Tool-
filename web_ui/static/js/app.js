@@ -26,6 +26,11 @@ const App = {
         // Setup event listeners
         this.setupEventListeners();
 
+        // Initialize tutorial system
+        if (typeof TutorialManager !== 'undefined') {
+            TutorialManager.init();
+        }
+
         console.log('✓ Application ready');
     },
 

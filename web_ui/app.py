@@ -3819,6 +3819,584 @@ def update_node_properties(node_id):
 
 
 # ============================================================================
+# ENHANCED SEARCH ENDPOINTS
+# ============================================================================
+
+@app.route('/api/search/quick', methods=['POST'])
+def quick_search():
+    """
+    Quick keyword search for real-time preview.
+
+    Request body:
+        {
+            "query": str,
+            "limit": int (default 10),
+            "filters": dict (optional)
+        }
+
+    Returns:
+        {
+            "results": [...],
+            "count": int
+        }
+    """
+    try:
+        data = request.json
+        query = data.get('query', '').strip()
+        limit = data.get('limit', 10)
+        filters = data.get('filters', {})
+
+        if not query:
+            return jsonify({'results': [], 'count': 0})
+
+        # Build Cypher query for quick search
+        types_filter = filters.get('types', ['claim', 'document', 'evidence'])
+
+        # Search across multiple node types
+        query_parts = []
+        for node_type in types_filter:
+            label = node_type.capitalize()
+            query_parts.append(f"""
+                MATCH (n:{label})
+                WHERE n.text =~ '(?i).*{query}.*' OR n.title =~ '(?i).*{query}.*'
+                RETURN n.id as id, n.text as text, n.title as title,
+                       '{node_type}' as type, n.confidence as confidence,
+                       n.created_at as created_at
+                LIMIT {limit}
+            """)
+
+        cypher = " UNION ".join(query_parts)
+        results_raw = db.execute_query(cypher)
+
+        # Format results
+        results = []
+        for record in results_raw[:limit]:
+            text = record.get('text', '') or record.get('title', '')
+            snippet = text[:200] + '...' if len(text) > 200 else text
+
+            results.append({
+                'id': record.get('id'),
+                'type': record.get('type'),
+                'title': record.get('title', text[:50]),
+                'text': text,
+                'snippet': snippet,
+                'confidence': record.get('confidence', 0),
+                'created_at': record.get('created_at'),
+                'relevance': 50  # Quick search has baseline relevance
+            })
+
+        return jsonify({
+            'results': results,
+            'count': len(results)
+        })
+
+    except Exception as e:
+        logger.error(f"Quick search error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/search/semantic', methods=['POST'])
+def semantic_search():
+    """
+    Semantic search using embeddings.
+
+    Request body:
+        {
+            "query": str,
+            "limit": int (default 20),
+            "threshold": float (default 0.7),
+            "filters": dict (optional)
+        }
+
+    Returns:
+        {
+            "results": [...],
+            "query": str,
+            "count": int
+        }
+    """
+    try:
+        from research_agent.semantic_similarity import get_embedding_manager
+
+        data = request.json
+        query = data.get('query', '').strip()
+        limit = data.get('limit', 20)
+        threshold = data.get('threshold', 0.7)
+        filters = data.get('filters', {})
+
+        if not query:
+            return jsonify({'results': [], 'count': 0, 'query': query})
+
+        # Get embedding manager
+        embedding_manager = get_embedding_manager()
+
+        # Generate query embedding
+        from web_ui.semantic_clustering import SemanticClaimClusterer
+        clusterer = SemanticClaimClusterer()
+        query_embedding = clusterer.model.encode([query])[0]
+
+        # Find similar nodes using cosine similarity
+        # Query Neo4j for nodes with embeddings
+        types_filter = filters.get('types', ['claim', 'document', 'evidence'])
+
+        results = []
+        for node_type in types_filter:
+            label = node_type.capitalize()
+
+            # Get all nodes of this type with embeddings
+            cypher = f"""
+                MATCH (n:{label})
+                WHERE n.embedding IS NOT NULL
+                RETURN n.id as id, n.text as text, n.title as title,
+                       n.embedding as embedding, n.confidence as confidence,
+                       n.created_at as created_at, n.investigation_value as investigation_value
+            """
+
+            nodes = db.execute_query(cypher)
+
+            # Calculate cosine similarity for each node
+            for node in nodes:
+                if not node.get('embedding'):
+                    continue
+
+                node_embedding = node['embedding']
+
+                # Calculate cosine similarity
+                from sklearn.metrics.pairwise import cosine_similarity
+                import numpy as np
+
+                similarity = cosine_similarity(
+                    [query_embedding],
+                    [np.array(node_embedding)]
+                )[0][0]
+
+                if similarity >= threshold:
+                    text = node.get('text', '') or node.get('title', '')
+                    snippet = text[:200] + '...' if len(text) > 200 else text
+
+                    # Calculate relevance score (0-100)
+                    relevance = int(similarity * 100)
+
+                    results.append({
+                        'id': node.get('id'),
+                        'type': node_type,
+                        'title': node.get('title', text[:50]),
+                        'text': text,
+                        'snippet': snippet,
+                        'confidence': node.get('confidence', 0),
+                        'investigation_value': node.get('investigation_value', 0),
+                        'created_at': node.get('created_at'),
+                        'relevance': relevance,
+                        'similarity': float(similarity),
+                        'scores': {
+                            'keyword': 0,
+                            'semantic': relevance,
+                            'confidence': node.get('confidence', 0) * 0.15,
+                            'recency': 10,
+                            'investigation': node.get('investigation_value', 0) * 0.05
+                        }
+                    })
+
+        # Sort by relevance
+        results.sort(key=lambda x: x['relevance'], reverse=True)
+        results = results[:limit]
+
+        return jsonify({
+            'results': results,
+            'query': query,
+            'count': len(results),
+            'method': 'semantic-embedding'
+        })
+
+    except ImportError as e:
+        logger.warning(f"Semantic search dependencies not available: {e}")
+        # Fallback to keyword search
+        return jsonify({
+            'error': 'Semantic search not available. Install sentence-transformers.',
+            'results': [],
+            'count': 0
+        }), 503
+
+    except Exception as e:
+        logger.error(f"Semantic search error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/search/natural', methods=['POST'])
+def natural_language_search():
+    """
+    Natural language query search with LLM parsing.
+
+    Request body:
+        {
+            "query": str,
+            "filters": dict (optional)
+        }
+
+    Returns:
+        {
+            "results": [...],
+            "parsed_query": dict,
+            "intent": str
+        }
+    """
+    try:
+        from web_ui.agent_config import get_agent_adapter
+
+        data = request.json
+        query = data.get('query', '').strip()
+        filters = data.get('filters', {})
+
+        if not query:
+            return jsonify({'results': [], 'parsed_query': {}, 'intent': 'search'})
+
+        # Use AI agent to parse the query
+        agent = get_agent_adapter()
+
+        prompt = f"""Parse this natural language search query and extract structured filters.
+
+Query: "{query}"
+
+Return ONLY a valid JSON object (no markdown, no code blocks) with these exact fields:
+{{
+    "keywords": ["list", "of", "search", "terms"],
+    "filters": {{
+        "types": ["claim", "document", "evidence"],
+        "date_range": {{"from": null, "to": null}},
+        "confidence_min": null,
+        "investigation_min": null
+    }},
+    "intent": "search"
+}}
+
+Intent can be: "search", "compare", "analyze", "find_contradictions"
+Extract date ranges, confidence levels, and other filters from the query.
+Return ONLY the JSON, nothing else."""
+
+        try:
+            response = agent.invoke(prompt, timeout=30)
+
+            # Parse JSON from response
+            import json
+            # Try to find JSON in response
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                parsed = json.loads(json_str)
+            else:
+                parsed = json.loads(response)
+
+        except Exception as e:
+            logger.warning(f"Failed to parse NL query with AI: {e}")
+            # Fallback to simple keyword extraction
+            parsed = {
+                'keywords': query.split(),
+                'filters': filters,
+                'intent': 'search'
+            }
+
+        # Extract search parameters
+        keywords = parsed.get('keywords', [query])
+        search_query = ' '.join(keywords)
+        extracted_filters = parsed.get('filters', {})
+        intent = parsed.get('intent', 'search')
+
+        # Merge filters
+        merged_filters = {**filters, **extracted_filters}
+
+        # Execute search based on intent
+        if intent == 'find_contradictions':
+            # Find contradicting claims
+            results = find_contradicting_claims(search_query)
+        else:
+            # Regular keyword search
+            results = perform_keyword_search(search_query, merged_filters)
+
+        return jsonify({
+            'results': results,
+            'parsed_query': parsed,
+            'intent': intent,
+            'count': len(results)
+        })
+
+    except Exception as e:
+        logger.error(f"Natural language search error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/search/keyword', methods=['POST'])
+def keyword_search():
+    """
+    Standard keyword-based search with filters.
+
+    Request body:
+        {
+            "query": str,
+            "filters": dict (optional)
+        }
+
+    Returns:
+        {
+            "results": [...],
+            "count": int
+        }
+    """
+    try:
+        data = request.json
+        query = data.get('query', '').strip()
+        filters = data.get('filters', {})
+
+        results = perform_keyword_search(query, filters)
+
+        return jsonify({
+            'results': results,
+            'count': len(results),
+            'method': 'keyword'
+        })
+
+    except Exception as e:
+        logger.error(f"Keyword search error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/authors', methods=['GET'])
+def get_authors():
+    """
+    Get list of unique authors/sources for filter dropdown.
+
+    Returns:
+        {
+            "authors": [...]
+        }
+    """
+    try:
+        # Query for unique authors from documents and claims
+        cypher = """
+            MATCH (n)
+            WHERE n.author IS NOT NULL
+            RETURN DISTINCT n.author as author
+            ORDER BY author
+        """
+
+        results = db.execute_query(cypher)
+        authors = [r['author'] for r in results if r.get('author')]
+
+        return jsonify({
+            'authors': authors
+        })
+
+    except Exception as e:
+        logger.error(f"Get authors error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/related/<node_id>', methods=['GET'])
+def get_related_items(node_id):
+    """
+    Find items related to a specific node.
+
+    Returns:
+        {
+            "results": [...],
+            "count": int
+        }
+    """
+    try:
+        # Find connected nodes
+        cypher = """
+            MATCH (n {id: $node_id})-[r]-(related)
+            RETURN related.id as id, related.text as text, related.title as title,
+                   type(r) as relationship, labels(related)[0] as type,
+                   related.confidence as confidence, related.created_at as created_at
+            LIMIT 50
+        """
+
+        results_raw = db.execute_query(cypher, {'node_id': node_id})
+
+        results = []
+        for record in results_raw:
+            text = record.get('text', '') or record.get('title', '')
+            snippet = text[:200] + '...' if len(text) > 200 else text
+
+            results.append({
+                'id': record.get('id'),
+                'type': record.get('type', '').lower(),
+                'title': record.get('title', text[:50]),
+                'text': text,
+                'snippet': snippet,
+                'confidence': record.get('confidence', 0),
+                'created_at': record.get('created_at'),
+                'relationship': record.get('relationship'),
+                'relevance': 80  # Related items have high relevance
+            })
+
+        return jsonify({
+            'results': results,
+            'count': len(results)
+        })
+
+    except Exception as e:
+        logger.error(f"Get related items error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+def perform_keyword_search(query, filters):
+    """
+    Helper function to perform keyword search with filters.
+
+    Args:
+        query: Search query string
+        filters: Filter dict with types, dates, confidence, etc.
+
+    Returns:
+        List of result dicts
+    """
+    if not query:
+        return []
+
+    types_filter = filters.get('types', ['claim', 'document', 'evidence'])
+    confidence_min = filters.get('confidenceMin', 0)
+    investigation_min = filters.get('investigationMin', 0)
+    date_from = filters.get('dateFrom', '')
+    date_to = filters.get('dateTo', '')
+    authors = filters.get('authors', [])
+
+    # Build WHERE clauses
+    where_clauses = []
+
+    if confidence_min > 0:
+        where_clauses.append(f"n.confidence >= {confidence_min}")
+
+    if investigation_min > 0:
+        where_clauses.append(f"n.investigation_value >= {investigation_min}")
+
+    if date_from:
+        where_clauses.append(f"n.created_at >= '{date_from}'")
+
+    if date_to:
+        where_clauses.append(f"n.created_at <= '{date_to}'")
+
+    if authors:
+        authors_str = "', '".join(authors)
+        where_clauses.append(f"n.author IN ['{authors_str}']")
+
+    where_clause = " AND ".join(where_clauses) if where_clauses else "true"
+
+    # Build query for each type
+    query_parts = []
+    for node_type in types_filter:
+        label = node_type.capitalize()
+        query_parts.append(f"""
+            MATCH (n:{label})
+            WHERE (n.text =~ '(?i).*{query}.*' OR n.title =~ '(?i).*{query}.*')
+              AND {where_clause}
+            RETURN n.id as id, n.text as text, n.title as title,
+                   '{node_type}' as type, n.confidence as confidence,
+                   n.investigation_value as investigation_value,
+                   n.created_at as created_at, n.author as author
+        """)
+
+    cypher = " UNION ".join(query_parts) + " LIMIT 100"
+
+    results_raw = db.execute_query(cypher)
+
+    # Format and score results
+    results = []
+    for record in results_raw:
+        text = record.get('text', '') or record.get('title', '')
+        snippet = text[:200] + '...' if len(text) > 200 else text
+
+        # Calculate keyword relevance
+        query_lower = query.lower()
+        text_lower = text.lower()
+        keyword_count = text_lower.count(query_lower)
+        keyword_score = min(keyword_count * 20, 100)
+
+        # Combined relevance score
+        relevance = int(
+            keyword_score * 0.6 +
+            (record.get('confidence', 0) or 0) * 0.25 +
+            (record.get('investigation_value', 0) or 0) * 0.15
+        )
+
+        results.append({
+            'id': record.get('id'),
+            'type': record.get('type'),
+            'title': record.get('title', text[:50]),
+            'text': text,
+            'snippet': snippet,
+            'confidence': record.get('confidence', 0),
+            'investigation_value': record.get('investigation_value', 0),
+            'created_at': record.get('created_at'),
+            'author': record.get('author'),
+            'relevance': relevance,
+            'scores': {
+                'keyword': keyword_score,
+                'semantic': 0,
+                'confidence': (record.get('confidence', 0) or 0) * 0.25,
+                'recency': 10,
+                'investigation': (record.get('investigation_value', 0) or 0) * 0.15
+            }
+        })
+
+    # Sort by relevance
+    results.sort(key=lambda x: x['relevance'], reverse=True)
+
+    return results
+
+
+def find_contradicting_claims(query):
+    """
+    Helper function to find contradicting claims.
+
+    Args:
+        query: Search query string
+
+    Returns:
+        List of result dicts
+    """
+    # Find claims with CONTRADICTS relationships
+    cypher = """
+        MATCH (c1:Claim)-[r:CONTRADICTS]-(c2:Claim)
+        WHERE c1.text =~ $query OR c2.text =~ $query
+        RETURN c1.id as id, c1.text as text, c1.title as title,
+               c1.confidence as confidence, c1.created_at as created_at,
+               c2.id as contradicts_id, c2.text as contradicts_text
+        LIMIT 50
+    """
+
+    results_raw = db.execute_query(cypher, {'query': f'(?i).*{query}.*'})
+
+    results = []
+    for record in results_raw:
+        text = record.get('text', '')
+        snippet = text[:200] + '...' if len(text) > 200 else text
+
+        results.append({
+            'id': record.get('id'),
+            'type': 'claim',
+            'title': record.get('title', text[:50]),
+            'text': text,
+            'snippet': snippet,
+            'confidence': record.get('confidence', 0),
+            'created_at': record.get('created_at'),
+            'relevance': 90,  # Contradictions are highly relevant
+            'contradicts': {
+                'id': record.get('contradicts_id'),
+                'text': record.get('contradicts_text')
+            }
+        })
+
+    return results
+
+
+# ============================================================================
 # FRAMEWORK MANAGEMENT ENDPOINTS
 # ============================================================================
 

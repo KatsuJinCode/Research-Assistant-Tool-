@@ -555,6 +555,13 @@ const GraphRenderer = {
                     return isConnected ? baseWidth * 1.5 : baseWidth;
                 });
 
+            // Dispatch node selected event for tutorial
+            if (this.selectedNodeIds.size === 1) {
+                document.dispatchEvent(new CustomEvent('nodeSelected', {
+                    detail: { nodeId: d.id, nodeType: d.type }
+                }));
+            }
+
             // Update comparison panel if multiple nodes selected
             if (this.selectedNodeIds.size > 1) {
                 this.showComparisonPanel();
@@ -594,6 +601,11 @@ const GraphRenderer = {
                 .attr('clip-path', d => `url(#${d.clipPathId})`)
                 .attr('font-size', '11px');
             this.hideComparisonPanel();
+
+            // Close Property Viewer if open
+            if (window.PropertyViewer && PropertyViewer.isOpen) {
+                PropertyViewer.hide();
+            }
         });
 
         // Simplified tick function - labels attached to nodes
@@ -1806,5 +1818,60 @@ const GraphRenderer = {
 
         // Show notification
         UI.showNotification(`Focused on ${node.type}: ${node.label || nodeId}`, 'success');
+    },
+
+    /**
+     * Update node colors with current heatmap scheme
+     * Called by HeatmapColorizer
+     */
+    updateNodeColors() {
+        const svg = d3.select('#graph-svg');
+
+        svg.selectAll('circle.graph-node')
+            .transition()
+            .duration(500)
+            .style('fill', d => {
+                if (d.heatmapColor) {
+                    return d.heatmapColor;
+                } else {
+                    // Use default color function
+                    return this.getNodeColor(d.type, d);
+                }
+            });
+
+        console.log('[GraphRenderer] Node colors updated via heatmap');
+    },
+
+    /**
+     * Get node size (used by timeline for pulse animation)
+     */
+    getNodeSize(node) {
+        return this.getNodeRadius(node.type, node);
     }
 };
+
+/**
+ * Advanced Visualization Integration
+ * Initialize and connect all visualization systems
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Visualization] Initializing advanced visualization systems...');
+
+    // Wait for graph to be ready
+    const initViz = () => {
+        if (typeof LayoutManager !== 'undefined') {
+            LayoutManager.init();
+            console.log('[Visualization] Layout Manager initialized');
+        }
+
+        if (typeof HeatmapColorizer !== 'undefined') {
+            HeatmapColorizer.init();
+            console.log('[Visualization] Heatmap Colorizer initialized');
+        }
+
+        console.log('[Visualization] Advanced visualization systems ready');
+    };
+
+    // Initialize after a short delay to ensure all modules are loaded
+    setTimeout(initViz, 100);
+});
