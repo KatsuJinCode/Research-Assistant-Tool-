@@ -4750,6 +4750,19 @@ def debug_disable():
         return jsonify({'error': str(e)}), 500
 
 
+# Agent mode API route (SDK vs CLI)
+@app.route('/api/agent/mode', methods=['GET'])
+def agent_mode():
+    """Get current agent mode information (SDK vs CLI)"""
+    try:
+        from web_ui.agent_config import _config
+        mode_info = _config.get_mode_info()
+        return jsonify(mode_info)
+    except Exception as e:
+        logger.error(f"Error getting agent mode: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("=" * 80)
     print("RESEARCH GRAPH WEB INTERFACE - LIVE UPDATES ENABLED".center(80))
