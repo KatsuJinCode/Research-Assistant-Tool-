@@ -1,7 +1,12 @@
 """
-Agent Configuration and CLI Adapter System
+Agent Configuration and Adapter System
 
-Supports multiple AI agent CLIs: Claude Code, OpenAI Codex, Gemini Code, and custom adapters.
+Supports multiple AI agent modes:
+- SDK Mode (Direct API): Full features, streaming, tool use (Claude, OpenAI, Gemini SDKs)
+- CLI Mode (Subprocess): Reduced features, uses external CLI tools
+
+In development: Prefers SDK mode for full features
+In production: Falls back to CLI mode if SDK unavailable
 """
 
 import os
@@ -9,20 +14,35 @@ import json
 import subprocess
 import tempfile
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Iterator
 from pathlib import Path
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
+# Try importing SDK libraries
+try:
+    from anthropic import Anthropic
+    ANTHROPIC_SDK_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_SDK_AVAILABLE = False
+    logger.warning("Anthropic SDK not available - Claude will use CLI mode (reduced features)")
+
+try:
+    import openai
+    OPENAI_SDK_AVAILABLE = True
+except ImportError:
+    OPENAI_SDK_AVAILABLE = False
+    logger.warning("OpenAI SDK not available - will use CLI mode if needed")
+
 
 class AgentAdapter(ABC):
-    """Base class for AI agent CLI adapters"""
+    """Base class for AI agent adapters (SDK and CLI modes)"""
 
     @abstractmethod
     def invoke(self, prompt: str, tools: Optional[List[Dict]] = None, timeout: int = 120) -> str:
         """
-        Invoke the agent CLI with a prompt and optional tools.
+        Invoke the agent with a prompt and optional tools.
 
         Args:
             prompt: The task prompt
@@ -30,7 +50,7 @@ class AgentAdapter(ABC):
             timeout: Timeout in seconds
 
         Returns:
-            Raw response string from CLI
+            Raw response string
         """
         pass
 
@@ -40,7 +60,7 @@ class AgentAdapter(ABC):
         Parse tool use from agent response.
 
         Args:
-            response: Raw response from CLI
+            response: Raw response
 
         Returns:
             Extracted tool input as dict
@@ -51,6 +71,35 @@ class AgentAdapter(ABC):
     def supports_tools(self) -> bool:
         """Check if this adapter supports tool calling"""
         pass
+
+    @abstractmethod
+    def is_sdk_mode(self) -> bool:
+        """Check if this adapter uses SDK (True) or CLI (False)"""
+        pass
+
+    def get_mode_info(self) -> Dict[str, Any]:
+        """
+        Get information about the adapter mode.
+
+        Returns:
+            Dict with mode, features, limitations
+        """
+        is_sdk = self.is_sdk_mode()
+        return {
+            'mode': 'sdk' if is_sdk else 'cli',
+            'features': {
+                'streaming': is_sdk,
+                'tool_use': self.supports_tools(),
+                'full_api_control': is_sdk,
+                'lower_latency': is_sdk
+            },
+            'limitations': [] if is_sdk else [
+                'No streaming responses',
+                'Higher latency (subprocess overhead)',
+                'Limited API parameter control',
+                'Requires external CLI tool installed'
+            ]
+        }
 
 
 class ClaudeCodeAdapter(AgentAdapter):
@@ -120,6 +169,73 @@ class ClaudeCodeAdapter(AgentAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def is_sdk_mode(self) -> bool:
+        return False  # CLI mode
+
+
+class ClaudeSDKAdapter(AgentAdapter):
+    """Adapter for Claude API via Anthropic SDK (direct API calls)"""
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "claude-sonnet-4-20250514"):
+        """
+        Initialize Claude SDK adapter.
+
+        Args:
+            api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+            model: Claude model to use
+        """
+        if not ANTHROPIC_SDK_AVAILABLE:
+            raise RuntimeError("Anthropic SDK not installed. Run: pip install anthropic")
+
+        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+
+        self.model = model
+        self.client = Anthropic(api_key=self.api_key)
+        logger.info(f"🚀 Claude SDK adapter initialized (model: {model})")
+
+    def invoke(self, prompt: str, tools: Optional[List[Dict]] = None, timeout: int = 120) -> str:
+        """Invoke Claude via SDK"""
+        try:
+            messages = [{"role": "user", "content": prompt}]
+
+            kwargs = {
+                "model": self.model,
+                "max_tokens": 4096,
+                "messages": messages
+            }
+
+            if tools:
+                kwargs["tools"] = tools
+
+            response = self.client.messages.create(**kwargs)
+
+            # Extract text content
+            if response.content:
+                return response.content[0].text if hasattr(response.content[0], 'text') else str(response.content[0])
+
+            return ""
+
+        except Exception as e:
+            logger.error(f"Claude SDK error: {str(e)}")
+            raise RuntimeError(f"Claude API call failed: {str(e)}")
+
+    def parse_tool_response(self, response: str) -> Dict[str, Any]:
+        """Parse tool use from Claude response"""
+        try:
+            # Claude SDK returns structured response
+            import json
+            return json.loads(response)
+        except:
+            raise RuntimeError("Failed to parse tool response")
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def is_sdk_mode(self) -> bool:
+        return True  # SDK mode
+
 
 class OpenAICodexAdapter(AgentAdapter):
     """Adapter for OpenAI Codex CLI (openai or codex)"""
@@ -187,6 +303,9 @@ class OpenAICodexAdapter(AgentAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def is_sdk_mode(self) -> bool:
+        return False  # CLI mode
+
 
 class GeminiCodeAdapter(AgentAdapter):
     """Adapter for Google Gemini Code CLI (gemini or gcloud)"""
@@ -239,6 +358,9 @@ class GeminiCodeAdapter(AgentAdapter):
 
     def supports_tools(self) -> bool:
         return True
+
+    def is_sdk_mode(self) -> bool:
+        return False  # CLI mode
 
 
 class CustomCLIAdapter(AgentAdapter):
@@ -326,12 +448,15 @@ class CustomCLIAdapter(AgentAdapter):
     def supports_tools(self) -> bool:
         return 'tools_flag' in self.config
 
+    def is_sdk_mode(self) -> bool:
+        return False  # CLI mode
+
 
 class AgentConfig:
     """Configuration manager for AI agent selection"""
 
-    # Built-in adapter registry
-    ADAPTERS = {
+    # Built-in adapter registry (CLI adapters)
+    CLI_ADAPTERS = {
         'claude': ClaudeCodeAdapter,
         'claude-code': ClaudeCodeAdapter,
         'openai': OpenAICodexAdapter,
@@ -340,13 +465,36 @@ class AgentConfig:
         'gemini-code': GeminiCodeAdapter,
     }
 
+    # SDK adapter registry
+    SDK_ADAPTERS = {
+        'claude': ClaudeSDKAdapter,
+        'claude-sdk': ClaudeSDKAdapter,
+        # OpenAI SDK adapter can be added here later
+        # 'openai': OpenAISDKAdapter,
+    }
+
     def __init__(self):
         """Initialize configuration from environment or defaults"""
         self.current_adapter: Optional[AgentAdapter] = None
+        self.is_dev_mode = self._detect_dev_mode()
         self._load_config()
 
+    def _detect_dev_mode(self) -> bool:
+        """Detect if running in development mode"""
+        # Check environment variable
+        flask_env = os.getenv('FLASK_ENV', '').lower()
+        if flask_env in ['development', 'dev']:
+            return True
+
+        # Check debug flag
+        debug_mode = os.getenv('DEBUG', '').lower()
+        if debug_mode in ['1', 'true', 'yes']:
+            return True
+
+        return False
+
     def _load_config(self):
-        """Load agent configuration from environment or config file"""
+        """Load agent configuration with SDK/CLI auto-detection"""
         # Check environment variable
         agent_type = os.getenv('AI_AGENT_CLI', '').lower()
 
@@ -366,17 +514,25 @@ class AgentConfig:
             except Exception as e:
                 logger.warning(f"Failed to load config file: {e}")
 
-        # Default to Claude Code
+        # Default to Claude
         if not agent_type:
             agent_type = 'claude'
-            logger.info("No agent configured, defaulting to Claude Code")
 
-        # Create adapter
-        if agent_type in self.ADAPTERS:
-            self.current_adapter = self.ADAPTERS[agent_type]()
-            logger.info(f"Using agent adapter: {agent_type}")
+        # Try SDK mode first (in development, if SDK available)
+        if self.is_dev_mode and agent_type in self.SDK_ADAPTERS:
+            try:
+                self.current_adapter = self.SDK_ADAPTERS[agent_type]()
+                logger.info(f"🚀 Using {agent_type} SDK adapter (full features)")
+                return
+            except Exception as e:
+                logger.warning(f"SDK adapter failed ({str(e)}), falling back to CLI mode")
+
+        # Fall back to CLI adapter
+        if agent_type in self.CLI_ADAPTERS:
+            self.current_adapter = self.CLI_ADAPTERS[agent_type]()
+            logger.info(f"Using {agent_type} CLI adapter (reduced features)")
         else:
-            logger.warning(f"Unknown agent type '{agent_type}', falling back to Claude Code")
+            logger.warning(f"Unknown agent type '{agent_type}', falling back to Claude CLI")
             self.current_adapter = ClaudeCodeAdapter()
 
     def get_adapter(self) -> AgentAdapter:
@@ -384,6 +540,32 @@ class AgentConfig:
         if not self.current_adapter:
             self._load_config()
         return self.current_adapter
+
+    def get_mode_info(self) -> Dict[str, Any]:
+        """
+        Get information about the current adapter mode.
+
+        Returns:
+            Dict with mode, adapter_type, features, limitations
+        """
+        adapter = self.get_adapter()
+        mode_info = adapter.get_mode_info()
+
+        # Add adapter type
+        adapter_class = adapter.__class__.__name__
+        if 'Claude' in adapter_class:
+            adapter_type = 'Claude'
+        elif 'OpenAI' in adapter_class:
+            adapter_type = 'OpenAI'
+        elif 'Gemini' in adapter_class:
+            adapter_type = 'Gemini'
+        else:
+            adapter_type = 'Custom'
+
+        mode_info['adapter_type'] = adapter_type
+        mode_info['is_dev_mode'] = self.is_dev_mode
+
+        return mode_info
 
     def set_adapter(self, agent_type: str, custom_config: Optional[Dict] = None):
         """
