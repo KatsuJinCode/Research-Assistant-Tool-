@@ -525,22 +525,37 @@ const AIAssistant = {
     updateContext(tabId) {
         this.context.activeTab = tabId;
 
-        // Update context badge
-        const badge = document.getElementById('ai-context-badge');
-        if (badge) {
-            const labels = {
-                'documents': 'Documents',
-                'search': 'Search',
-                'agents': 'Agents',
-                'projects': 'Projects'
-            };
-            badge.textContent = labels[tabId] || tabId;
-        }
+        // Update context badge with selected nodes
+        this.updateContextBadge();
 
         // Update contextual suggestions based on tab
         this.updateContextualSuggestions(tabId);
 
         console.log('[AIAssistant] Context updated:', this.context);
+    },
+
+    /**
+     * Update the context badge to show active tab + selected nodes
+     */
+    updateContextBadge() {
+        const badge = document.getElementById('ai-context-badge');
+        if (!badge) return;
+
+        const labels = {
+            'documents': 'Documents',
+            'search': 'Search',
+            'agents': 'Agents',
+            'projects': 'Projects'
+        };
+
+        let badgeText = labels[this.context.activeTab] || this.context.activeTab;
+
+        // Add selected nodes count if any are selected
+        if (this.context.selectedNodes && this.context.selectedNodes.length > 0) {
+            badgeText += ` + ${this.context.selectedNodes.length} node${this.context.selectedNodes.length > 1 ? 's' : ''}`;
+        }
+
+        badge.textContent = badgeText;
     },
 
     /**
@@ -933,6 +948,9 @@ const AIAssistant = {
 
             console.log('[AIAssistant] Node added to context with full details:', nodeId);
 
+            // Update context badge
+            this.updateContextBadge();
+
             // Display visual feedback badge
             this.displaySelectedNodeBadge(fullDetails);
 
@@ -945,6 +963,9 @@ const AIAssistant = {
             // Fallback: Add just the node ID
             this.context.selectedNodes.push({ id: nodeId });
 
+            // Update context badge
+            this.updateContextBadge();
+
             // Show simplified badge
             this.displaySelectedNodeBadge({ node: { id: nodeId, title: nodeId.substring(0, 8) } });
         }
@@ -956,6 +977,9 @@ const AIAssistant = {
     removeSelectedNode(nodeId) {
         this.context.selectedNodes = this.context.selectedNodes.filter(n => n.id !== nodeId);
         console.log('[AIAssistant] Node deselected:', nodeId);
+
+        // Update context badge
+        this.updateContextBadge();
 
         // Remove visual badge
         const badge = document.querySelector(`.ai-context-node-badge[data-node-id="${nodeId}"]`);

@@ -1285,143 +1285,149 @@ def get_node_provenance(node_id):
 def get_full_graph():
     """Get complete hierarchical graph with arbitrary depth support, including agents."""
 
-    # Fetch all data using repositories
-    documents = doc_repo.get_all_documents_simple()
-    claims = claim_repo.get_all_claims_with_children()
-    doc_claims = doc_repo.get_all_document_claim_relationships()
-    evidence_data = claim_repo.get_all_claim_evidence_relationships()
-    semantic_links = claim_repo.get_all_semantic_relationships()
-    similar_to_links = claim_repo.get_all_similar_to_relationships()  # RAG-detected similar claims
+    try:
+        # Fetch all data using repositories
+        documents = doc_repo.get_all_documents_simple()
+        claims = claim_repo.get_all_claims_with_children()
+        doc_claims = doc_repo.get_all_document_claim_relationships()
+        evidence_data = claim_repo.get_all_claim_evidence_relationships()
+        semantic_links = claim_repo.get_all_semantic_relationships()
+        similar_to_links = claim_repo.get_all_similar_to_relationships()  # RAG-detected similar claims
 
-    # Fetch agent data from transcripts
-    from research_agent.transcript_manager import get_transcript_manager
-    transcript_manager = get_transcript_manager()
-    all_transcripts = transcript_manager.list_all_transcripts()
+        # Fetch agent data from transcripts
+        from research_agent.transcript_manager import get_transcript_manager
+        transcript_manager = get_transcript_manager()
+        all_transcripts = transcript_manager.list_all_transcripts()
 
-    # Build agent info map
-    agents_map = {}
-    for transcript in all_transcripts:
-        agent_id = transcript.get('agent_id')
-        if agent_id:
-            agents_map[agent_id] = {
-                'id': agent_id,
-                'type': transcript.get('agent_type', 'unknown'),
-                'status': transcript.get('status', 'unknown'),
-                'goal': transcript.get('goal', ''),
-                'created_at': transcript.get('created_at', ''),
-                'completed_at': transcript.get('completed_at', ''),
-                'created_node_ids': []  # Will populate this below
-            }
-
-    # Build sources map (URLs, files, etc.)
-    sources_map = {}
-    for doc in documents:
-        # Extract source information from document
-        source_url = doc.get('source_url') or doc.get('source_file')
-        source_type = doc.get('source_type', 'file')
-
-        if source_url:
-            # Use URL/file path as source ID
-            source_id = source_url
-            if source_id not in sources_map:
-                # Determine source display type
-                if source_url.startswith('http'):
-                    display_type = 'URL'
-                    display_label = source_url.split('/')[-1] or source_url  # Get last part of URL
-                elif source_url.startswith('arxiv'):
-                    display_type = 'ArXiv'
-                    display_label = source_url
-                else:
-                    display_type = 'File'
-                    display_label = source_url.split('\\')[-1].split('/')[-1]  # Get filename
-
-                sources_map[source_id] = {
-                    'id': source_id,
-                    'url': source_url,
-                    'type': display_type,
-                    'label': display_label,
-                    'sourced_doc_ids': []
+        # Build agent info map
+        agents_map = {}
+        for transcript in all_transcripts:
+            agent_id = transcript.get('agent_id')
+            if agent_id:
+                agents_map[agent_id] = {
+                    'id': agent_id,
+                    'type': transcript.get('agent_type', 'unknown'),
+                    'status': transcript.get('status', 'unknown'),
+                    'goal': transcript.get('goal', ''),
+                    'created_at': transcript.get('created_at', ''),
+                    'completed_at': transcript.get('completed_at', ''),
+                    'created_node_ids': []  # Will populate this below
                 }
 
-            # Track which documents came from this source
-            sources_map[source_id]['sourced_doc_ids'].append(doc['id'])
+        # Build sources map (URLs, files, etc.)
+        sources_map = {}
+        for doc in documents:
+            # Extract source information from document
+            source_url = doc.get('source_url') or doc.get('source_file')
+            source_type = doc.get('source_type', 'file')
 
-    # Build document-claim mapping
-    doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
+            if source_url:
+                # Use URL/file path as source ID
+                source_id = source_url
+                if source_id not in sources_map:
+                    # Determine source display type
+                    if source_url.startswith('http'):
+                        display_type = 'URL'
+                        display_label = source_url.split('/')[-1] or source_url  # Get last part of URL
+                    elif source_url.startswith('arxiv'):
+                        display_type = 'ArXiv'
+                        display_label = source_url
+                    else:
+                        display_type = 'File'
+                        display_label = source_url.split('\\')[-1].split('/')[-1]  # Get filename
 
-    # Build evidence mapping
-    evidence_map = {ev['claim_id']: ev['evidence_list'] for ev in evidence_data}
+                    sources_map[source_id] = {
+                        'id': source_id,
+                        'url': source_url,
+                        'type': display_type,
+                        'label': display_label,
+                        'sourced_doc_ids': []
+                    }
 
-    # Structure response
-    response = []
-    for doc in documents:
-        doc_id = doc['id']
+                # Track which documents came from this source
+                sources_map[source_id]['sourced_doc_ids'].append(doc['id'])
 
-        # Track which agent created this document
-        doc_created_by = doc.get('created_by_agent_id')
-        if doc_created_by and doc_created_by in agents_map:
-            agents_map[doc_created_by]['created_node_ids'].append(doc_id)
+        # Build document-claim mapping
+        doc_claim_map = {dc['doc_id']: dc['claim_ids'] for dc in doc_claims}
 
-        # Get claims for this document
-        doc_claim_ids = doc_claim_map.get(doc_id, [])
+        # Build evidence mapping
+        evidence_map = {ev['claim_id']: ev['evidence_list'] for ev in evidence_data}
 
-        # Separate super-claims and regular claims
-        super_claims = []
-        all_claims = []
+        # Structure response
+        response = []
+        for doc in documents:
+            doc_id = doc['id']
 
-        for claim in claims:
-            if claim['id'] in doc_claim_ids:
-                # Track which agent created this claim
-                claim_created_by = claim.get('created_by_agent_id')
-                if claim_created_by and claim_created_by in agents_map:
-                    agents_map[claim_created_by]['created_node_ids'].append(claim['id'])
+            # Track which agent created this document
+            doc_created_by = doc.get('created_by_agent_id')
+            if doc_created_by and doc_created_by in agents_map:
+                agents_map[doc_created_by]['created_node_ids'].append(doc_id)
 
-                claim_data = {
-                    'id': claim['id'],
-                    'text': claim['text'],
-                    'summary': claim.get('summary'),
-                    'status': claim.get('status', 'complete'),
-                    'disposition': claim.get('disposition', 'child'),
-                    'is_super_claim': claim['is_super_claim'],
-                    'quality_score': claim.get('quality_score'),
-                    'claim_type': claim.get('claim_type', 'extracted'),
-                    'confidence': claim.get('confidence', 0.0),
-                    'child_ids': [cid for cid in claim['child_ids'] if cid],  # Filter None
-                    'created_by_agent_id': claim_created_by
-                }
+            # Get claims for this document
+            doc_claim_ids = doc_claim_map.get(doc_id, [])
 
-                if claim['is_super_claim']:
-                    super_claims.append(claim_data)
-                all_claims.append(claim_data)
+            # Separate super-claims and regular claims
+            super_claims = []
+            all_claims = []
 
-        # Get source for this document
-        doc_source_url = doc.get('source_url') or doc.get('source_file')
-        source_id = doc_source_url if doc_source_url else None
+            for claim in claims:
+                if claim['id'] in doc_claim_ids:
+                    # Track which agent created this claim
+                    claim_created_by = claim.get('created_by_agent_id')
+                    if claim_created_by and claim_created_by in agents_map:
+                        agents_map[claim_created_by]['created_node_ids'].append(claim['id'])
 
-        response.append({
-            'doc_id': doc_id,
-            'doc_title': doc['title'],
-            'doc_status': doc['status'],
-            'created_by_agent_id': doc_created_by,
-            'source_id': source_id,  # NEW - link to source node
-            'super_claims': super_claims,
-            'all_claims': all_claims,  # New: all claims regardless of depth
-            'evidence': evidence_map,
-            'semantic_links': semantic_links,  # Cross-document semantic relationships
-            'similar_to_links': similar_to_links  # RAG-detected similar claims
+                    claim_data = {
+                        'id': claim['id'],
+                        'text': claim['text'],
+                        'summary': claim.get('summary'),
+                        'status': claim.get('status', 'complete'),
+                        'disposition': claim.get('disposition', 'child'),
+                        'is_super_claim': claim['is_super_claim'],
+                        'quality_score': claim.get('quality_score'),
+                        'claim_type': claim.get('claim_type', 'extracted'),
+                        'confidence': claim.get('confidence', 0.0),
+                        'child_ids': [cid for cid in claim['child_ids'] if cid],  # Filter None
+                        'created_by_agent_id': claim_created_by
+                    }
+
+                    if claim['is_super_claim']:
+                        super_claims.append(claim_data)
+                    all_claims.append(claim_data)
+
+            # Get source for this document
+            doc_source_url = doc.get('source_url') or doc.get('source_file')
+            source_id = doc_source_url if doc_source_url else None
+
+            response.append({
+                'doc_id': doc_id,
+                'doc_title': doc['title'],
+                'doc_status': doc['status'],
+                'created_by_agent_id': doc_created_by,
+                'source_id': source_id,  # NEW - link to source node
+                'super_claims': super_claims,
+                'all_claims': all_claims,  # New: all claims regardless of depth
+                'evidence': evidence_map,
+                'semantic_links': semantic_links,  # Cross-document semantic relationships
+                'similar_to_links': similar_to_links  # RAG-detected similar claims
+            })
+
+        # Add agents data to response (only agents that created nodes)
+        active_agents = [agent for agent in agents_map.values() if len(agent['created_node_ids']) > 0]
+
+        # Add sources data to response
+        active_sources = list(sources_map.values())
+
+        return jsonify({
+            'documents': response,
+            'agents': active_agents,
+            'sources': active_sources  # NEW - data source nodes
         })
 
-    # Add agents data to response (only agents that created nodes)
-    active_agents = [agent for agent in agents_map.values() if len(agent['created_node_ids']) > 0]
-
-    # Add sources data to response
-    active_sources = list(sources_map.values())
-
-    return jsonify({
-        'documents': response,
-        'agents': active_agents,
-        'sources': active_sources  # NEW - data source nodes
-    })
+    except Exception as e:
+        logger.error(f"Error in get_full_graph: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e), 'documents': [], 'agents': [], 'sources': []}), 500
 
 
 @app.route('/api/upload-document', methods=['POST'])

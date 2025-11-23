@@ -51,10 +51,7 @@
 
             console.log('[AnimationIntegration] Animation system initialized successfully');
 
-            // Show notification
-            if (typeof UI !== 'undefined' && typeof UI.showNotification === 'function') {
-                UI.showNotification('Animation system ready! Click the game controller icon to start.', 'success');
-            }
+            // Notification removed per user request - no popup on page load
 
         } catch (error) {
             console.error('[AnimationIntegration] Failed to initialize:', error);

@@ -35,15 +35,14 @@
         }
 
         .header-title-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 12px;
-            gap: 12px;
+            display: none; /* Merged into tabs row */
         }
 
         .header-brand {
             flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
         }
 
         .header-brand h1 {
@@ -59,9 +58,9 @@
 
         .header-tabs-row {
             display: flex;
-            align-items: flex-end;
-            padding: 0 12px;
-            gap: 2px;
+            align-items: center;
+            padding: 8px 12px;
+            gap: 8px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
         }
 
@@ -338,18 +337,18 @@
             border-top: 2px solid #444;
             display: flex;
             flex-direction: column;
-            padding: 10px;  /* Reduced from 15px */
+            padding: 6px;
         }
 
         /* AI Assistant Styles */
         .ai-header {
-            font-size: 13px;  /* Reduced from 14px */
+            font-size: 12px;
             font-weight: 600;
             color: #2196F3;
-            margin-bottom: 6px;  /* Reduced from 10px */
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 6px;  /* Reduced from 8px */
+            gap: 4px;
         }
 
         .ai-help-btn {
@@ -388,10 +387,10 @@
         .ai-chat-area {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: 8px;  /* Reduced from 10px */
-            padding: 8px;  /* Reduced from 10px */
+            margin-bottom: 4px;
+            padding: 4px;
             background: #2a2a2a;
-            border-radius: 6px;
+            border-radius: 4px;
             border: 1px solid #333;
         }
 
@@ -426,25 +425,25 @@
 
         .ai-quick-actions {
             display: flex;
-            gap: 4px;  /* Reduced from 8px */
-            margin-bottom: 6px;  /* Reduced from 12px */
+            gap: 3px;
+            margin-bottom: 4px;
             flex-wrap: wrap;
-            padding: 0 2px;  /* Reduced from 4px */
+            padding: 0;
         }
 
         .ai-quick-action {
             background: rgba(33, 150, 243, 0.1);
             border: 1px solid rgba(33, 150, 243, 0.3);
             color: #2196F3;
-            padding: 4px 10px;  /* Reduced from 8px 14px */
-            border-radius: 12px;  /* Reduced from 16px */
-            font-size: 11px;  /* Reduced from 12px */
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 9px;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            gap: 4px;  /* Reduced from 6px */
+            gap: 2px;
         }
 
         .ai-quick-action:hover {
@@ -1669,18 +1668,16 @@
     </style>
 </head>
 <body>
-    <!-- Unified Header System - TWO ROWS -->
+    <!-- Unified Header System - SINGLE ROW -->
     <div id="unified-header">
         <div class="header-top">
-            <!-- Row 1: Centered Title -->
-            <div class="header-title-row">
+            <!-- Single Row: Title + Tabs + Stats + Actions -->
+            <div class="header-tabs-row">
+                <!-- Title on Left -->
                 <div class="header-brand">
                     <h1>🔍 Research Graph Navigator</h1>
                 </div>
-            </div>
 
-            <!-- Row 2: Left-Aligned Tabs + Stats + Actions -->
-            <div class="header-tabs-row">
                 <!-- Browser-Style Tabs -->
                 <div class="tab-bar" id="tab-bar">
                     <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
@@ -1793,7 +1790,128 @@
 
                 <!-- Placeholder tabs - will be populated by TabManager -->
                 <div id="tab-search" class="tab-content" style="display:none;"></div>
-                <div id="tab-agents" class="tab-content" style="display:none;"></div>
+                <div id="tab-agents" class="tab-content" style="display:none;">
+                    <!-- Agent Animation Controls - Compact Tab Version -->
+                    <div style="padding: 8px;">
+                        <!-- Enable Toggle -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #ccc; cursor: pointer;">
+                                <span>Enable Animations</span>
+                                <input type="checkbox" id="animation-enabled" checked onchange="onAnimationToggle(this)" style="width: 16px; height: 16px;">
+                            </label>
+                        </div>
+
+                        <!-- Performance Controls -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px; font-weight: 600;">PERFORMANCE</div>
+                            <div style="margin-bottom: 4px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #ccc; margin-bottom: 2px;">
+                                    <span>Speed</span>
+                                    <span id="speed-value">1.0x</span>
+                                </div>
+                                <input type="range" id="animation-speed" min="0.25" max="2" step="0.25" value="1" oninput="onSpeedChange(this)" style="width: 100%; height: 4px;">
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <div style="font-size: 10px; color: #ccc; margin-bottom: 2px;">Quality</div>
+                                <select id="quality-select" onchange="onQualityChange(this)" style="width: 100%; padding: 3px; background: #333; color: white; border: 1px solid #555; border-radius: 3px; font-size: 10px;">
+                                    <option value="low">Low (Better Performance)</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high" selected>High (Best Visual)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #ccc; margin-bottom: 2px;">
+                                    <span>Max Agents</span>
+                                    <span id="max-agents-value">10</span>
+                                </div>
+                                <input type="range" id="max-agents" min="1" max="20" step="1" value="10" oninput="onMaxAgentsChange(this)" style="width: 100%; height: 4px;">
+                            </div>
+                        </div>
+
+                        <!-- Game Modes - Compact Grid -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px; font-weight: 600;">GAME MODES</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">
+                                <div class="mode-card" data-mode="research" onclick="selectMode('research')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">🔬</div>
+                                    <div>Research</div>
+                                </div>
+                                <div class="mode-card" data-mode="debate" onclick="selectMode('debate')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">⚖️</div>
+                                    <div>Debate</div>
+                                </div>
+                                <div class="mode-card" data-mode="collaborative" onclick="selectMode('collaborative')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">🤝</div>
+                                    <div>Collab</div>
+                                </div>
+                                <div class="mode-card" data-mode="tournament" onclick="selectMode('tournament')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">🏆</div>
+                                    <div>Tournament</div>
+                                </div>
+                                <div class="mode-card" data-mode="speedrun" onclick="selectMode('speedrun')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">⚡</div>
+                                    <div>Speed</div>
+                                </div>
+                                <div class="mode-card" data-mode="exploration" onclick="selectMode('exploration')" style="background: #333; border: 1px solid #444; border-radius: 3px; padding: 4px; text-align: center; cursor: pointer; font-size: 9px;">
+                                    <div style="font-size: 14px;">🗺️</div>
+                                    <div>Explore</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions - Compact Buttons -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px; font-weight: 600;">ACTIONS</div>
+                            <div style="display: flex; gap: 3px;">
+                                <button onclick="spawnAgent()" style="flex: 1; padding: 4px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 9px; font-weight: 600;">+ Agent</button>
+                                <button onclick="startDemo()" style="flex: 1; padding: 4px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 9px; font-weight: 600;">▶ Demo</button>
+                                <button onclick="clearAllAgents()" style="flex: 1; padding: 4px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 9px; font-weight: 600;">🗑 Clear</button>
+                            </div>
+                        </div>
+
+                        <!-- Statistics - Compact Grid -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px; font-weight: 600;">STATS</div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px;">
+                                <div style="background: #333; border-radius: 3px; padding: 3px; text-align: center;">
+                                    <div style="font-size: 14px; font-weight: 700; color: #2196F3;" id="stat-agents">0</div>
+                                    <div style="font-size: 8px; color: #888;">Agents</div>
+                                </div>
+                                <div style="background: #333; border-radius: 3px; padding: 3px; text-align: center;">
+                                    <div style="font-size: 14px; font-weight: 700; color: #4CAF50;" id="stat-fps">60</div>
+                                    <div style="font-size: 8px; color: #888;">FPS</div>
+                                </div>
+                                <div style="background: #333; border-radius: 3px; padding: 3px; text-align: center;">
+                                    <div style="font-size: 14px; font-weight: 700; color: #FF9800;" id="stat-particles">0</div>
+                                    <div style="font-size: 8px; color: #888;">Particles</div>
+                                </div>
+                                <div style="background: #333; border-radius: 3px; padding: 3px; text-align: center;">
+                                    <div style="font-size: 14px; font-weight: 700; color: #9C27B0;" id="stat-debates">0</div>
+                                    <div style="font-size: 8px; color: #888;">Debates</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visual Options - Compact Toggles -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px; font-weight: 600;">VISUAL OPTIONS</div>
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <label style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #ccc; cursor: pointer;">
+                                    <span>Show Paths</span>
+                                    <input type="checkbox" id="show-paths" checked onchange="onShowPathsToggle(this)" style="width: 14px; height: 14px;">
+                                </label>
+                                <label style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #ccc; cursor: pointer;">
+                                    <span>Show Thoughts</span>
+                                    <input type="checkbox" id="show-thoughts" checked onchange="onShowThoughtsToggle(this)" style="width: 14px; height: 14px;">
+                                </label>
+                                <label style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #ccc; cursor: pointer;">
+                                    <span>Particle Effects</span>
+                                    <input type="checkbox" id="enable-particles" checked onchange="onParticlesToggle(this)" style="width: 14px; height: 14px;">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="tab-projects" class="tab-content" style="display:none;">
                     <!-- Project Management Section -->
                     <div style="padding: 12px;">
@@ -2941,8 +3059,161 @@ Databases: ${fw.source_preferences.databases.join(', ')}
     <!-- Project Manager -->
     <script src="{{ url_for('static', filename='js/project_manager.js') }}"></script>
 
-    <!-- Include Agent Animation Control Panel -->
-    {% include 'agent-controls.html' %}
+    <!-- Agent Animation Control Panel Functions -->
+    <script>
+        // Control Panel Functions
+        let animationEngine = null;
+        let gameModeManager = null;
+        let statsUpdateInterval = null;
+
+        function onAnimationToggle(checkbox) {
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ enabled: checkbox.checked });
+            }
+        }
+
+        function onSpeedChange(slider) {
+            const value = parseFloat(slider.value);
+            document.getElementById('speed-value').textContent = value.toFixed(2) + 'x';
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ speed: value });
+            }
+        }
+
+        function onQualityChange(select) {
+            const quality = select.value;
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ quality: quality });
+            }
+
+            if (window.ParticleEffects) {
+                const maxParticles = {
+                    'low': 100,
+                    'medium': 300,
+                    'high': 500
+                };
+                window.ParticleEffects.maxParticles = maxParticles[quality];
+            }
+        }
+
+        function onMaxAgentsChange(slider) {
+            const value = parseInt(slider.value);
+            document.getElementById('max-agents-value').textContent = value;
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ maxAgents: value });
+            }
+        }
+
+        function onShowPathsToggle(checkbox) {
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ showPaths: checkbox.checked });
+            }
+        }
+
+        function onShowThoughtsToggle(checkbox) {
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ showThoughts: checkbox.checked });
+            }
+        }
+
+        function onParticlesToggle(checkbox) {
+            if (window.animationEngine) {
+                window.animationEngine.updateConfig({ enableParticles: checkbox.checked });
+            }
+            if (window.ParticleEffects) {
+                window.ParticleEffects.setEnabled(checkbox.checked);
+            }
+        }
+
+        function selectMode(modeId) {
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`.mode-card[data-mode="${modeId}"]`)?.classList.add('active');
+
+            if (window.gameModeManager) {
+                window.gameModeManager.activateMode(modeId);
+            }
+        }
+
+        function spawnAgent() {
+            if (!window.animationEngine) return;
+
+            const types = ['researcher', 'critic', 'synthesizer', 'validator', 'explorer'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+
+            const nodes = GraphRenderer.currentGraphData.nodes;
+            const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+
+            window.animationEngine.createAgent({
+                agent_id: `agent_${Date.now()}`,
+                type: randomType,
+                startNodeId: randomNode?.id
+            });
+        }
+
+        function startDemo() {
+            if (!window.gameModeManager) return;
+            window.gameModeManager.activateMode('research');
+            selectMode('research');
+        }
+
+        function clearAllAgents() {
+            if (window.animationEngine) {
+                window.animationEngine.clearAllAgents();
+            }
+        }
+
+        function updateStats() {
+            if (!window.animationEngine) return;
+
+            const stats = window.animationEngine.getStats();
+
+            const statAgents = document.getElementById('stat-agents');
+            const statFps = document.getElementById('stat-fps');
+            const statParticles = document.getElementById('stat-particles');
+            const statDebates = document.getElementById('stat-debates');
+
+            if (statAgents) statAgents.textContent = stats.agentCount;
+            if (statFps) statFps.textContent = stats.fps;
+
+            if (window.ParticleEffects && statParticles) {
+                const particleStats = window.ParticleEffects.getStats();
+                statParticles.textContent = particleStats.activeParticles;
+            }
+
+            if (window.DebateSystem && window.animationEngine.debateSystem && statDebates) {
+                const debateCount = window.animationEngine.debateSystem.activeDebates.size;
+                statDebates.textContent = debateCount;
+            }
+        }
+
+        function initializeControls(engine) {
+            window.animationEngine = engine;
+            if (typeof GameModeManager !== 'undefined') {
+                window.gameModeManager = new GameModeManager(engine);
+                window.animationEngine.gameModeManager = window.gameModeManager;
+            }
+
+            statsUpdateInterval = setInterval(() => {
+                updateStats();
+            }, 1000);
+
+            if (engine && typeof engine.on === 'function') {
+                engine.on('activityLogged', () => {
+                    // Activity logging removed from compact view
+                });
+            }
+
+            console.log('[AnimationControls] Initialized');
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (statsUpdateInterval) {
+                clearInterval(statsUpdateInterval);
+            }
+        });
+    </script>
 
 </body>
 </html>
