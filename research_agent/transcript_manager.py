@@ -246,6 +246,15 @@ class TranscriptManager:
                 for a in agents
             ]
 
+    def list_all_transcripts(self) -> List[Dict]:
+        """
+        List all transcripts (alias for list_agents with no filters).
+
+        Returns:
+            List of all agent summaries
+        """
+        return self.list_agents()
+
     def cleanup_old_agents(self, max_age_hours: int = 24, keep_failed: bool = True):
         """
         Remove old agent transcripts from memory.

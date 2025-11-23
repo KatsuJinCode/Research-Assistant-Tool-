@@ -147,6 +147,11 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
 
                 # Invoke agent
                 response = adapter.invoke(current_prompt, tools=None, timeout=120)
+
+                # Validate response is not None
+                if response is None:
+                    raise RuntimeError("Agent returned None response")
+
                 logger.info(f"Agent completed {task_type} (attempt {attempt+1}): {len(response)} chars")
 
                 # Parse response - handle CLI wrapper format
@@ -155,6 +160,8 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                 # Extract actual result from CLI wrapper if present
                 if isinstance(response_data, dict) and 'result' in response_data:
                     result_text = response_data['result']
+                    if result_text is None:
+                        raise RuntimeError("Agent response 'result' field is None")
                 else:
                     result_text = response
 

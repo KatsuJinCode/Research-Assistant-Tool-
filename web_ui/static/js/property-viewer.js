@@ -228,10 +228,10 @@ const PropertyViewer = {
         }
 
         const investigationSlider = document.getElementById('pv-investigation-slider');
-        const investigationValue = document.getElementById('pv-investigation-value');
-        if (investigationSlider && investigationValue) {
+        const investigationValueElement = document.getElementById('pv-investigation-value');
+        if (investigationSlider && investigationValueElement) {
             investigationSlider.addEventListener('input', (e) => {
-                investigationValue.textContent = `${(e.target.value * 100).toFixed(0)}%`;
+                investigationValueElement.textContent = `${(e.target.value * 100).toFixed(0)}%`;
             });
         }
     },

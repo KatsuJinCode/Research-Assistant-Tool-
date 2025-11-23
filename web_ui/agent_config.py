@@ -220,14 +220,39 @@ class ClaudeSDKAdapter(AgentAdapter):
 
             response = self.client.messages.create(**kwargs)
 
-            # Extract text content
-            if response.content:
-                return response.content[0].text if hasattr(response.content[0], 'text') else str(response.content[0])
+            # Robust content extraction with detailed error checking
+            if not response:
+                raise RuntimeError("Claude API returned None response")
 
-            return ""
+            if not hasattr(response, 'content'):
+                raise RuntimeError(f"Claude API response has no content attribute. Response: {response}")
+
+            if not response.content:
+                logger.warning("Claude API returned empty content")
+                return ""
+
+            if not isinstance(response.content, list):
+                raise RuntimeError(f"Claude API content is not a list: {type(response.content)}")
+
+            if len(response.content) == 0:
+                logger.warning("Claude API returned empty content list")
+                return ""
+
+            # Extract first content block
+            content_block = response.content[0]
+            if content_block is None:
+                raise RuntimeError("Claude API first content block is None")
+
+            # Try to get text attribute
+            if hasattr(content_block, 'text'):
+                return content_block.text
+            elif hasattr(content_block, 'content'):
+                return str(content_block.content)
+            else:
+                return str(content_block)
 
         except Exception as e:
-            logger.error(f"Claude SDK error: {str(e)}")
+            logger.error(f"Claude SDK error: {str(e)}", exc_info=True)
             raise RuntimeError(f"Claude API call failed: {str(e)}")
 
     def parse_tool_response(self, response: str) -> Dict[str, Any]:
