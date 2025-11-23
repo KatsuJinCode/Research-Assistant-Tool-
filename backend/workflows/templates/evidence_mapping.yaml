@@ -1,0 +1,268 @@
+workflow_id: evidence_mapping
+name: Evidence Mapping
+description: |
+  Evidence mapping workflow for creating visual representations of research
+  evidence across a broad topic. Identifies evidence clusters, gaps, and
+  research priorities.
+version: 1.0.0
+
+variables:
+  topic: "climate change adaptation strategies"
+  scope: "broad"
+  evidence_types:
+    - "empirical"
+    - "theoretical"
+    - "systematic_review"
+
+error_handling: continue
+
+steps:
+  - step_id: broad_search
+    step_type: search
+    name: Conduct Broad Topic Search
+    description: Search broadly across the topic area
+    inputs:
+      query: $topic
+      databases: ["arxiv", "pubmed", "web_of_science", "scopus"]
+      date_range:
+        start: "2010-01-01"
+        end: "2024-12-31"
+      max_results: 5000
+      include_grey_literature: true
+    outputs:
+      - search_results
+      - result_count
+    timeout: 900.0
+
+  - step_id: extract_all_claims
+    step_type: extract
+    name: Extract All Claims and Evidence
+    description: Extract all claims, findings, and evidence from documents
+    inputs:
+      documents: $broad_search.search_results
+      extract_type: "comprehensive"
+      include_metadata:
+        - "study_design"
+        - "population"
+        - "intervention"
+        - "outcome"
+        - "geographic_location"
+        - "evidence_type"
+    outputs:
+      - claims
+      - claim_count
+      - metadata
+    depends_on:
+      - broad_search
+    timeout: 2400.0
+
+  - step_id: classify_evidence_types
+    step_type: analyze
+    name: Classify Evidence Types
+    description: Classify claims by type of evidence
+    inputs:
+      claims: $extract_all_claims.claims
+      classification_scheme:
+        - "empirical_quantitative"
+        - "empirical_qualitative"
+        - "theoretical"
+        - "systematic_review"
+        - "meta_analysis"
+        - "case_study"
+    outputs:
+      - classified_claims
+      - classification_distribution
+    depends_on:
+      - extract_all_claims
+    timeout: 600.0
+
+  - step_id: semantic_clustering
+    step_type: analyze
+    name: Cluster Evidence by Theme
+    description: Cluster all evidence into thematic groups
+    inputs:
+      claims: $extract_all_claims.claims
+      clustering_method: "hierarchical_semantic"
+      similarity_threshold: 0.65
+      min_cluster_size: 10
+      max_cluster_size: 500
+    outputs:
+      - evidence_clusters
+      - cluster_count
+      - cluster_themes
+      - unclustered_claims
+    depends_on:
+      - extract_all_claims
+    timeout: 900.0
+
+  - step_id: build_evidence_graph
+    step_type: analyze
+    name: Build Evidence Knowledge Graph
+    description: Build knowledge graph connecting claims, concepts, and evidence
+    inputs:
+      claims: $extract_all_claims.claims
+      clusters: $semantic_clustering.evidence_clusters
+      classifications: $classify_evidence_types.classified_claims
+      relationship_types:
+        - "supports"
+        - "challenges"
+        - "extends"
+        - "applies_to"
+      extract_entities:
+        - "concepts"
+        - "methods"
+        - "populations"
+        - "locations"
+    outputs:
+      - knowledge_graph
+      - node_count
+      - edge_count
+      - central_concepts
+    depends_on:
+      - extract_all_claims
+      - semantic_clustering
+      - classify_evidence_types
+    timeout: 1200.0
+
+  - step_id: identify_evidence_gaps
+    step_type: analyze
+    name: Identify Evidence Gaps
+    description: Identify underresearched areas and evidence gaps
+    inputs:
+      clusters: $semantic_clustering.evidence_clusters
+      classifications: $classify_evidence_types.classified_claims
+      knowledge_graph: $build_evidence_graph.knowledge_graph
+      gap_criteria:
+        - "low_evidence_density"
+        - "missing_study_designs"
+        - "geographic_gaps"
+        - "population_gaps"
+        - "methodological_gaps"
+    outputs:
+      - evidence_gaps
+      - gap_severity
+      - research_priorities
+    depends_on:
+      - semantic_clustering
+      - classify_evidence_types
+      - build_evidence_graph
+    timeout: 600.0
+
+  - step_id: calculate_evidence_density
+    step_type: analyze
+    name: Calculate Evidence Density
+    description: Calculate how much evidence exists for each theme
+    inputs:
+      clusters: $semantic_clustering.evidence_clusters
+      quality_weights:
+        systematic_review: 1.0
+        meta_analysis: 1.0
+        rct: 0.8
+        cohort_study: 0.6
+        case_study: 0.3
+    outputs:
+      - density_scores
+      - well_researched_areas
+      - poorly_researched_areas
+    depends_on:
+      - semantic_clustering
+      - classify_evidence_types
+    timeout: 300.0
+
+  - step_id: generate_evidence_map_visualization
+    step_type: export
+    name: Generate Evidence Map Visualization
+    description: Create interactive evidence map visualization
+    inputs:
+      clusters: $semantic_clustering.evidence_clusters
+      knowledge_graph: $build_evidence_graph.knowledge_graph
+      density_scores: $calculate_evidence_density.density_scores
+      gaps: $identify_evidence_gaps.evidence_gaps
+      visualization_type: "network_graph"
+      format: "html"
+      interactive: true
+      output_path: "evidence_map.html"
+    outputs:
+      - map_path
+      - exported
+    depends_on:
+      - semantic_clustering
+      - build_evidence_graph
+      - calculate_evidence_density
+      - identify_evidence_gaps
+
+  - step_id: generate_bubble_chart
+    step_type: export
+    name: Generate Evidence Bubble Chart
+    description: Create bubble chart showing evidence distribution
+    inputs:
+      clusters: $semantic_clustering.evidence_clusters
+      density_scores: $calculate_evidence_density.density_scores
+      classifications: $classify_evidence_types.classification_distribution
+      format: "png"
+      output_path: "evidence_bubble_chart.png"
+    outputs:
+      - chart_path
+      - exported
+    depends_on:
+      - semantic_clustering
+      - calculate_evidence_density
+      - classify_evidence_types
+
+  - step_id: generate_mapping_report
+    step_type: export
+    name: Generate Evidence Mapping Report
+    description: Generate comprehensive evidence mapping report
+    inputs:
+      data:
+        topic: $topic
+        total_documents: $broad_search.result_count
+        total_claims: $extract_all_claims.claim_count
+        cluster_count: $semantic_clustering.cluster_count
+        cluster_themes: $semantic_clustering.cluster_themes
+        evidence_distribution: $classify_evidence_types.classification_distribution
+        well_researched_areas: $calculate_evidence_density.well_researched_areas
+        poorly_researched_areas: $calculate_evidence_density.poorly_researched_areas
+        evidence_gaps: $identify_evidence_gaps.evidence_gaps
+        research_priorities: $identify_evidence_gaps.research_priorities
+        knowledge_graph_stats:
+          nodes: $build_evidence_graph.node_count
+          edges: $build_evidence_graph.edge_count
+          central_concepts: $build_evidence_graph.central_concepts
+      format: "pdf"
+      template: "evidence_mapping"
+      include_visualizations:
+        - $generate_evidence_map_visualization.map_path
+        - $generate_bubble_chart.chart_path
+      output_path: "evidence_mapping_report.pdf"
+    outputs:
+      - report_path
+      - exported
+    depends_on:
+      - broad_search
+      - extract_all_claims
+      - semantic_clustering
+      - classify_evidence_types
+      - build_evidence_graph
+      - identify_evidence_gaps
+      - calculate_evidence_density
+      - generate_evidence_map_visualization
+      - generate_bubble_chart
+
+triggers:
+  manual: true
+  scheduled: false
+
+metadata:
+  category: "evidence_mapping"
+  complexity: "high"
+  estimated_duration: "4-8 hours"
+  outputs:
+    - "interactive_evidence_map"
+    - "evidence_gap_analysis"
+    - "research_priorities"
+  tags:
+    - "evidence_synthesis"
+    - "knowledge_mapping"
+    - "gap_analysis"
+    - "visualization"

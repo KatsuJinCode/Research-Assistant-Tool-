@@ -1,0 +1,328 @@
+# Scientific Research Framework
+# Specialized framework for scientific methodology, experimental research, and peer review
+
+name: scientific_research
+description: Framework for scientific research with emphasis on methodology and reproducibility
+version: 1.0.0
+extends: general_research
+
+# Scientific-specific entity types
+entity_types:
+  - Hypothesis
+  - Experiment
+  - Finding
+  - Theory
+  - Model
+  - Variable
+  - Dataset
+  - Method
+  - Protocol
+  - Instrument
+  - Measurement
+  - Observation
+  - Prediction
+  - Phenomenon
+  - Parameter
+  - Control_Group
+  - Experimental_Group
+  - Replication_Study
+
+# Scientific relationship types
+relationship_types:
+  - SUPPORTS
+  - REFUTES
+  - BUILDS_ON
+  - REPLICATES
+  - EXTENDS
+  - CONTRADICTS
+  - PREDICTS
+  - EXPLAINS
+  - MEASURES
+  - CONTROLS_FOR
+  - DEPENDS_ON
+  - VALIDATES
+  - FALSIFIES
+  - GENERALIZES
+  - USES_METHOD
+  - PRODUCES_DATA
+
+# Scientific-specific prompts
+prompts:
+  extraction: |
+    Extract scientific claims from the following research text. Focus on:
+    - Hypotheses and predictions
+    - Experimental findings and results
+    - Methodological claims
+    - Theoretical propositions
+    - Observed phenomena
+
+    Text: {text}
+
+    For each claim, identify:
+    - Hypothesis/Finding: [statement]
+    - Variables: [independent, dependent, controlled]
+    - Method: [experimental design]
+    - Results: [data/observations]
+    - Statistical Significance: [p-value, effect size]
+    - Reproducibility: [can it be replicated?]
+
+  analysis: |
+    Analyze this scientific claim using the scientific method:
+
+    Claim: {claim}
+    Scientific Context: {context}
+
+    Assess:
+    1. Falsifiability (can it be tested?)
+    2. Methodology rigor (controlled, randomized, blinded?)
+    3. Sample size and statistical power
+    4. Effect size and practical significance
+    5. Confounding variables and controls
+    6. Reproducibility (has it been replicated?)
+    7. Alternative explanations
+    8. Consistency with established theory
+
+  evaluation: |
+    Evaluate the scientific quality of this research:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Consider:
+    1. Experimental Design:
+       - Randomization
+       - Blinding
+       - Control groups
+       - Sample size calculation
+    2. Data Quality:
+       - Measurement validity
+       - Data completeness
+       - Statistical assumptions met
+    3. Analysis:
+       - Appropriate statistical tests
+       - Multiple comparison correction
+       - Effect size reported
+       - Confidence intervals
+    4. Reproducibility:
+       - Protocol detailed enough?
+       - Data/code available?
+       - Independent replication?
+    5. Peer Review:
+       - Published in peer-reviewed journal?
+       - Preprint vs. final publication?
+       - Post-publication critique?
+
+  claim_simplification: |
+    Break down this scientific claim into testable components:
+
+    Complex Claim: {claim}
+
+    Decompose into:
+    1. Null Hypothesis (H0): [no effect/relationship]
+    2. Alternative Hypothesis (H1): [predicted effect/relationship]
+    3. Independent Variables: [what is manipulated]
+    4. Dependent Variables: [what is measured]
+    5. Control Variables: [what is held constant]
+    6. Predicted Outcome: [specific, measurable]
+    7. Falsification Criteria: [what would disprove this?]
+
+  evidence_assessment: |
+    Assess the strength of this scientific evidence:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Determine:
+    1. Replication Status:
+       - Original finding only
+       - Replicated once
+       - Multiple independent replications
+       - Failed replication
+    2. Statistical Evidence:
+       - P-value and significance level
+       - Effect size (Cohen's d, eta-squared, etc.)
+       - Confidence intervals
+       - Bayesian factor (if applicable)
+    3. Methodological Quality:
+       - Pre-registration (prevents p-hacking)
+       - Blinding (prevents bias)
+       - Adequate power (prevents false negatives)
+       - Open data/materials (enables verification)
+    4. Theoretical Integration:
+       - Consistent with existing theory?
+       - Explains known phenomena?
+       - Makes novel predictions?
+
+# Scientific evaluation criteria
+evaluation_criteria:
+  evidence_levels:
+    - Systematic_Review_Meta_Analysis
+    - Registered_Report_Replicated
+    - Registered_Report_Original
+    - Peer_Reviewed_Replicated
+    - Peer_Reviewed_Original
+    - Preprint_Replicated
+    - Preprint_Original
+    - Conference_Abstract
+    - Unpublished_Data
+
+  quality_metrics:
+    - peer_reviewed
+    - pre_registered
+    - replicated
+    - sample_size_adequate
+    - power_analysis_conducted
+    - effect_size_reported
+    - confidence_intervals_reported
+    - p_value_reported
+    - multiple_comparison_corrected
+    - open_data
+    - open_materials
+    - open_code
+    - blinded
+    - randomized
+    - controlled
+
+  authority_indicators:
+    - high_impact_journal
+    - highly_cited
+    - independent_replication
+    - included_in_meta_analysis
+    - textbook_citation
+    - paradigm_shifting
+    - nobel_prize_related
+    - multiple_research_groups
+
+  minimum_confidence: 0.6
+
+# Scientific claim structure
+claim_structure:
+  components:
+    - hypothesis
+    - variables
+    - method
+    - results
+    - interpretation
+    - limitations
+
+  required_fields:
+    - text
+    - source
+    - methodology
+    - statistical_analysis
+
+  optional_fields:
+    - sample_size
+    - p_value
+    - effect_size
+    - confidence_interval
+    - replication_status
+    - data_availability
+    - code_availability
+    - preregistration_link
+
+# Evidence requirements for scientific research
+evidence_requirements:
+  source_types:
+    - peer_reviewed_journal
+    - registered_report
+    - preprint
+    - conference_paper
+    - dataset
+    - replication_study
+    - meta_analysis
+
+  minimum_sources: 1
+  preferred_date_range: last_10_years  # Science builds on itself
+  peer_review_required: false  # Preprints are valuable in fast-moving fields
+
+# Scientific source preferences
+source_preferences:
+  databases:
+    - PubMed
+    - arXiv
+    - bioRxiv
+    - medRxiv
+    - Google_Scholar
+    - Web_of_Science
+    - Scopus
+    - IEEE_Xplore
+    - ACM_Digital_Library
+    - PLOS
+    - Open_Science_Framework
+
+  journals:
+    - Nature
+    - Science
+    - Cell
+    - PNAS
+    - Nature_Communications
+    - Scientific_Reports
+    - PLOS_ONE
+    - eLife
+    - Journal_of_Neuroscience
+    - Physical_Review_Letters
+
+  publication_types:
+    - journal_article
+    - registered_report
+    - replication_study
+    - meta_analysis
+    - systematic_review
+    - preprint
+    - dataset
+    - conference_paper
+
+  authority_sources:
+    - National_Laboratories
+    - Max_Planck_Institute
+    - CERN
+    - NASA
+    - NIH
+    - NSF
+    - Research_Universities
+    - Howard_Hughes_Medical_Institute
+
+# Scientific-specific metadata
+metadata:
+  domain: scientific
+  disciplines:
+    - physics
+    - chemistry
+    - biology
+    - neuroscience
+    - psychology
+    - computer_science
+    - materials_science
+    - earth_sciences
+
+  suitable_for:
+    - hypothesis_testing
+    - literature_review
+    - meta_analysis
+    - replication_studies
+    - methodology_assessment
+
+  open_science_principles:
+    - preregistration_encouraged
+    - open_data_preferred
+    - open_materials_preferred
+    - open_code_preferred
+    - preprints_accepted
+
+  replication_crisis_aware: true
+
+  limitations:
+    - replication_crisis_in_some_fields
+    - publication_bias_exists
+    - p_hacking_concern
+    - requires_statistical_expertise
+    - context_dependent_generalization
+
+  special_considerations:
+    - check_for_retractions
+    - verify_data_availability
+    - assess_conflicts_of_interest
+    - consider_publication_bias
+    - evaluate_statistical_power
+    - check_preregistration_status

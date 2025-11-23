@@ -1,0 +1,357 @@
+<!-- Agent Animation Control Panel -->
+<!-- Include this in the main index.html -->
+
+<div id="animation-control-panel" class="animation-control-panel collapsed">
+    <!-- Header -->
+    <div class="control-panel-header">
+        <h3>🎮 Agent Animation</h3>
+        <button class="control-panel-toggle" onclick="toggleControlPanel()">▼</button>
+    </div>
+
+    <!-- Enable/Disable Toggle -->
+    <div class="control-section">
+        <div class="control-group">
+            <div class="control-label">
+                <span>Enable Animations</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="animation-enabled" checked onchange="onAnimationToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animation Speed -->
+    <div class="control-section">
+        <h4>Performance</h4>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Animation Speed</span>
+                <span id="speed-value">1.0x</span>
+            </div>
+            <input type="range" class="control-input" id="animation-speed"
+                   min="0.25" max="2" step="0.25" value="1"
+                   oninput="onSpeedChange(this)">
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Visual Quality</span>
+            </div>
+            <select class="control-select" id="quality-select" onchange="onQualityChange(this)">
+                <option value="low">Low (Better Performance)</option>
+                <option value="medium">Medium</option>
+                <option value="high" selected>High (Best Visual)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Max Agents</span>
+                <span id="max-agents-value">10</span>
+            </div>
+            <input type="range" class="control-input" id="max-agents"
+                   min="1" max="20" step="1" value="10"
+                   oninput="onMaxAgentsChange(this)">
+        </div>
+    </div>
+
+    <!-- Game Modes -->
+    <div class="control-section">
+        <h4>Game Modes</h4>
+        <div class="mode-grid">
+            <div class="mode-card" data-mode="research" onclick="selectMode('research')">
+                <div class="mode-icon">🔬</div>
+                <div class="mode-name">Research</div>
+            </div>
+            <div class="mode-card" data-mode="debate" onclick="selectMode('debate')">
+                <div class="mode-icon">⚖️</div>
+                <div class="mode-name">Debate</div>
+            </div>
+            <div class="mode-card" data-mode="collaborative" onclick="selectMode('collaborative')">
+                <div class="mode-icon">🤝</div>
+                <div class="mode-name">Collaborative</div>
+            </div>
+            <div class="mode-card" data-mode="tournament" onclick="selectMode('tournament')">
+                <div class="mode-icon">🏆</div>
+                <div class="mode-name">Tournament</div>
+            </div>
+            <div class="mode-card" data-mode="speedrun" onclick="selectMode('speedrun')">
+                <div class="mode-icon">⚡</div>
+                <div class="mode-name">Speed Run</div>
+            </div>
+            <div class="mode-card" data-mode="exploration" onclick="selectMode('exploration')">
+                <div class="mode-icon">🗺️</div>
+                <div class="mode-name">Exploration</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="control-section">
+        <h4>Quick Actions</h4>
+        <button class="control-button success" onclick="spawnAgent()">
+            + Spawn Agent
+        </button>
+        <button class="control-button" onclick="startDemo()">
+            ▶ Start Demo
+        </button>
+        <button class="control-button danger" onclick="clearAllAgents()">
+            🗑 Clear All Agents
+        </button>
+    </div>
+
+    <!-- Statistics -->
+    <div class="control-section">
+        <h4>Statistics</h4>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value" id="stat-agents">0</div>
+                <div class="stat-label">Active Agents</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stat-fps">60</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stat-particles">0</div>
+                <div class="stat-label">Particles</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stat-debates">0</div>
+                <div class="stat-label">Debates</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="control-section">
+        <h4>Activity Log</h4>
+        <div class="activity-log" id="activity-log">
+            <div class="activity-entry">
+                <span class="activity-timestamp">00:00</span>
+                <span class="activity-message">Animation system ready</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Options -->
+    <div class="control-section">
+        <h4>Visual Options</h4>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Show Paths</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="show-paths" checked onchange="onShowPathsToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Show Thoughts</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="show-thoughts" checked onchange="onShowThoughtsToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">
+                <span>Particle Effects</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enable-particles" checked onchange="onParticlesToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Control Panel Functions
+    let animationEngine = null;
+    let gameModeManager = null;
+    let statsUpdateInterval = null;
+
+    function toggleControlPanel() {
+        const panel = document.getElementById('animation-control-panel');
+        panel.classList.toggle('collapsed');
+    }
+
+    function onAnimationToggle(checkbox) {
+        if (animationEngine) {
+            animationEngine.updateConfig({ enabled: checkbox.checked });
+        }
+    }
+
+    function onSpeedChange(slider) {
+        const value = parseFloat(slider.value);
+        document.getElementById('speed-value').textContent = value.toFixed(2) + 'x';
+        if (animationEngine) {
+            animationEngine.updateConfig({ speed: value });
+        }
+    }
+
+    function onQualityChange(select) {
+        const quality = select.value;
+        if (animationEngine) {
+            animationEngine.updateConfig({ quality: quality });
+        }
+
+        // Adjust particle count based on quality
+        if (window.ParticleEffects) {
+            const maxParticles = {
+                'low': 100,
+                'medium': 300,
+                'high': 500
+            };
+            window.ParticleEffects.maxParticles = maxParticles[quality];
+        }
+    }
+
+    function onMaxAgentsChange(slider) {
+        const value = parseInt(slider.value);
+        document.getElementById('max-agents-value').textContent = value;
+        if (animationEngine) {
+            animationEngine.updateConfig({ maxAgents: value });
+        }
+    }
+
+    function onShowPathsToggle(checkbox) {
+        if (animationEngine) {
+            animationEngine.updateConfig({ showPaths: checkbox.checked });
+        }
+    }
+
+    function onShowThoughtsToggle(checkbox) {
+        if (animationEngine) {
+            animationEngine.updateConfig({ showThoughts: checkbox.checked });
+        }
+    }
+
+    function onParticlesToggle(checkbox) {
+        if (animationEngine) {
+            animationEngine.updateConfig({ enableParticles: checkbox.checked });
+        }
+        if (window.ParticleEffects) {
+            window.ParticleEffects.setEnabled(checkbox.checked);
+        }
+    }
+
+    function selectMode(modeId) {
+        // Update UI
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        document.querySelector(`.mode-card[data-mode="${modeId}"]`)?.classList.add('active');
+
+        // Activate mode
+        if (gameModeManager) {
+            gameModeManager.activateMode(modeId);
+        }
+    }
+
+    function spawnAgent() {
+        if (!animationEngine) return;
+
+        const types = ['researcher', 'critic', 'synthesizer', 'validator', 'explorer'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
+
+        // Get random start node
+        const nodes = GraphRenderer.currentGraphData.nodes;
+        const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+
+        animationEngine.createAgent({
+            agent_id: `agent_${Date.now()}`,
+            type: randomType,
+            startNodeId: randomNode?.id
+        });
+    }
+
+    function startDemo() {
+        if (!gameModeManager) return;
+
+        // Start research mode as demo
+        gameModeManager.activateMode('research');
+        selectMode('research');
+    }
+
+    function clearAllAgents() {
+        if (animationEngine) {
+            animationEngine.clearAllAgents();
+        }
+    }
+
+    function updateStats() {
+        if (!animationEngine) return;
+
+        const stats = animationEngine.getStats();
+
+        document.getElementById('stat-agents').textContent = stats.agentCount;
+        document.getElementById('stat-fps').textContent = stats.fps;
+
+        if (window.ParticleEffects) {
+            const particleStats = window.ParticleEffects.getStats();
+            document.getElementById('stat-particles').textContent = particleStats.activeParticles;
+        }
+
+        // Update debates count if available
+        if (window.DebateSystem && animationEngine.debateSystem) {
+            const debateCount = animationEngine.debateSystem.activeDebates.size;
+            document.getElementById('stat-debates').textContent = debateCount;
+        }
+    }
+
+    function updateActivityLog() {
+        if (!animationEngine) return;
+
+        const log = animationEngine.getActivityLog(10);
+        const logContainer = document.getElementById('activity-log');
+
+        logContainer.innerHTML = log.map(entry => {
+            const timestamp = new Date(entry.timestamp).toLocaleTimeString();
+            return `
+                <div class="activity-entry ${entry.type}">
+                    <span class="activity-timestamp">${timestamp}</span>
+                    <span class="activity-message">${entry.message}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Initialize when animation engine is ready
+    function initializeControls(engine) {
+        animationEngine = engine;
+        gameModeManager = new GameModeManager(engine);
+        animationEngine.gameModeManager = gameModeManager;
+
+        // Update stats periodically
+        statsUpdateInterval = setInterval(() => {
+            updateStats();
+            updateActivityLog();
+        }, 1000);
+
+        // Listen for activity log updates
+        engine.on('activityLogged', () => {
+            updateActivityLog();
+        });
+
+        console.log('[AnimationControls] Initialized');
+    }
+
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+        if (statsUpdateInterval) {
+            clearInterval(statsUpdateInterval);
+        }
+    });
+</script>
+
+<style>
+    /* Additional inline styles if needed */
+</style>

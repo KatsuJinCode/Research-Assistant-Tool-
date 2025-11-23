@@ -203,6 +203,12 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/workflows')
+def workflows_page():
+    """Workflows management page."""
+    return render_template('workflows.html')
+
+
 @app.route('/api/root-claims')
 def get_root_claims():
     """Get top-level (root) claims."""
@@ -3804,6 +3810,260 @@ def update_node_properties(node_id):
         logger.error(f"[API] Error updating node: {e}")
         logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# FRAMEWORK MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.route('/api/frameworks', methods=['GET'])
+def list_frameworks():
+    """
+    Get list of available research frameworks.
+
+    Returns:
+        JSON array of framework metadata
+    """
+    try:
+        from backend.frameworks import FrameworkManager
+
+        manager = FrameworkManager()
+        frameworks = manager.list_available_frameworks()
+
+        return jsonify({
+            'success': True,
+            'frameworks': frameworks,
+            'current': manager.get_current_framework().name
+        })
+
+    except Exception as e:
+        logger.error(f"Error listing frameworks: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/framework/current', methods=['GET'])
+def get_current_framework():
+    """
+    Get details of the currently active framework.
+
+    Returns:
+        JSON object with framework configuration
+    """
+    try:
+        from backend.frameworks import FrameworkManager
+
+        manager = FrameworkManager()
+        framework = manager.get_current_framework()
+
+        return jsonify({
+            'success': True,
+            'framework': framework.to_dict()
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting current framework: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/framework/set', methods=['POST'])
+def set_framework():
+    """
+    Set the active research framework.
+
+    Request body:
+        {
+            "framework_name": "medical_research"
+        }
+
+    Returns:
+        Success status and new framework details
+    """
+    try:
+        from backend.frameworks import FrameworkManager
+
+        data = request.json
+        framework_name = data.get('framework_name')
+
+        if not framework_name:
+            return jsonify({'error': 'framework_name is required'}), 400
+
+        manager = FrameworkManager()
+
+        # Validate compatibility
+        compatibility = manager.validate_framework_compatibility(framework_name)
+
+        if not compatibility['compatible']:
+            # Return warnings but allow switch
+            logger.warning(f"Framework compatibility issues: {compatibility['warnings']}")
+
+        # Set framework
+        manager.set_framework(framework_name)
+        framework = manager.get_current_framework()
+
+        # Emit update via WebSocket
+        with app.app_context():
+            socketio.emit('framework_changed', {
+                'framework_name': framework.name,
+                'framework_description': framework.description
+            })
+
+        logger.info(f"Framework switched to: {framework_name}")
+
+        return jsonify({
+            'success': True,
+            'framework': framework.to_dict(),
+            'compatibility': compatibility
+        })
+
+    except FileNotFoundError as e:
+        logger.error(f"Framework not found: {e}")
+        return jsonify({'error': f'Framework not found: {str(e)}'}), 404
+
+    except Exception as e:
+        logger.error(f"Error setting framework: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/framework/<framework_name>', methods=['GET'])
+def get_framework_details(framework_name):
+    """
+    Get detailed information about a specific framework.
+
+    Args:
+        framework_name: Name of framework to retrieve
+
+    Returns:
+        Framework configuration details
+    """
+    try:
+        from backend.frameworks import FrameworkManager
+
+        manager = FrameworkManager()
+        details = manager.get_framework_details(framework_name)
+
+        return jsonify({
+            'success': True,
+            'framework': details
+        })
+
+    except FileNotFoundError as e:
+        logger.error(f"Framework not found: {e}")
+        return jsonify({'error': f'Framework not found: {str(e)}'}), 404
+
+    except Exception as e:
+        logger.error(f"Error getting framework details: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/framework/upload', methods=['POST'])
+def upload_custom_framework():
+    """
+    Upload a custom framework YAML file.
+
+    Expects multipart/form-data with 'framework' file field.
+
+    Returns:
+        Success status and uploaded framework details
+    """
+    try:
+        from backend.frameworks import load_framework, validate_framework
+        import yaml
+
+        # Check if file was uploaded
+        if 'framework' not in request.files:
+            return jsonify({'error': 'No framework file provided'}), 400
+
+        file = request.files['framework']
+
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        if not file.filename.endswith('.yaml') and not file.filename.endswith('.yml'):
+            return jsonify({'error': 'File must be a YAML file (.yaml or .yml)'}), 400
+
+        # Save to custom frameworks directory
+        custom_dir = Path.cwd() / 'custom_frameworks'
+        custom_dir.mkdir(exist_ok=True)
+
+        filename = secure_filename(file.filename)
+        filepath = custom_dir / filename
+
+        file.save(filepath)
+        logger.info(f"Uploaded custom framework to {filepath}")
+
+        # Load and validate
+        try:
+            framework = load_framework(filepath)
+            logger.info(f"Successfully validated custom framework: {framework.name}")
+
+            return jsonify({
+                'success': True,
+                'framework': framework.to_dict(),
+                'filename': filename,
+                'message': f'Framework "{framework.name}" uploaded successfully'
+            })
+
+        except Exception as validation_error:
+            # Remove invalid file
+            filepath.unlink(missing_ok=True)
+            logger.error(f"Invalid framework file: {validation_error}")
+            return jsonify({
+                'error': f'Invalid framework file: {str(validation_error)}'
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Error uploading framework: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/framework/validate', methods=['POST'])
+def validate_framework_compatibility():
+    """
+    Validate if switching to a framework is compatible with current graph.
+
+    Request body:
+        {
+            "framework_name": "medical_research"
+        }
+
+    Returns:
+        Compatibility status and warnings
+    """
+    try:
+        from backend.frameworks import FrameworkManager
+
+        data = request.json
+        framework_name = data.get('framework_name')
+
+        if not framework_name:
+            return jsonify({'error': 'framework_name is required'}), 400
+
+        manager = FrameworkManager()
+        compatibility = manager.validate_framework_compatibility(framework_name)
+
+        return jsonify({
+            'success': True,
+            'compatibility': compatibility
+        })
+
+    except Exception as e:
+        logger.error(f"Error validating framework compatibility: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+# Register workflow routes
+try:
+    from web_ui.workflow_routes import register_workflow_routes
+    register_workflow_routes(app, socketio)
+    logger.info("Workflow routes registered successfully")
+except Exception as e:
+    logger.warning(f"Failed to register workflow routes: {e}")
 
 
 if __name__ == '__main__':

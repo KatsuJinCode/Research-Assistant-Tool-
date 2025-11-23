@@ -1,0 +1,215 @@
+workflow_id: rapid_review
+name: Rapid Evidence Review
+description: |
+  Fast-turnaround evidence review workflow for time-sensitive questions.
+  Searches recent literature, applies quick screening, extracts key findings,
+  and generates brief summary report.
+version: 1.0.0
+
+variables:
+  question: "What are the latest findings on topic X?"
+  urgency: "high"
+  time_frame: "last_2_years"
+  max_papers: 50
+
+error_handling: continue
+
+steps:
+  - step_id: rapid_search
+    step_type: search
+    name: Search Recent Papers
+    description: Quick search of recent literature (last 2 years)
+    inputs:
+      query: $question
+      databases: ["arxiv", "pubmed", "google_scholar"]
+      date_range:
+        start: "2023-01-01"
+        end: "2024-12-31"
+      max_results: $max_papers
+      sort_by: "relevance"
+    outputs:
+      - papers
+      - paper_count
+    timeout: 120.0
+
+  - step_id: fast_screen
+    step_type: filter
+    name: Fast Screen by Keywords
+    description: Rapidly screen papers using keyword matching
+    inputs:
+      items: $rapid_search.papers
+      screening_method: "keyword_matching"
+      keywords:
+        include:
+          - "latest"
+          - "recent"
+          - "novel"
+          - "new"
+          - "2023"
+          - "2024"
+        exclude:
+          - "retracted"
+          - "withdrawn"
+      relevance_threshold: 0.6
+    outputs:
+      - screened_papers
+      - included_count
+      - excluded_count
+    depends_on:
+      - rapid_search
+    timeout: 60.0
+
+  - step_id: extract_key_findings
+    step_type: extract
+    name: Extract Key Findings
+    description: Extract main findings and conclusions
+    inputs:
+      documents: $fast_screen.screened_papers
+      extract_type: "key_findings"
+      fields:
+        - "main_finding"
+        - "conclusion"
+        - "implications"
+        - "limitations"
+      summarize: true
+    outputs:
+      - findings
+      - finding_count
+    depends_on:
+      - fast_screen
+    timeout: 300.0
+
+  - step_id: categorize_findings
+    step_type: analyze
+    name: Categorize Findings
+    description: Group findings into categories
+    inputs:
+      findings: $extract_key_findings.findings
+      categorization_method: "automatic"
+      max_categories: 8
+    outputs:
+      - categories
+      - category_distribution
+    depends_on:
+      - extract_key_findings
+    timeout: 120.0
+
+  - step_id: identify_consensus
+    step_type: analyze
+    name: Identify Consensus and Conflicts
+    description: Identify areas of consensus and conflicting evidence
+    inputs:
+      findings: $extract_key_findings.findings
+      categories: $categorize_findings.categories
+      analysis_type: "consensus_detection"
+    outputs:
+      - consensus_areas
+      - conflicting_areas
+      - certainty_ratings
+    depends_on:
+      - extract_key_findings
+      - categorize_findings
+    timeout: 180.0
+
+  - step_id: synthesize_findings
+    step_type: synthesize
+    name: Synthesize Key Messages
+    description: Create concise synthesis of key messages
+    inputs:
+      findings: $extract_key_findings.findings
+      categories: $categorize_findings.categories
+      consensus: $identify_consensus.consensus_areas
+      conflicts: $identify_consensus.conflicting_areas
+      synthesis_length: "brief"
+      max_bullets: 10
+    outputs:
+      - key_messages
+      - executive_summary
+      - evidence_strength
+    depends_on:
+      - extract_key_findings
+      - categorize_findings
+      - identify_consensus
+    timeout: 240.0
+
+  - step_id: generate_brief
+    step_type: export
+    name: Generate Evidence Brief
+    description: Generate concise evidence brief (2-4 pages)
+    inputs:
+      data:
+        question: $question
+        search_date: "today"
+        paper_count: $rapid_search.paper_count
+        included_count: $fast_screen.included_count
+        finding_count: $extract_key_findings.finding_count
+        categories: $categorize_findings.categories
+        key_messages: $synthesize_findings.key_messages
+        executive_summary: $synthesize_findings.executive_summary
+        consensus_areas: $identify_consensus.consensus_areas
+        conflicting_areas: $identify_consensus.conflicting_areas
+        evidence_strength: $synthesize_findings.evidence_strength
+        papers: $fast_screen.screened_papers
+      format: "pdf"
+      template: "evidence_brief"
+      max_pages: 4
+      style: "concise"
+      output_path: "rapid_review_brief.pdf"
+    outputs:
+      - brief_path
+      - exported
+    depends_on:
+      - rapid_search
+      - fast_screen
+      - extract_key_findings
+      - categorize_findings
+      - identify_consensus
+      - synthesize_findings
+
+  - step_id: export_citation_list
+    step_type: export
+    name: Export Citation List
+    description: Export list of included papers with citations
+    inputs:
+      papers: $fast_screen.screened_papers
+      format: "csv"
+      fields:
+        - "title"
+        - "authors"
+        - "year"
+        - "doi"
+        - "citation_apa"
+        - "key_finding"
+      output_path: "rapid_review_citations.csv"
+    outputs:
+      - citations_path
+      - exported
+    depends_on:
+      - fast_screen
+
+triggers:
+  manual: true
+  scheduled: false
+  event_based:
+    enabled: false
+    event_type: "urgent_query"
+
+metadata:
+  category: "rapid_review"
+  complexity: "medium"
+  estimated_duration: "30-60 minutes"
+  turnaround: "same_day"
+  ideal_for:
+    - "Policy questions"
+    - "Clinical inquiries"
+    - "Urgent evidence needs"
+    - "Scoping questions"
+  limitations:
+    - "Limited search scope"
+    - "Reduced quality assessment"
+    - "May miss older relevant evidence"
+  tags:
+    - "rapid_evidence"
+    - "quick_synthesis"
+    - "time_sensitive"
+    - "evidence_brief"

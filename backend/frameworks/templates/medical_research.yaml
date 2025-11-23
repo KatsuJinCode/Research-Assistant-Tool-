@@ -1,0 +1,262 @@
+# Medical Research Framework
+# Specialized framework for clinical research, medical studies, and healthcare evidence
+
+name: medical_research
+description: Framework for medical and clinical research with evidence-based medicine principles
+version: 1.0.0
+extends: general_research  # Inherit from general framework
+
+# Medical-specific entity types
+entity_types:
+  - Disease
+  - Treatment
+  - Drug
+  - Symptom
+  - Patient_Population
+  - Clinical_Trial
+  - Diagnosis
+  - Biomarker
+  - Adverse_Event
+  - Dosage
+  - Intervention
+  - Outcome_Measure
+  - Comorbidity
+  - Risk_Factor
+  - Mechanism_of_Action
+
+# Medical relationship types
+relationship_types:
+  - TREATS
+  - CAUSES
+  - INDICATES
+  - CONTRAINDICATES
+  - TESTED_ON
+  - DIAGNOSES
+  - PREVENTS
+  - INCREASES_RISK
+  - DECREASES_RISK
+  - INTERACTS_WITH
+  - METABOLIZES_TO
+  - TARGETS
+  - ASSOCIATED_WITH
+  - PROGRESSES_TO
+
+# Medical-specific prompts
+prompts:
+  extraction: |
+    Extract medical claims from the following clinical text. Focus on:
+    - Treatment efficacy and safety
+    - Disease mechanisms and etiology
+    - Diagnostic criteria and accuracy
+    - Patient outcomes and adverse events
+    - Drug interactions and contraindications
+
+    Text: {text}
+
+    Return each claim in the format:
+    - Population: [patient group]
+    - Intervention: [treatment/drug]
+    - Comparison: [control/alternative]
+    - Outcome: [measured result]
+    - Evidence Level: [I-V]
+
+  analysis: |
+    Analyze this medical claim using evidence-based medicine principles:
+
+    Claim: {claim}
+    Clinical Context: {context}
+
+    Assess:
+    1. Evidence level (Level I: Systematic review → Level V: Expert opinion)
+    2. Study design quality (RCT > Cohort > Case-control > Case series)
+    3. Sample size and statistical power
+    4. Clinical significance vs statistical significance
+    5. Applicability to patient population
+    6. Potential confounders and biases
+
+  evaluation: |
+    Evaluate this medical evidence using GRADE criteria:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Rate:
+    - Quality of Evidence (High/Moderate/Low/Very Low)
+    - Risk of Bias
+    - Inconsistency
+    - Indirectness
+    - Imprecision
+    - Publication bias
+
+    Consider:
+    - Study methodology (blinding, randomization)
+    - Conflict of interest
+    - FDA/EMA approval status
+    - Real-world evidence
+
+  claim_simplification: |
+    Simplify this medical claim into PICO components:
+
+    Complex Claim: {claim}
+
+    Break down into:
+    - P (Population): Who are the patients?
+    - I (Intervention): What is the treatment?
+    - C (Comparison): Compared to what?
+    - O (Outcome): What is measured?
+
+    Each component should be a clear, measurable statement.
+
+  evidence_assessment: |
+    Assess medical evidence strength for this claim:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Determine:
+    1. Evidence Level (I-V):
+       - Level I: Systematic review/meta-analysis of RCTs
+       - Level II: Individual RCT
+       - Level III: Controlled trial without randomization
+       - Level IV: Case-control or cohort study
+       - Level V: Case series, expert opinion
+    2. Sample size adequacy
+    3. P-value and confidence intervals
+    4. Clinical vs statistical significance
+    5. Number Needed to Treat (NNT) if applicable
+
+# Medical evaluation criteria
+evaluation_criteria:
+  evidence_levels:
+    - Level_I_Systematic_Review
+    - Level_I_Meta_Analysis
+    - Level_II_RCT
+    - Level_III_Controlled_Trial
+    - Level_IV_Cohort_Study
+    - Level_IV_Case_Control
+    - Level_V_Case_Series
+    - Level_V_Expert_Opinion
+
+  quality_metrics:
+    - randomization
+    - blinding
+    - sample_size
+    - power_calculation
+    - intention_to_treat_analysis
+    - p_value
+    - confidence_interval
+    - effect_size
+    - number_needed_to_treat
+    - adverse_event_reporting
+    - conflict_of_interest_disclosure
+
+  authority_indicators:
+    - published_in_tier1_journal  # NEJM, Lancet, JAMA, BMJ
+    - FDA_approved
+    - EMA_approved
+    - included_in_cochrane_review
+    - cited_in_guidelines
+    - multicenter_study
+    - phase_3_trial
+
+  minimum_confidence: 0.7  # Higher threshold for medical claims
+
+# Medical claim structure
+claim_structure:
+  components:
+    - population
+    - intervention
+    - comparison
+    - outcome
+    - timeframe
+    - statistical_measure
+
+  required_fields:
+    - text
+    - source
+    - evidence_level
+    - patient_population
+
+  optional_fields:
+    - sample_size
+    - p_value
+    - confidence_interval
+    - adverse_events
+    - contraindications
+    - dosage
+    - duration
+
+# Evidence requirements for medical research
+evidence_requirements:
+  source_types:
+    - randomized_controlled_trial
+    - systematic_review
+    - meta_analysis
+    - cohort_study
+    - case_control_study
+    - clinical_guideline
+    - fda_approval_document
+
+  minimum_sources: 2  # Require multiple sources for medical claims
+  preferred_date_range: last_5_years  # Medical knowledge evolves quickly
+  peer_review_required: true  # Strict peer review requirement
+
+# Medical source preferences
+source_preferences:
+  databases:
+    - PubMed
+    - Cochrane_Library
+    - EMBASE
+    - ClinicalTrials.gov
+    - FDA.gov
+    - EMA.europa.eu
+
+  journals:
+    - New_England_Journal_of_Medicine
+    - The_Lancet
+    - JAMA
+    - BMJ
+    - Nature_Medicine
+    - PLOS_Medicine
+    - Annals_of_Internal_Medicine
+
+  publication_types:
+    - randomized_controlled_trial
+    - systematic_review
+    - meta_analysis
+    - clinical_guideline
+    - clinical_trial_registry
+
+  authority_sources:
+    - FDA
+    - EMA
+    - WHO
+    - NIH
+    - CDC
+    - Cochrane_Collaboration
+    - NICE  # UK National Institute for Health and Care Excellence
+
+# Medical-specific metadata
+metadata:
+  domain: medical
+  specialty_areas:
+    - clinical_medicine
+    - pharmacology
+    - epidemiology
+    - public_health
+
+  suitable_for:
+    - clinical_decision_support
+    - systematic_reviews
+    - treatment_guidelines
+    - drug_safety_analysis
+
+  regulatory_compliance:
+    - HIPAA_aware
+    - follows_EBM_principles
+    - GRADE_compatible
+
+  limitations:
+    - not_for_diagnostic_use
+    - requires_clinical_expertise
+    - supplement_to_clinical_judgment

@@ -1,0 +1,241 @@
+workflow_id: competitive_intelligence
+name: Competitive Intelligence Gathering
+description: |
+  Automated competitive intelligence workflow for analyzing competitor patents,
+  publications, and technology trends. Generates competitive landscape reports.
+version: 1.0.0
+
+variables:
+  company_name: "Competitor Inc"
+  technology_domain: "artificial intelligence"
+  analysis_period: "2020-2024"
+  competitors:
+    - "Competitor A"
+    - "Competitor B"
+    - "Competitor C"
+
+error_handling: continue
+
+steps:
+  - step_id: search_patents
+    step_type: search
+    name: Search Patent Databases
+    description: Search for patents filed by target companies
+    inputs:
+      query: $technology_domain
+      assignees: $competitors
+      databases: ["uspto", "epo", "wipo"]
+      date_range:
+        start: "2020-01-01"
+        end: "2024-12-31"
+      max_results: 2000
+    outputs:
+      - patents
+      - patent_count
+    timeout: 600.0
+
+  - step_id: extract_patent_claims
+    step_type: extract
+    name: Extract Technology Claims from Patents
+    description: Extract key technology claims and innovations from patents
+    inputs:
+      documents: $search_patents.patents
+      extract_type: "patent_claims"
+      fields:
+        - "independent_claims"
+        - "dependent_claims"
+        - "abstract"
+        - "technical_field"
+        - "inventors"
+    outputs:
+      - technology_claims
+      - claim_count
+    depends_on:
+      - search_patents
+    timeout: 1200.0
+
+  - step_id: search_publications
+    step_type: search
+    name: Search Academic Publications
+    description: Search for academic papers authored by competitor researchers
+    inputs:
+      query: $technology_domain
+      author_affiliations: $competitors
+      databases: ["arxiv", "google_scholar", "ieee"]
+      date_range:
+        start: "2020-01-01"
+        end: "2024-12-31"
+      max_results: 500
+    outputs:
+      - publications
+      - publication_count
+    timeout: 300.0
+
+  - step_id: extract_research_claims
+    step_type: extract
+    name: Extract Research Claims
+    description: Extract key research claims from publications
+    inputs:
+      documents: $search_publications.publications
+      extract_type: "claims"
+      include_context: true
+    outputs:
+      - research_claims
+      - research_claim_count
+    depends_on:
+      - search_publications
+    timeout: 900.0
+
+  - step_id: cluster_technologies
+    step_type: analyze
+    name: Cluster Technologies by Theme
+    description: Cluster all claims by technology theme
+    inputs:
+      claims:
+        - $extract_patent_claims.technology_claims
+        - $extract_research_claims.research_claims
+      clustering_method: "semantic_clustering"
+      min_cluster_size: 5
+      similarity_threshold: 0.7
+    outputs:
+      - technology_clusters
+      - cluster_count
+      - cluster_labels
+    depends_on:
+      - extract_patent_claims
+      - extract_research_claims
+    timeout: 600.0
+
+  - step_id: trend_analysis
+    step_type: analyze
+    name: Analyze Technology Trends
+    description: Analyze trends over time by cluster
+    inputs:
+      clusters: $cluster_technologies.technology_clusters
+      time_period: $analysis_period
+      metrics:
+        - "patent_filing_rate"
+        - "publication_rate"
+        - "inventor_count"
+        - "citation_count"
+    outputs:
+      - trend_data
+      - emerging_areas
+      - declining_areas
+      - growth_rates
+    depends_on:
+      - cluster_technologies
+    timeout: 450.0
+
+  - step_id: competitor_comparison
+    step_type: analyze
+    name: Compare Competitors
+    description: Compare technology portfolios across competitors
+    inputs:
+      patents: $search_patents.patents
+      publications: $search_publications.publications
+      clusters: $cluster_technologies.technology_clusters
+      competitors: $competitors
+      metrics:
+        - "patent_count"
+        - "publication_count"
+        - "technology_breadth"
+        - "innovation_rate"
+        - "collaboration_network"
+    outputs:
+      - competitor_profiles
+      - strength_analysis
+      - weakness_analysis
+      - opportunity_gaps
+    depends_on:
+      - search_patents
+      - search_publications
+      - cluster_technologies
+    timeout: 600.0
+
+  - step_id: identify_white_spaces
+    step_type: analyze
+    name: Identify Technology White Spaces
+    description: Identify underexplored technology areas (opportunities)
+    inputs:
+      clusters: $cluster_technologies.technology_clusters
+      competitor_profiles: $competitor_comparison.competitor_profiles
+      market_trends: $trend_analysis.trend_data
+    outputs:
+      - white_spaces
+      - opportunity_score
+      - recommendations
+    depends_on:
+      - cluster_technologies
+      - competitor_comparison
+      - trend_analysis
+    timeout: 300.0
+
+  - step_id: generate_landscape_visualization
+    step_type: export
+    name: Generate Technology Landscape Map
+    description: Create visual technology landscape map
+    inputs:
+      clusters: $cluster_technologies.technology_clusters
+      competitors: $competitor_comparison.competitor_profiles
+      trends: $trend_analysis.trend_data
+      visualization_type: "bubble_chart"
+      format: "png"
+      output_path: "technology_landscape.png"
+    outputs:
+      - visualization_path
+      - exported
+    depends_on:
+      - cluster_technologies
+      - competitor_comparison
+      - trend_analysis
+
+  - step_id: generate_intelligence_report
+    step_type: export
+    name: Generate Competitive Intelligence Report
+    description: Generate comprehensive competitive intelligence report
+    inputs:
+      data:
+        domain: $technology_domain
+        analysis_period: $analysis_period
+        competitors: $competitors
+        patent_count: $search_patents.patent_count
+        publication_count: $search_publications.publication_count
+        technology_clusters: $cluster_technologies.cluster_labels
+        trend_analysis: $trend_analysis.trend_data
+        competitor_comparison: $competitor_comparison.competitor_profiles
+        white_spaces: $identify_white_spaces.white_spaces
+        opportunities: $identify_white_spaces.recommendations
+      format: "pdf"
+      template: "competitive_intelligence"
+      include_visualizations:
+        - $generate_landscape_visualization.visualization_path
+      output_path: "competitive_intelligence_report.pdf"
+    outputs:
+      - report_path
+      - exported
+    depends_on:
+      - trend_analysis
+      - competitor_comparison
+      - identify_white_spaces
+      - generate_landscape_visualization
+
+triggers:
+  manual: true
+  scheduled:
+    enabled: false
+    cron: "0 0 1 * *"  # Monthly on 1st at midnight
+
+metadata:
+  category: "competitive_intelligence"
+  complexity: "high"
+  estimated_duration: "2-5 hours"
+  data_sources:
+    - "patent_databases"
+    - "academic_publications"
+    - "company_filings"
+  tags:
+    - "patent_analysis"
+    - "technology_trends"
+    - "competitive_analysis"
+    - "landscape_mapping"

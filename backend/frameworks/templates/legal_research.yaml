@@ -1,0 +1,281 @@
+# Legal Research Framework
+# Specialized framework for legal analysis, case law, and statutory interpretation
+
+name: legal_research
+description: Framework for legal research with case law analysis and statutory interpretation
+version: 1.0.0
+extends: general_research
+
+# Legal-specific entity types
+entity_types:
+  - Case
+  - Statute
+  - Regulation
+  - Legal_Principle
+  - Jurisdiction
+  - Precedent
+  - Court
+  - Legal_Issue
+  - Holding
+  - Dicta
+  - Legal_Test
+  - Standard_of_Review
+  - Party
+  - Judge
+  - Legal_Rule
+  - Legislative_History
+  - Constitutional_Provision
+
+# Legal relationship types
+relationship_types:
+  - CITES
+  - OVERRULES
+  - DISTINGUISHES
+  - APPLIES
+  - INTERPRETS
+  - FOLLOWS
+  - CONFLICTS_WITH
+  - CODIFIES
+  - AMENDS
+  - REPEALS
+  - CREATES_EXCEPTION
+  - EXTENDS
+  - LIMITS
+  - ADOPTS_TEST
+
+# Legal-specific prompts
+prompts:
+  extraction: |
+    Extract legal holdings and principles from the following text. Focus on:
+    - Holdings (binding legal conclusions)
+    - Dicta (non-binding observations)
+    - Legal tests and standards
+    - Statutory interpretations
+    - Constitutional principles
+
+    Text: {text}
+
+    For each claim, identify:
+    - Jurisdiction: [court/legislature]
+    - Legal Issue: [question presented]
+    - Holding/Rule: [legal conclusion]
+    - Reasoning: [rationale]
+    - Precedential Value: [binding/persuasive/dicta]
+
+  analysis: |
+    Analyze this legal claim using legal reasoning methodology:
+
+    Claim: {claim}
+    Legal Context: {context}
+
+    Assess:
+    1. Precedential value (binding vs. persuasive authority)
+    2. Jurisdictional relevance and hierarchy
+    3. Current validity (not overruled/superseded)
+    4. Factual distinguishability
+    5. Majority vs. dissenting opinion
+    6. Consistency with higher authority
+    7. Treatment by subsequent cases
+
+  evaluation: |
+    Evaluate the authority of this legal source:
+
+    Claim: {claim}
+    Source: {evidence}
+
+    Consider:
+    1. Court Level (Supreme Court > Appellate > Trial)
+    2. Jurisdiction Match (same jurisdiction > sister jurisdiction)
+    3. Temporal Validity (still good law?)
+    4. Treatment by Other Courts (followed, questioned, limited?)
+    5. Majority vs. Plurality vs. Dissent
+    6. Statutory vs. Case Law vs. Constitutional
+    7. En Banc vs. Panel Decision
+
+  claim_simplification: |
+    Break down this legal holding into component parts:
+
+    Complex Holding: {claim}
+
+    Identify:
+    1. Legal Rule: [general principle]
+    2. Elements/Factors: [required components]
+    3. Exceptions: [when rule doesn't apply]
+    4. Standard of Review: [burden of proof]
+    5. Procedural Context: [motion, appeal, etc.]
+
+    Each component should be independently verifiable.
+
+  evidence_assessment: |
+    Assess the precedential value of this legal authority:
+
+    Claim: {claim}
+    Authority: {evidence}
+
+    Determine:
+    1. Binding vs. Persuasive:
+       - Same jurisdiction + higher court = Binding
+       - Different jurisdiction or lower court = Persuasive
+    2. Strength Factors:
+       - En banc > Panel decision
+       - Majority > Plurality > Concurrence > Dissent
+       - Recent > Old (unless longstanding precedent)
+       - On point > Analogous
+       - Well-reasoned > Conclusory
+    3. Negative Treatment:
+       - Overruled?
+       - Questioned?
+       - Limited?
+       - Distinguished?
+
+# Legal evaluation criteria
+evaluation_criteria:
+  evidence_levels:
+    - Supreme_Court_Binding
+    - Appellate_Court_Binding
+    - Supreme_Court_Persuasive
+    - Appellate_Court_Persuasive
+    - Trial_Court
+    - Statute
+    - Constitutional_Provision
+    - Regulation
+    - Restatement
+    - Legal_Treatise
+    - Law_Review_Article
+
+  quality_metrics:
+    - precedential_value
+    - jurisdictional_match
+    - temporal_validity
+    - factual_similarity
+    - depth_of_reasoning
+    - citation_frequency
+    - negative_treatment
+    - en_banc_decision
+    - unanimous_decision
+
+  authority_indicators:
+    - supreme_court_decision
+    - en_banc_decision
+    - constitutional_provision
+    - controlling_statute
+    - frequently_cited
+    - adopted_by_restatement
+    - cited_in_treatise
+    - followed_by_majority
+
+  minimum_confidence: 0.75  # High threshold for legal authority
+
+# Legal claim structure
+claim_structure:
+  components:
+    - jurisdiction
+    - legal_issue
+    - holding
+    - reasoning
+    - procedural_posture
+    - standard_of_review
+
+  required_fields:
+    - text
+    - source
+    - jurisdiction
+    - precedential_value
+
+  optional_fields:
+    - case_citation
+    - statute_citation
+    - court_level
+    - date_decided
+    - subsequent_history
+    - negative_treatment
+    - key_facts
+
+# Evidence requirements for legal research
+evidence_requirements:
+  source_types:
+    - case_law
+    - statute
+    - regulation
+    - constitutional_provision
+    - legislative_history
+    - legal_treatise
+    - restatement
+    - law_review_article
+
+  minimum_sources: 1  # Single binding authority can be sufficient
+  preferred_date_range: current_law  # Recent or still valid
+  peer_review_required: false  # Court decisions are authoritative
+
+# Legal source preferences
+source_preferences:
+  databases:
+    - Westlaw
+    - LexisNexis
+    - Google_Scholar_Case_Law
+    - CourtListener
+    - Justia
+    - FindLaw
+    - Congress.gov
+    - Federal_Register
+
+  journals:
+    - Harvard_Law_Review
+    - Yale_Law_Journal
+    - Stanford_Law_Review
+    - Columbia_Law_Review
+    - Michigan_Law_Review
+    - NYU_Law_Review
+
+  publication_types:
+    - supreme_court_opinion
+    - appellate_court_opinion
+    - federal_statute
+    - state_statute
+    - regulation
+    - law_review_article
+    - legal_treatise
+    - restatement
+
+  authority_sources:
+    - US_Supreme_Court
+    - Federal_Circuit_Courts
+    - State_Supreme_Courts
+    - US_Congress
+    - State_Legislatures
+    - American_Law_Institute  # Restatements
+    - Uniform_Law_Commission
+
+# Legal-specific metadata
+metadata:
+  domain: legal
+  practice_areas:
+    - constitutional_law
+    - contract_law
+    - tort_law
+    - criminal_law
+    - administrative_law
+    - statutory_interpretation
+
+  suitable_for:
+    - case_law_research
+    - statutory_analysis
+    - legal_memoranda
+    - brief_writing
+    - legal_issue_spotting
+
+  citation_format: bluebook
+
+  limitations:
+    - not_legal_advice
+    - requires_attorney_review
+    - jurisdiction_specific
+    - check_current_validity
+    - shepardize_all_citations
+
+  special_considerations:
+    - track_negative_treatment
+    - verify_jurisdictional_hierarchy
+    - distinguish_binding_vs_persuasive
+    - check_for_statutory_overrides
+    - consider_procedural_posture

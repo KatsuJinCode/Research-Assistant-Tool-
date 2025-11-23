@@ -1766,41 +1766,6 @@
                         </div>
                     </div>
 
-                    <!-- Filter Panel - Ultra compact -->
-                    <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 8px; margin-bottom: 8px; border: 1px solid #333;">
-                        <div style="font-size: 10px; color: #999; margin-bottom: 6px; font-weight: 600;">🎯 GRAPH FILTERS</div>
-                        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                            <label title="Show/hide document nodes. Search uses text matching on document titles and content."
-                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
-                                <input type="checkbox" id="filter-documents" checked style="margin: 0;">
-                                <span style="color: #9C27B0;">■</span>
-                                <span style="color: #ccc;">Docs</span>
-                            </label>
-                            <label title="Show/hide claim nodes. Search uses semantic similarity (embeddings) to find related claims."
-                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
-                                <input type="checkbox" id="filter-claims" checked style="margin: 0;">
-                                <span style="color: #2196F3;">■</span>
-                                <span style="color: #ccc;">Claims</span>
-                            </label>
-                            <label title="Show/hide duplicate/similar nodes. Identified using MECE clustering algorithm."
-                                   style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
-                                <input type="checkbox" id="filter-duplicates" checked style="margin: 0;">
-                                <span style="color: #FF6B35;">≈</span>
-                                <span style="color: #ccc;">Dupes</span>
-                            </label>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <input type="range" id="quality-filter" min="0" max="100" value="0" step="10" style="width: 100%; height: 4px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 9px; color: #666;">
-                                <span>Min Quality: <span id="quality-filter-value">0%</span></span>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 4px;">
-                            <button id="clear-filters-btn" style="flex: 1; padding: 4px; background: #333; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Clear</button>
-                            <button id="focus-search-btn" style="flex: 1; padding: 4px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Focus</button>
-                        </div>
-                    </div>
-
                     <!-- Queue status - Compact single-line -->
                     <div id="queue-status" style="display: none; background: #2a2a2a; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #FF9800;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1842,6 +1807,41 @@
                         <p style="color: #666; margin-top: 15px; font-size: 12px;">
                             💡 Click above to create, switch, or delete projects
                         </p>
+
+                        <!-- Graph Filter Panel -->
+                        <div id="search-filter-panel" style="background: #2a2a2a; border-radius: 6px; padding: 8px; margin-top: 20px; border: 1px solid #333;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 6px; font-weight: 600;">🎯 GRAPH FILTERS</div>
+                            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                                <label title="Show/hide document nodes. Search uses text matching on document titles and content."
+                                       style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                    <input type="checkbox" id="filter-documents" checked style="margin: 0;">
+                                    <span style="color: #9C27B0;">■</span>
+                                    <span style="color: #ccc;">Docs</span>
+                                </label>
+                                <label title="Show/hide claim nodes. Search uses semantic similarity (embeddings) to find related claims."
+                                       style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                    <input type="checkbox" id="filter-claims" checked style="margin: 0;">
+                                    <span style="color: #2196F3;">■</span>
+                                    <span style="color: #ccc;">Claims</span>
+                                </label>
+                                <label title="Show/hide duplicate/similar nodes. Identified using MECE clustering algorithm."
+                                       style="display: flex; align-items: center; cursor: pointer; padding: 4px 8px; background: #333; border-radius: 3px; font-size: 10px; flex: 1; gap: 4px;">
+                                    <input type="checkbox" id="filter-duplicates" checked style="margin: 0;">
+                                    <span style="color: #FF6B35;">≈</span>
+                                    <span style="color: #ccc;">Dupes</span>
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <input type="range" id="quality-filter" min="0" max="100" value="0" step="10" style="width: 100%; height: 4px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 9px; color: #666;">
+                                    <span>Min Quality: <span id="quality-filter-value">0%</span></span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 4px;">
+                                <button id="clear-filters-btn" style="flex: 1; padding: 4px; background: #333; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Clear</button>
+                                <button id="focus-search-btn" style="flex: 1; padding: 4px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Focus</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2032,8 +2032,48 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
-        <div style="background: #2a2a2a; border: 2px solid #2196F3; border-radius: 12px; padding: 30px; width: 600px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-            <h2 style="margin: 0 0 20px 0; color: #2196F3; font-size: 24px;">⚙️ Auto-Linking Settings</h2>
+        <div style="background: #2a2a2a; border: 2px solid #2196F3; border-radius: 12px; padding: 30px; width: 700px; max-width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+            <h2 style="margin: 0 0 20px 0; color: #2196F3; font-size: 24px;">⚙️ Research Assistant Settings</h2>
+
+            <!-- Framework Settings Section -->
+            <div style="margin-bottom: 30px; padding: 20px; background: rgba(76, 175, 80, 0.05); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #4CAF50; font-size: 18px;">🎯 Research Framework</h3>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #e0e0e0; font-weight: bold; margin-bottom: 8px;">
+                        Domain Framework
+                        <span style="color: #999; font-weight: normal; font-size: 12px;">
+                            (Customizes entity types, relationships, and prompts)
+                        </span>
+                    </label>
+                    <select id="framework-select" onchange="updateFrameworkDescription()" style="width: 100%; padding: 12px; background: #333; border: 1px solid #666; color: white; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                        <option value="general_research">📚 General Research (Default)</option>
+                        <option value="medical_research">🏥 Medical Research</option>
+                        <option value="legal_research">⚖️ Legal Research</option>
+                        <option value="scientific_research">🔬 Scientific Research</option>
+                    </select>
+                </div>
+
+                <div id="framework-description" style="padding: 12px; background: rgba(33, 150, 243, 0.1); border: 1px solid #2196F3; border-radius: 6px; font-size: 12px; color: #e0e0e0; line-height: 1.6;">
+                    <strong style="color: #2196F3;">General Research Framework</strong><br>
+                    • Flexible entity and relationship types for broad domains<br>
+                    • Entity Types: Claim, Evidence, Document, Author, Concept, Finding, etc.<br>
+                    • Suitable for: Literature review, cross-domain analysis, exploratory research
+                </div>
+
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button onclick="viewFrameworkDetails()" style="flex: 1; background: #2196F3; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        📋 View Details
+                    </button>
+                    <button onclick="uploadCustomFramework()" style="flex: 1; background: #FF9800; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        📤 Upload Custom
+                    </button>
+                </div>
+
+                <div id="framework-compatibility-warning" style="display: none; margin-top: 12px; padding: 10px; background: rgba(255, 152, 0, 0.1); border: 1px solid #FF9800; border-radius: 6px; font-size: 11px; color: #FF9800;">
+                    ⚠️ <strong>Compatibility Warning:</strong> Switching frameworks may not support all existing graph data.
+                </div>
+            </div>
 
             <!-- Similarity Threshold -->
             <div style="margin-bottom: 25px;">
@@ -2480,6 +2520,9 @@
         }
     </style>
 
+    <!-- Animation System CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+
     <!-- Modular JavaScript -->
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
     <script src="{{ url_for('static', filename='js/graph.js') }}"></script>
@@ -2487,6 +2530,15 @@
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/agent_monitor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+    <!-- Agent Animation System -->
+    <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent-movement.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent-animation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/agent-debate.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api-visualization.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/game-modes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/animation-integration.js') }}"></script>
 
     <script>
         // Agent monitor toggle
@@ -2561,8 +2613,151 @@
             }
             updateModelDescription();
 
+            // Load current framework
+            loadCurrentFramework();
+
             // Show modal
             modal.style.display = 'flex';
+        }
+
+        // Framework management functions
+        function loadCurrentFramework() {
+            fetch('/api/framework/current')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.framework) {
+                        const frameworkSelect = document.getElementById('framework-select');
+                        if (frameworkSelect) {
+                            frameworkSelect.value = data.framework.name;
+                            updateFrameworkDescription();
+                        }
+                    }
+                })
+                .catch(err => console.error('Error loading current framework:', err));
+        }
+
+        function updateFrameworkDescription() {
+            const select = document.getElementById('framework-select');
+            const descDiv = document.getElementById('framework-description');
+            if (!select || !descDiv) return;
+
+            const framework = select.value;
+            const descriptions = {
+                'general_research': {
+                    title: 'General Research Framework',
+                    color: '#2196F3',
+                    points: [
+                        'Flexible entity and relationship types for broad domains',
+                        'Entity Types: Claim, Evidence, Document, Author, Concept, Finding, etc.',
+                        'Suitable for: Literature review, cross-domain analysis, exploratory research'
+                    ]
+                },
+                'medical_research': {
+                    title: 'Medical Research Framework',
+                    color: '#4CAF50',
+                    points: [
+                        'Evidence-based medicine principles with clinical focus',
+                        'Entity Types: Disease, Treatment, Drug, Clinical_Trial, Patient_Population, etc.',
+                        'Relationships: TREATS, CAUSES, CONTRAINDICATES, TESTED_ON',
+                        'Suitable for: Clinical decision support, systematic reviews, drug safety analysis'
+                    ]
+                },
+                'legal_research': {
+                    title: 'Legal Research Framework',
+                    color: '#FF9800',
+                    points: [
+                        'Case law analysis and statutory interpretation',
+                        'Entity Types: Case, Statute, Legal_Principle, Jurisdiction, Precedent',
+                        'Relationships: CITES, OVERRULES, DISTINGUISHES, APPLIES, INTERPRETS',
+                        'Suitable for: Legal memoranda, case law research, brief writing'
+                    ]
+                },
+                'scientific_research': {
+                    title: 'Scientific Research Framework',
+                    color: '#9C27B0',
+                    points: [
+                        'Emphasis on methodology, reproducibility, and peer review',
+                        'Entity Types: Hypothesis, Experiment, Finding, Theory, Dataset, Protocol',
+                        'Relationships: SUPPORTS, REFUTES, REPLICATES, EXTENDS, VALIDATES',
+                        'Suitable for: Hypothesis testing, meta-analysis, replication studies'
+                    ]
+                }
+            };
+
+            const desc = descriptions[framework];
+            if (desc) {
+                descDiv.innerHTML = `
+                    <strong style="color: ${desc.color};">${desc.title}</strong><br>
+                    ${desc.points.map(p => `• ${p}`).join('<br>')}
+                `;
+                descDiv.style.borderColor = desc.color;
+                descDiv.style.background = desc.color + '1A';
+            }
+        }
+
+        function viewFrameworkDetails() {
+            const select = document.getElementById('framework-select');
+            if (!select) return;
+
+            const frameworkName = select.value;
+            fetch(`/api/framework/${frameworkName}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.framework) {
+                        const fw = data.framework;
+                        const details = `
+Framework: ${fw.name}
+Version: ${fw.version}
+
+Description:
+${fw.description}
+
+Entity Types (${fw.entity_types.length}):
+${fw.entity_types.join(', ')}
+
+Relationship Types (${fw.relationship_types.length}):
+${fw.relationship_types.join(', ')}
+
+Evidence Levels:
+${fw.evaluation_criteria.evidence_levels.join(', ')}
+
+Source Preferences:
+Databases: ${fw.source_preferences.databases.join(', ')}
+                        `;
+                        alert(details);
+                    }
+                })
+                .catch(err => alert('Error loading framework details: ' + err.message));
+        }
+
+        function uploadCustomFramework() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.yaml,.yml';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('framework', file);
+
+                fetch('/api/framework/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`✓ ${data.message}\n\nFramework "${data.framework.name}" has been uploaded and validated.`);
+                        // Reload framework list
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => alert('Error uploading framework: ' + err.message));
+            };
+            input.click();
         }
 
         function closeSettings() {
@@ -2577,6 +2772,8 @@
             const threshold = document.getElementById('similarity-threshold-slider').value;
             const modelSelect = document.getElementById('embedding-model-select');
             const model = modelSelect ? modelSelect.value : 'all-mpnet-base-v2';
+            const frameworkSelect = document.getElementById('framework-select');
+            const framework = frameworkSelect ? frameworkSelect.value : 'general_research';
 
             // Save to localStorage
             localStorage.setItem('similarity_threshold', threshold);
@@ -2587,6 +2784,37 @@
             const modelChanged = previousModel !== model;
             localStorage.setItem('previous_embedding_model', model);
 
+            // Check if framework changed
+            const previousFramework = localStorage.getItem('current_framework') || 'general_research';
+            const frameworkChanged = previousFramework !== framework;
+
+            // Set framework if changed
+            if (frameworkChanged) {
+                fetch('/api/framework/set', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({framework_name: framework})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        localStorage.setItem('current_framework', framework);
+                        console.log('[Settings] Framework changed to:', framework);
+
+                        // Show compatibility warnings if any
+                        if (data.compatibility && !data.compatibility.compatible) {
+                            const warnings = data.compatibility.warnings.join('\n');
+                            alert(`⚠️ Framework Compatibility Warning:\n\n${warnings}\n\nThe framework has been changed, but some existing graph data may not be compatible.`);
+                        }
+                    } else {
+                        alert('Error changing framework: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    alert('Error changing framework: ' + err.message);
+                });
+            }
+
             // Close modal
             closeSettings();
 
@@ -2596,12 +2824,15 @@
 
             // Show confirmation message
             let message = `✓ Settings saved!\n\nSimilarity Threshold: ${threshold}\nEmbedding Model: ${modelDisplayName}`;
+            if (frameworkChanged) {
+                message += `\nResearch Framework: ${framework}`;
+            }
             if (modelChanged) {
                 message += '\n\n⚠️ Model changed! Type "generate embeddings" in chat to regenerate embeddings with the new model.';
             }
             alert(message);
 
-            console.log('[Settings] Saved:', { threshold, model, modelChanged });
+            console.log('[Settings] Saved:', { threshold, model, framework, modelChanged, frameworkChanged });
         }
 
         function updateThresholdDisplay(value) {
@@ -2709,5 +2940,9 @@
 
     <!-- Project Manager -->
     <script src="{{ url_for('static', filename='js/project_manager.js') }}"></script>
+
+    <!-- Include Agent Animation Control Panel -->
+    {% include 'agent-controls.html' %}
+
 </body>
 </html>

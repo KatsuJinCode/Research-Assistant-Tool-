@@ -1,0 +1,180 @@
+# General Research Framework
+# Default framework with flexible entity and relationship types for broad research domains
+
+name: general_research
+description: General-purpose research framework with flexible entity and relationship types
+version: 1.0.0
+
+# Entity types - flexible types that work across domains
+entity_types:
+  - Claim
+  - Evidence
+  - Document
+  - Author
+  - Institution
+  - Concept
+  - Finding
+  - Hypothesis
+  - Method
+  - Result
+
+# Relationship types - general reasoning relationships
+relationship_types:
+  - SUPPORTS
+  - CONTRADICTS
+  - SIMILAR_TO
+  - CITES
+  - CONTAINS
+  - AUTHORED_BY
+  - AFFILIATED_WITH
+  - USES_METHOD
+  - PRODUCES_RESULT
+  - BUILDS_ON
+  - REFUTES
+
+# Domain-specific prompts
+prompts:
+  extraction: |
+    Extract factual claims from the following research text. Focus on:
+    - Main findings and conclusions
+    - Supporting evidence and data
+    - Methodological claims
+    - Theoretical propositions
+
+    Text: {text}
+
+    Return each claim as a clear, factual statement.
+
+  analysis: |
+    Analyze the following claim in the context of existing research:
+
+    Claim: {claim}
+    Context: {context}
+
+    Assess:
+    1. Validity and logical coherence
+    2. Supporting and contradicting evidence
+    3. Methodological soundness
+    4. Generalizability
+
+  evaluation: |
+    Evaluate the quality of this research claim:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Consider:
+    - Strength of evidence
+    - Source credibility
+    - Reproducibility
+    - Potential biases
+
+  claim_simplification: |
+    Simplify the following complex claim into clear, atomic sub-claims:
+
+    Complex Claim: {claim}
+
+    Break down into:
+    1. Independent factual statements
+    2. Clear cause-effect relationships
+    3. Measurable assertions
+
+  evidence_assessment: |
+    Assess whether the following evidence supports the claim:
+
+    Claim: {claim}
+    Evidence: {evidence}
+
+    Determine:
+    - Relevance (0-1)
+    - Support strength (supports/contradicts/neutral)
+    - Quality of evidence (0-1)
+
+# Evaluation criteria
+evaluation_criteria:
+  evidence_levels:
+    - Systematic Review
+    - Meta-Analysis
+    - Randomized Study
+    - Cohort Study
+    - Case Study
+    - Expert Opinion
+
+  quality_metrics:
+    - peer_reviewed
+    - sample_size
+    - methodology_rigor
+    - statistical_significance
+    - reproducibility
+
+  authority_indicators:
+    - citation_count
+    - author_reputation
+    - journal_impact_factor
+    - institutional_affiliation
+
+  minimum_confidence: 0.5
+
+# Claim structure
+claim_structure:
+  components:
+    - subject
+    - predicate
+    - object
+    - context
+
+  required_fields:
+    - text
+    - source
+
+  optional_fields:
+    - confidence
+    - evidence_count
+    - methodology
+    - limitations
+
+# Evidence requirements
+evidence_requirements:
+  source_types:
+    - peer_reviewed_journal
+    - conference_paper
+    - book
+    - technical_report
+    - preprint
+
+  minimum_sources: 1
+  preferred_date_range: last_10_years
+  peer_review_required: false
+
+# Source preferences
+source_preferences:
+  databases:
+    - Google Scholar
+    - arXiv
+    - SSRN
+    - ResearchGate
+
+  journals:
+    - any_peer_reviewed
+
+  publication_types:
+    - journal_article
+    - conference_paper
+    - book_chapter
+    - thesis
+
+  authority_sources:
+    - academic_institutions
+    - research_labs
+    - government_agencies
+
+# Additional metadata
+metadata:
+  domain: general
+  suitable_for:
+    - exploratory_research
+    - literature_review
+    - cross_domain_analysis
+  limitations:
+    - may_lack_domain_specific_rigor
+    - requires_manual_refinement_for_specialized_domains

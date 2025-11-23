@@ -1,0 +1,216 @@
+workflow_id: meta_analysis
+name: Meta-Analysis Pipeline
+description: |
+  Quantitative meta-analysis workflow for aggregating and analyzing effect sizes
+  across multiple clinical trials. Includes forest plot generation, publication
+  bias analysis, and sensitivity analysis.
+version: 1.0.0
+
+variables:
+  intervention: "Treatment X"
+  outcome: "Outcome Y"
+  effect_measure: "odds_ratio"
+  search_terms: "randomized controlled trial AND treatment X"
+
+error_handling: stop
+
+steps:
+  - step_id: search_clinical_trials
+    step_type: search
+    name: Search Clinical Trials Databases
+    description: Search for relevant randomized controlled trials
+    inputs:
+      query: $search_terms
+      databases: ["pubmed", "clinicaltrials_gov", "cochrane"]
+      study_types: ["randomized_controlled_trial", "clinical_trial"]
+      max_results: 500
+    outputs:
+      - trials
+      - trial_count
+    timeout: 300.0
+
+  - step_id: extract_effect_sizes
+    step_type: extract
+    name: Extract Effect Sizes and Statistics
+    description: Extract effect sizes, sample sizes, and study characteristics
+    inputs:
+      documents: $search_clinical_trials.trials
+      extract_fields:
+        - "effect_size"
+        - "sample_size"
+        - "standard_error"
+        - "confidence_interval"
+        - "p_value"
+        - "study_design"
+        - "population_characteristics"
+    outputs:
+      - effect_data
+      - extracted_count
+    depends_on:
+      - search_clinical_trials
+    timeout: 900.0
+
+  - step_id: quality_assessment
+    step_type: analyze
+    name: Assess Study Quality (Cochrane Risk of Bias)
+    description: Assess risk of bias using Cochrane tool
+    inputs:
+      studies: $extract_effect_sizes.effect_data
+      tool: "cochrane_rob"
+      domains:
+        - "random_sequence_generation"
+        - "allocation_concealment"
+        - "blinding_participants"
+        - "blinding_outcome_assessment"
+        - "incomplete_outcome_data"
+        - "selective_reporting"
+    outputs:
+      - quality_scores
+      - high_quality_studies
+      - low_risk_studies
+    depends_on:
+      - extract_effect_sizes
+    timeout: 600.0
+
+  - step_id: calculate_pooled_effect
+    step_type: analyze
+    name: Calculate Pooled Effect Size
+    description: Calculate pooled effect size using random-effects model
+    inputs:
+      effect_data: $extract_effect_sizes.effect_data
+      model: "random_effects"
+      effect_measure: $effect_measure
+      heterogeneity_test: "i_squared"
+    outputs:
+      - pooled_effect
+      - confidence_interval
+      - heterogeneity_stats
+      - tau_squared
+      - i_squared
+    depends_on:
+      - extract_effect_sizes
+    timeout: 300.0
+
+  - step_id: generate_forest_plot
+    step_type: export
+    name: Generate Forest Plot
+    description: Create forest plot visualization of effect sizes
+    inputs:
+      effect_data: $extract_effect_sizes.effect_data
+      pooled_effect: $calculate_pooled_effect.pooled_effect
+      quality_scores: $quality_assessment.quality_scores
+      plot_type: "forest"
+      format: "png"
+      output_path: "forest_plot.png"
+    outputs:
+      - plot_path
+      - exported
+    depends_on:
+      - calculate_pooled_effect
+      - quality_assessment
+
+  - step_id: publication_bias_analysis
+    step_type: analyze
+    name: Assess Publication Bias
+    description: Analyze publication bias using funnel plot and Egger's test
+    inputs:
+      effect_data: $extract_effect_sizes.effect_data
+      tests:
+        - "egger"
+        - "begg"
+        - "trim_and_fill"
+      generate_funnel_plot: true
+    outputs:
+      - bias_test_results
+      - funnel_plot_path
+      - adjusted_effect
+      - bias_detected
+    depends_on:
+      - extract_effect_sizes
+    timeout: 300.0
+
+  - step_id: sensitivity_analysis
+    step_type: analyze
+    name: Sensitivity Analysis
+    description: Perform sensitivity analysis by removing studies one at a time
+    inputs:
+      effect_data: $extract_effect_sizes.effect_data
+      analysis_type: "leave_one_out"
+      quality_scores: $quality_assessment.quality_scores
+    outputs:
+      - sensitivity_results
+      - influential_studies
+      - robust_effect
+    depends_on:
+      - extract_effect_sizes
+      - quality_assessment
+    timeout: 600.0
+
+  - step_id: subgroup_analysis
+    step_type: analyze
+    name: Subgroup Analysis
+    description: Analyze effect sizes by subgroups (if applicable)
+    inputs:
+      effect_data: $extract_effect_sizes.effect_data
+      subgroup_variables:
+        - "study_design"
+        - "population_age"
+        - "intervention_duration"
+      min_studies_per_group: 3
+    outputs:
+      - subgroup_results
+      - heterogeneity_by_subgroup
+    depends_on:
+      - extract_effect_sizes
+    timeout: 450.0
+    conditions:
+      sufficient_data: true
+
+  - step_id: generate_final_report
+    step_type: export
+    name: Generate Meta-Analysis Report
+    description: Generate comprehensive meta-analysis report
+    inputs:
+      data:
+        intervention: $intervention
+        outcome: $outcome
+        trial_count: $search_clinical_trials.trial_count
+        pooled_effect: $calculate_pooled_effect.pooled_effect
+        confidence_interval: $calculate_pooled_effect.confidence_interval
+        heterogeneity_stats: $calculate_pooled_effect.heterogeneity_stats
+        quality_assessment: $quality_assessment.quality_scores
+        publication_bias: $publication_bias_analysis.bias_test_results
+        sensitivity_analysis: $sensitivity_analysis.sensitivity_results
+        subgroup_analysis: $subgroup_analysis.subgroup_results
+      format: "pdf"
+      template: "meta_analysis"
+      include_plots:
+        - $generate_forest_plot.plot_path
+        - $publication_bias_analysis.funnel_plot_path
+      output_path: "meta_analysis_report.pdf"
+    outputs:
+      - report_path
+      - exported
+    depends_on:
+      - calculate_pooled_effect
+      - generate_forest_plot
+      - publication_bias_analysis
+      - sensitivity_analysis
+
+triggers:
+  manual: true
+  scheduled: false
+
+metadata:
+  category: "meta_analysis"
+  complexity: "high"
+  estimated_duration: "3-6 hours"
+  statistical_methods:
+    - "random_effects_model"
+    - "heterogeneity_assessment"
+    - "publication_bias_tests"
+    - "sensitivity_analysis"
+  tags:
+    - "quantitative_synthesis"
+    - "clinical_trials"
+    - "statistical_analysis"

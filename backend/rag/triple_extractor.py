@@ -6,14 +6,23 @@ for training PyKEEN embeddings (TransE, RotatE, etc.).
 
 This module provides the foundation for advanced Graph RAG by converting
 the research claim graph into a format suitable for knowledge graph embedding.
+
+Framework Integration:
+- Filters triples by framework-defined relationship types
+- Maps entity types according to framework configuration
+- Validates triples against framework schema
 """
 
 from typing import List, Tuple, Dict, Any, Optional, Set
 from research_agent.graph_database import GraphDatabase
+from backend.frameworks.framework_manager import get_framework_manager
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TripleExtractor:
-    """Extract knowledge graph triples for embedding training."""
+    """Extract knowledge graph triples for embedding training with framework support."""
 
     # Metadata relationships to exclude from embeddings
     # These are system-level relationships that don't add semantic value
@@ -21,14 +30,17 @@ class TripleExtractor:
         'CREATED',  # Agent provenance - not semantic
     }
 
-    def __init__(self, db: GraphDatabase):
+    def __init__(self, db: GraphDatabase, use_framework: bool = True):
         """
         Initialize extractor with graph database.
 
         Args:
             db: GraphDatabase instance
+            use_framework: Whether to filter triples by current framework (default: True)
         """
         self.db = db
+        self.use_framework = use_framework
+        self._framework_manager = get_framework_manager() if use_framework else None
         self._cache_valid = False
         self._cached_triples: Optional[List[Tuple[str, str, str]]] = None
 
@@ -148,12 +160,26 @@ class TripleExtractor:
         """
         Extract only semantic relationships (reasoning relationships).
 
-        Includes: SUPPORTS, CONTRADICTS, SIMILAR_TO
-        Excludes: Structural relationships like CONTAINS, MERGED_INTO
+        Uses framework-defined semantic relationships if framework is enabled.
+        Otherwise uses default: SUPPORTS, CONTRADICTS, SIMILAR_TO
 
         Returns:
             List of semantic triples
         """
+        # Use framework if available
+        if self.use_framework and self._framework_manager:
+            framework = self._framework_manager.get_current_framework()
+            # Filter for typical semantic relations from framework
+            semantic_keywords = ['SUPPORTS', 'CONTRADICTS', 'REFUTES', 'SIMILAR', 'BUILDS_ON']
+            semantic_relations = [
+                rel for rel in framework.relationship_types
+                if any(keyword in rel.upper() for keyword in semantic_keywords)
+            ]
+            if semantic_relations:
+                logger.info(f"Using framework semantic relations: {semantic_relations}")
+                return self.extract_by_relation_type(semantic_relations)
+
+        # Fallback to default
         semantic_relations = ['SUPPORTS', 'CONTRADICTS', 'SIMILAR_TO']
         return self.extract_by_relation_type(semantic_relations)
 
@@ -183,6 +209,12 @@ class TripleExtractor:
         """
         Check if a triple is valid for extraction.
 
+        Validates against:
+        - Node existence
+        - Relation validity
+        - Metadata exclusion
+        - Framework compatibility (if enabled)
+
         Args:
             head: Head entity ID
             tail: Tail entity ID
@@ -202,6 +234,23 @@ class TripleExtractor:
         # Exclude metadata relationships
         if relation in self.EXCLUDED_RELATIONS:
             return False
+
+        # Framework validation
+        if self.use_framework and self._framework_manager:
+            framework = self._framework_manager.get_current_framework()
+
+            # Check if relationship type is allowed by framework
+            if relation not in framework.relationship_types:
+                logger.debug(f"Triple filtered by framework: relation '{relation}' not in framework.relationship_types")
+                return False
+
+            # Optionally check entity types
+            head_label = self.db.graph.nodes[head].get('label', 'Unknown')
+            tail_label = self.db.graph.nodes[tail].get('label', 'Unknown')
+
+            if head_label not in framework.entity_types or tail_label not in framework.entity_types:
+                logger.debug(f"Triple filtered by framework: entity types '{head_label}', '{tail_label}' not in framework.entity_types")
+                return False
 
         return True
 

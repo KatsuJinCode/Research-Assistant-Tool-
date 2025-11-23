@@ -1,0 +1,162 @@
+workflow_id: systematic_review
+name: Systematic Literature Review
+description: |
+  Comprehensive systematic literature review workflow following PRISMA guidelines.
+  Searches multiple databases, applies inclusion/exclusion criteria, extracts claims,
+  performs quality assessment, and generates final report.
+version: 1.0.0
+
+variables:
+  research_question: "What is the effectiveness of intervention X on outcome Y?"
+  databases: ["arxiv", "pubmed", "google_scholar"]
+  inclusion_criteria:
+    - "Published in last 10 years"
+    - "English language"
+    - "Peer-reviewed"
+  quality_framework: "GRADE"
+
+error_handling: continue
+
+steps:
+  - step_id: search_databases
+    step_type: search
+    name: Search Multiple Databases
+    description: Search configured databases for relevant papers
+    inputs:
+      query: $research_question
+      databases: $databases
+      max_results: 1000
+      date_range:
+        start: "2014-01-01"
+        end: "2024-12-31"
+    outputs:
+      - search_results
+      - result_count
+    retry_policy:
+      max_attempts: 3
+      initial_delay: 2.0
+      max_delay: 30.0
+      backoff_multiplier: 2.0
+    timeout: 300.0
+
+  - step_id: extract_titles_abstracts
+    step_type: extract
+    name: Extract Titles and Abstracts
+    description: Extract title and abstract metadata from search results
+    inputs:
+      documents: $search_databases.search_results
+      fields: ["title", "abstract", "authors", "year", "doi"]
+    outputs:
+      - extracted_metadata
+      - document_count
+    depends_on:
+      - search_databases
+    timeout: 600.0
+
+  - step_id: screen_inclusion
+    step_type: filter
+    name: Screen by Inclusion Criteria
+    description: Filter papers based on inclusion criteria
+    inputs:
+      items: $extract_titles_abstracts.extracted_metadata
+      criteria:
+        year_min: 2014
+        language: "English"
+        peer_reviewed: true
+    outputs:
+      - included_papers
+      - excluded_papers
+      - inclusion_count
+    depends_on:
+      - extract_titles_abstracts
+
+  - step_id: full_text_extraction
+    step_type: extract
+    name: Extract Full-Text Claims
+    description: Extract all claims from full-text papers
+    inputs:
+      documents: $screen_inclusion.included_papers
+      extract_type: "claims"
+      include_context: true
+    outputs:
+      - claims
+      - claim_count
+    depends_on:
+      - screen_inclusion
+    timeout: 1800.0
+
+  - step_id: quality_assessment
+    step_type: analyze
+    name: Quality Assessment (GRADE)
+    description: Assess quality of evidence using GRADE framework
+    inputs:
+      claims: $full_text_extraction.claims
+      framework: $quality_framework
+      criteria:
+        - "risk_of_bias"
+        - "inconsistency"
+        - "indirectness"
+        - "imprecision"
+        - "publication_bias"
+    outputs:
+      - quality_ratings
+      - high_quality_claims
+      - moderate_quality_claims
+      - low_quality_claims
+    depends_on:
+      - full_text_extraction
+    timeout: 900.0
+
+  - step_id: data_synthesis
+    step_type: synthesize
+    name: Synthesize Findings
+    description: Synthesize all findings into coherent narrative
+    inputs:
+      claims: $full_text_extraction.claims
+      quality_ratings: $quality_assessment.quality_ratings
+      synthesis_type: "narrative"
+    outputs:
+      - synthesis
+      - key_findings
+      - evidence_gaps
+    depends_on:
+      - quality_assessment
+    timeout: 600.0
+
+  - step_id: generate_report
+    step_type: export
+    name: Generate Final Report
+    description: Generate comprehensive systematic review report
+    inputs:
+      data:
+        research_question: $research_question
+        search_results: $search_databases.result_count
+        included_papers: $screen_inclusion.inclusion_count
+        total_claims: $full_text_extraction.claim_count
+        synthesis: $data_synthesis.synthesis
+        key_findings: $data_synthesis.key_findings
+        evidence_gaps: $data_synthesis.evidence_gaps
+        quality_ratings: $quality_assessment.quality_ratings
+      format: "pdf"
+      template: "systematic_review"
+      output_path: "systematic_review_report.pdf"
+    outputs:
+      - report_path
+      - exported
+    depends_on:
+      - data_synthesis
+
+triggers:
+  manual: true
+  scheduled: false
+  event_based: false
+
+metadata:
+  category: "systematic_review"
+  complexity: "high"
+  estimated_duration: "2-4 hours"
+  guidelines: "PRISMA"
+  tags:
+    - "literature_review"
+    - "evidence_synthesis"
+    - "quality_assessment"
