@@ -38,6 +38,9 @@ from backend.database.repositories import ClaimRepository, DocumentRepository
 from backend.database.event_emitter import RepositoryEventEmitter
 from backend.database.neo4j_client import Neo4jClient
 
+# Debugging agent for development
+from backend.debug import get_debug_agent
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'research-assistant-secret-key'
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
@@ -76,6 +79,12 @@ try:
 except Exception as e:
     logger.warning(f"DatabaseManager not available: {e}")
     db_manager = None
+
+# Initialize debugging agent (auto-enables in development mode)
+debug_agent = get_debug_agent(socketio=socketio)
+if debug_agent.is_dev_mode:
+    debug_agent.enable()
+    logger.info("🐛 Debugging agent auto-enabled (development mode)")
 
 
 def process_queue_worker():
@@ -4688,6 +4697,60 @@ try:
     logger.info("Activity feed routes registered successfully")
 except Exception as e:
     logger.warning(f"Failed to register activity feed routes: {e}")
+
+
+# Debug agent API routes
+@app.route('/api/debug/status', methods=['GET'])
+def debug_status():
+    """Get debugging agent status"""
+    try:
+        status = debug_agent.get_status()
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Error getting debug status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/debug/toggle', methods=['POST'])
+def debug_toggle():
+    """Toggle debugging agent on/off"""
+    try:
+        enabled = debug_agent.toggle()
+        return jsonify({
+            'enabled': enabled,
+            'message': f"Debugging agent {'enabled' if enabled else 'disabled'}"
+        })
+    except Exception as e:
+        logger.error(f"Error toggling debug agent: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/debug/enable', methods=['POST'])
+def debug_enable():
+    """Enable debugging agent"""
+    try:
+        debug_agent.enable()
+        return jsonify({
+            'enabled': True,
+            'message': 'Debugging agent enabled'
+        })
+    except Exception as e:
+        logger.error(f"Error enabling debug agent: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/debug/disable', methods=['POST'])
+def debug_disable():
+    """Disable debugging agent"""
+    try:
+        debug_agent.disable()
+        return jsonify({
+            'enabled': False,
+            'message': 'Debugging agent disabled'
+        })
+    except Exception as e:
+        logger.error(f"Error disabling debug agent: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

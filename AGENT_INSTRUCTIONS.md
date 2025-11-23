@@ -34,6 +34,33 @@ If diagnostics fail, fix the issues BEFORE telling user to test.
 
 ---
 
+## 🐳 DOCKER WARNING - DO NOT USE BY DEFAULT
+
+**⚠️ CRITICAL FOR ALL AGENTS:**
+
+**NEVER suggest Docker unless user explicitly requests it!**
+
+- **Default**: Local installation (Neo4j Desktop + local Redis + pip install)
+- **Docker**: ONLY if user explicitly says "I want to use Docker"
+
+**Docker files location**: `docs/deployment/` (ONLY read if user requests Docker)
+
+**If user asks about setup:**
+1. ✅ Assume local installation
+2. ✅ Guide them through pip install + Neo4j Desktop + Redis
+3. ❌ DON'T mention Docker
+4. ❌ DON'T suggest containerization
+
+**ONLY use Docker if:**
+- User explicitly says "I want Docker" or "use Docker"
+- User is deploying to production cloud servers
+- User specifically asks about containerization
+
+**Default answer to "how do I set this up?"**
+→ Local installation (see below), NOT Docker
+
+---
+
 ## 🚨 AUTOMATIC SETUP ON FIRST RUN
 
 When user starts you in this directory, you MUST automatically:
