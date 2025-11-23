@@ -3,6 +3,8 @@ fastapi==0.109.0
 uvicorn[standard]==0.27.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
+flask==3.0.0
+flask-socketio==5.3.6
 
 # Database
 sqlalchemy==2.0.25
@@ -39,6 +41,7 @@ python-dotenv==1.0.0
 httpx==0.26.0
 tenacity==8.2.3
 loguru==0.7.2
+psutil==5.9.8
 
 # Development
 pytest==7.4.4

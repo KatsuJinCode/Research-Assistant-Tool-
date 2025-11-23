@@ -4645,6 +4645,10 @@ def validate_framework_compatibility():
 try:
     from web_ui.workflow_routes import register_workflow_routes
     register_workflow_routes(app, socketio)
+
+    # Register report routes
+    from web_ui.report_routes import report_routes
+    app.register_blueprint(report_routes)
     logger.info("Workflow routes registered successfully")
 except Exception as e:
     logger.warning(f"Failed to register workflow routes: {e}")

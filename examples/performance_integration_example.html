@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Optimization Integration Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #graph-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+        }
+        .log-info { color: #007bff; }
+        .log-success { color: #28a745; }
+        .log-warning { color: #ffc107; }
+        .log-error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Performance Optimization Integration Example</h1>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-label">Total Nodes</div>
+                <div class="metric-value" id="total-nodes">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Visible Nodes</div>
+                <div class="metric-value" id="visible-nodes">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Render Time</div>
+                <div class="metric-value" id="render-time">0ms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Cache Hit Rate</div>
+                <div class="metric-value" id="cache-hit-rate">0%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Query Time</div>
+                <div class="metric-value" id="query-time">0ms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">LOD Level</div>
+                <div class="metric-value" id="lod-level">high</div>
+            </div>
+        </div>
+
+        <div>
+            <button onclick="loadGraph(100)">Load 100 Nodes</button>
+            <button onclick="loadGraph(500)">Load 500 Nodes</button>
+            <button onclick="loadGraph(1000)">Load 1000 Nodes</button>
+            <button onclick="runLayoutWorker()">Calculate Layout (Worker)</button>
+            <button onclick="runClustering()">Cluster Nodes</button>
+            <button onclick="clearCache()">Clear Cache</button>
+            <button onclick="runBenchmark()">Run Benchmark</button>
+        </div>
+
+        <div id="graph-container">
+            <canvas id="graph-canvas"></canvas>
+        </div>
+
+        <h3>Performance Log</h3>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // Import graph paginator (in real app, use module import)
+        // For this example, we'll create a simplified version
+
+        let graphData = { nodes: [], links: [] };
+        let paginator = null;
+        let worker = null;
+        let performanceStats = {
+            queries: 0,
+            cached_queries: 0,
+            total_query_time: 0
+        };
+
+        // Initialize
+        function init() {
+            log('Initializing performance optimization example...', 'info');
+
+            // Create web worker
+            try {
+                worker = new Worker('/static/js/workers/graph-worker.js');
+                worker.onmessage = handleWorkerMessage;
+                worker.onerror = (error) => log('Worker error: ' + error.message, 'error');
+                log('Web worker initialized', 'success');
+            } catch (error) {
+                log('Web worker not available: ' + error.message, 'warning');
+            }
+
+            updateMetrics();
+            log('Ready!', 'success');
+        }
+
+        // Load graph with pagination
+        async function loadGraph(nodeCount) {
+            const startTime = performance.now();
+            log(`Loading graph with ${nodeCount} nodes...`, 'info');
+
+            try {
+                // Fetch from API with caching
+                const response = await fetch(`/api/graph?limit=${nodeCount}&use_cache=true`);
+                const data = await response.json();
+
+                const queryTime = performance.now() - startTime;
+
+                graphData = data.graph;
+
+                // Update stats
+                performanceStats.queries++;
+                if (data.cached) {
+                    performanceStats.cached_queries++;
+                }
+                performanceStats.total_query_time += queryTime;
+
+                // Track performance
+                await trackQuery('load_graph', queryTime, data.node_count, data.cached);
+
+                log(`Loaded ${data.node_count} nodes, ${data.link_count} links in ${queryTime.toFixed(2)}ms (cached: ${data.cached})`,
+                    data.cached ? 'success' : 'info');
+
+                // Initialize paginator if needed
+                if (!paginator || graphData.nodes.length > 200) {
+                    initPaginator();
+                }
+
+                renderGraph();
+                updateMetrics();
+
+            } catch (error) {
+                log('Error loading graph: ' + error.message, 'error');
+            }
+        }
+
+        // Initialize paginator
+        function initPaginator() {
+            log('Initializing graph paginator...', 'info');
+
+            // In real app, use: paginator = new GraphPaginator({ pageSize: 100 });
+            // For this example, simplified version
+            paginator = {
+                pageSize: 100,
+                currentPage: 0,
+                totalPages: Math.ceil(graphData.nodes.length / 100),
+                getVisibleNodes: () => {
+                    const start = paginator.currentPage * paginator.pageSize;
+                    const end = Math.min(start + paginator.pageSize, graphData.nodes.length);
+                    return graphData.nodes.slice(start, end);
+                }
+            };
+
+            log(`Paginator initialized (${paginator.totalPages} pages)`, 'success');
+        }
+
+        // Render graph
+        function renderGraph() {
+            const startTime = performance.now();
+
+            const canvas = document.getElementById('graph-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            const container = document.getElementById('graph-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Get visible nodes (use paginator if available)
+            const nodesToRender = paginator ? paginator.getVisibleNodes() : graphData.nodes.slice(0, 500);
+
+            // Simple rendering (in real app, use D3.js or similar)
+            ctx.fillStyle = '#007bff';
+            nodesToRender.forEach((node, index) => {
+                const x = (index % 20) * (canvas.width / 20) + 20;
+                const y = Math.floor(index / 20) * 30 + 20;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            const renderTime = performance.now() - startTime;
+
+            // Track render performance
+            trackRender(nodesToRender.length, graphData.links.length, renderTime);
+
+            document.getElementById('render-time').textContent = renderTime.toFixed(2) + 'ms';
+            document.getElementById('visible-nodes').textContent = nodesToRender.length;
+
+            log(`Rendered ${nodesToRender.length} nodes in ${renderTime.toFixed(2)}ms`, 'success');
+        }
+
+        // Run layout calculation in web worker
+        function runLayoutWorker() {
+            if (!worker) {
+                log('Web worker not available', 'error');
+                return;
+            }
+
+            log('Calculating layout in background worker...', 'info');
+            const startTime = performance.now();
+
+            // Initialize worker with graph data
+            worker.postMessage({
+                type: 'init',
+                id: Date.now(),
+                data: { graph: graphData }
+            });
+
+            // Calculate layout
+            worker.postMessage({
+                type: 'layout',
+                id: Date.now() + 1,
+                data: {
+                    algorithm: 'force',
+                    iterations: 50,
+                    width: 800,
+                    height: 600
+                }
+            });
+        }
+
+        // Handle worker messages
+        function handleWorkerMessage(event) {
+            const { type, success, result, error } = event.data;
+
+            if (!success) {
+                log(`Worker error: ${error}`, 'error');
+                return;
+            }
+
+            if (type === 'layout') {
+                log(`Layout calculated: ${result.length} positions`, 'success');
+                // Apply positions to nodes
+                result.forEach(pos => {
+                    const node = graphData.nodes.find(n => n.id === pos.id);
+                    if (node) {
+                        node.x = pos.x;
+                        node.y = pos.y;
+                    }
+                });
+                renderGraph();
+            } else if (type === 'layoutProgress') {
+                document.getElementById('lod-level').textContent = `${result.progress.toFixed(0)}%`;
+            } else if (type === 'cluster') {
+                log(`Clustering complete: ${result.clusterCount} clusters`, 'success');
+            }
+        }
+
+        // Run clustering
+        function runClustering() {
+            if (!worker) {
+                log('Web worker not available', 'error');
+                return;
+            }
+
+            log('Running clustering algorithm...', 'info');
+
+            worker.postMessage({
+                type: 'cluster',
+                id: Date.now(),
+                data: { algorithm: 'similarity', k: 5 }
+            });
+        }
+
+        // Clear cache
+        async function clearCache() {
+            try {
+                await fetch('/api/invalidate-cache', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'all' })
+                });
+                log('Cache cleared', 'success');
+                performanceStats.cached_queries = 0;
+                updateMetrics();
+            } catch (error) {
+                log('Error clearing cache: ' + error.message, 'error');
+            }
+        }
+
+        // Run benchmark
+        async function runBenchmark() {
+            log('Running performance benchmark...', 'info');
+
+            try {
+                const response = await fetch('/api/performance/benchmark', { method: 'POST' });
+                const results = await response.json();
+
+                log('Benchmark complete:', 'success');
+                results.tests.forEach(test => {
+                    log(`  ${test.name}: ${test.duration_ms.toFixed(2)}ms`, 'info');
+                });
+            } catch (error) {
+                log('Benchmark error: ' + error.message, 'error');
+            }
+        }
+
+        // Track query performance
+        async function trackQuery(query, duration, resultCount, cached) {
+            try {
+                await fetch('/api/performance/track/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        duration,
+                        result_count: resultCount,
+                        cached
+                    })
+                });
+            } catch (error) {
+                console.error('Error tracking query:', error);
+            }
+        }
+
+        // Track render performance
+        async function trackRender(nodeCount, linkCount, duration) {
+            try {
+                await fetch('/api/performance/track/render', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        node_count: nodeCount,
+                        link_count: linkCount,
+                        duration,
+                        lod_level: 'high'
+                    })
+                });
+            } catch (error) {
+                console.error('Error tracking render:', error);
+            }
+        }
+
+        // Update metrics display
+        function updateMetrics() {
+            document.getElementById('total-nodes').textContent = graphData.nodes.length;
+
+            const cacheHitRate = performanceStats.queries > 0
+                ? (performanceStats.cached_queries / performanceStats.queries * 100).toFixed(1)
+                : 0;
+            document.getElementById('cache-hit-rate').textContent = cacheHitRate + '%';
+
+            const avgQueryTime = performanceStats.queries > 0
+                ? (performanceStats.total_query_time / performanceStats.queries).toFixed(2)
+                : 0;
+            document.getElementById('query-time').textContent = avgQueryTime + 'ms';
+        }
+
+        // Logging
+        function log(message, level = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${level}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+
+            // Keep only last 50 entries
+            while (logDiv.children.length > 50) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

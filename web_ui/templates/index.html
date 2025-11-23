@@ -4,6 +4,10 @@
     <title>Research Graph Navigator</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <!-- PDF Generation and Template Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -956,6 +960,25 @@
 
         .btn-info:hover {
             background: #0097A7;
+        }
+
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #F57C00;
+        }
+
+        .header-btn.btn-warning {
+            background: rgba(255, 152, 0, 0.3);
+            border-color: rgba(255, 152, 0, 0.5);
+        }
+
+        .header-btn.btn-warning:hover {
+            background: rgba(255, 152, 0, 0.5);
+            border-color: rgba(255, 152, 0, 0.7);
         }
 
         .btn-secondary {
@@ -3130,6 +3153,9 @@
                     </button>
                     <button class="header-btn btn-info" onclick="ComparisonTool.open()" title="Compare documents side-by-side">
                         📊 Compare
+                    </button>
+                    <button class="header-btn btn-warning" onclick="ReportModal.show()" title="Generate and export reports">
+                        📄 Reports
                     </button>
                     <button class="header-btn btn-purple" id="settings-btn" onclick="openSettings()" title="Open settings">
                         ⚙️ Settings
@@ -5610,6 +5636,10 @@ Databases: ${fw.source_preferences.databases.join(', ')}
     <script src="{{ url_for('static', filename='js/consensus-analyzer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/comparison-report.js') }}"></script>
     <script src="{{ url_for('static', filename='js/comparison-tool.js') }}"></script>
+
+    <!-- Report Generation System -->
+    <script src="{{ url_for('static', filename='js/report-generator.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/report-modal.js') }}"></script>
 
     <!-- Agent Animation Control Panel Functions -->
     <script>
