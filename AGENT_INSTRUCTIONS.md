@@ -79,6 +79,26 @@ When user starts you in this directory, you MUST automatically:
 
 ## 📋 Installation Workflow (Run Automatically)
 
+### Step 0: Detect Launching CLI Agent
+```bash
+# Detect which AI agent CLI is launching this session
+if command -v claude &> /dev/null && [[ "$(basename "$0")" == *"claude"* ]]; then
+    LAUNCHING_CLI="claude"
+    export AI_AGENT_CLI="claude"
+elif command -v openai &> /dev/null && [[ "$(basename "$0")" == *"openai"* ]]; then
+    LAUNCHING_CLI="openai"
+    export AI_AGENT_CLI="openai"
+elif command -v gemini &> /dev/null && [[ "$(basename "$0")" == *"gemini"* ]]; then
+    LAUNCHING_CLI="gemini"
+    export AI_AGENT_CLI="gemini"
+else
+    LAUNCHING_CLI="unknown"
+    export AI_AGENT_CLI="claude"  # Default to Claude
+fi
+
+echo "Detected launching CLI: $LAUNCHING_CLI"
+```
+
 ### Step 1: Silent Check
 ```bash
 python -c "import pytest, networkx, arxiv, PyPDF2, pdfplumber; from research_agent.graph_database import GraphDatabase; print('INSTALLED')" 2>&1
@@ -89,9 +109,18 @@ python -c "import pytest, networkx, arxiv, PyPDF2, pdfplumber; from research_age
 
 ### Step 2: Install Python Dependencies
 ```bash
+# Core dependencies (always install)
 pip install -q -r requirements.txt
 pip install -q -r requirements-test.txt
 pip install -q -r requirements-neo4j.txt
+
+# Claude Agent SDK (ONLY if launched by Claude Code CLI)
+if [ "$LAUNCHING_CLI" = "claude" ]; then
+    echo "Installing Claude Agent SDK (Claude Code CLI detected)..."
+    pip install -q --upgrade anthropic>=0.40.0
+else
+    echo "Skipping Claude Agent SDK (not launched by Claude Code CLI)"
+fi
 ```
 
 **New Dependencies (2025-01) - MECE Clustering System:**

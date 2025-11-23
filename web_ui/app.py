@@ -21,6 +21,11 @@ import time
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Set development mode for Agent SDK auto-detection
+# When server runs with debug=True, enable SDK mode automatically
+os.environ.setdefault('FLASK_ENV', 'development')
+os.environ.setdefault('DEBUG', '1')
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
