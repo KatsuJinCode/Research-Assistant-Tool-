@@ -1,6 +1,6 @@
 {
-  "build_hash": "FIXED_DUPLICATE_PROPERTYVIEWER_20251124010000",
-  "timestamp": "2025-11-24T01:00:00.000000",
+  "build_hash": "CLEANUP_DUPLICATES_20251124020000",
+  "timestamp": "2025-11-24T02:00:00.000000",
   "restart_count": 0,
-  "changes": "Fixed PropertyViewer duplicate declaration by removing duplicate property-viewer.js script tag"
+  "changes": "Fixed PropertyViewer duplicate - kept property-viewer.js (hyphen), moved property_viewer.js (underscore) to trash. Comprehensive codebase review completed."
 }
