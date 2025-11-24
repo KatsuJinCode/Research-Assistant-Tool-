@@ -35,7 +35,7 @@ class TutorialManager {
                         Let's take a quick tour of the key features. This will take about 2 minutes.
                     </p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                        <button class="tutorial-btn" onclick="TutorialManager.start()">Start Tour</button>
+                        <button class="tutorial-btn" onclick="TutorialManager.nextStep()">Start Tour</button>
                         <button class="tutorial-btn tutorial-btn-secondary" onclick="TutorialManager.skip()">Skip</button>
                     </div>
                 </div>
@@ -577,12 +577,17 @@ class TutorialManager {
             this.centerPanel();
         }
 
-        // If step 0, hide backdrop click (it's welcome screen)
+        // Handle backdrop pointer events
         const backdrop = document.querySelector('.tutorial-backdrop');
         if (backdrop) {
             if (stepNumber === 0 || stepNumber === this.totalSteps - 1) {
+                // Welcome and completion screens - keep backdrop clickable to close
                 backdrop.style.pointerEvents = 'all';
+            } else if (step.target) {
+                // When highlighting an element - allow clicks through backdrop
+                backdrop.style.pointerEvents = 'none';
             } else {
+                // No specific target - backdrop should block
                 backdrop.style.pointerEvents = 'all';
             }
         }

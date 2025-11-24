@@ -98,26 +98,29 @@
 
         /* Individual Stat Cards - Horizontal layout with spans */
         .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            padding: 1px 4px;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 2px;
             white-space: nowrap;
+            font-size: 10px;
         }
 
         .stat-value {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             color: white;
         }
 
         .stat-label {
-            font-size: 9px;
+            font-size: 8px;
             color: rgba(255, 255, 255, 0.7);
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         /* Action Buttons Container */
@@ -3095,13 +3098,8 @@
     <!-- Unified Header System - SINGLE ROW -->
     <div id="unified-header">
         <div class="header-top">
-            <!-- Single Row: Title + Tabs + Stats + Actions -->
+            <!-- Single Row: Tabs + Stats + Actions -->
             <div class="header-tabs-row">
-                <!-- Title on Left -->
-                <div class="header-brand">
-                    <h1>🔍 Research Graph Navigator</h1>
-                </div>
-
                 <!-- Browser-Style Tabs -->
                 <div class="tab-bar" id="tab-bar">
                     <div class="tab active" data-tab="projects" onclick="TabManager.switchTab('projects')">
