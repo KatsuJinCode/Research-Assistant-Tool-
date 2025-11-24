@@ -1,5 +1,6 @@
 {
-  "build_hash": "1e45bbd",
-  "timestamp": "2025-11-23T18:34:56.538398",
-  "restart_count": 0
+  "build_hash": "STRUCTURE_FIX_20251123192116",
+  "timestamp": "2025-11-23T19:21:16.946339",
+  "restart_count": 0,
+  "changes": "FIXED tab-content-area closing early - tab-visualization now properly inside, AI panel correctly positioned"
 }

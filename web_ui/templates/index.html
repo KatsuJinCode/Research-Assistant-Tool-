@@ -3607,7 +3607,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
                 <!-- Visualization Tab -->
                 <div id="tab-visualization" class="tab-content" style="display:none;">
@@ -4171,27 +4170,7 @@
         </div>
     </div>
 
-    <!-- AI Chat Assistant Panel -->
-    <div id="chat-panel" class="collapsed">
-        <div class="chat-header" onclick="toggleChat()">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">💬</span>
-                <span style="font-weight: bold;">AI Assistant</span>
-            </div>
-            <span id="chat-toggle">▼</span>
-        </div>
-        <div class="chat-body">
-            <div id="chat-messages"></div>
-            <div id="chat-context-area" style="display: none; padding: 8px 12px; border-top: 1px solid #444; background: rgba(0,0,0,0.3);">
-                <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Context:</div>
-                <div id="chat-context-chips" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
-            </div>
-            <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Ask me anything about your research..." />
-                <button id="chat-send-btn">Send</button>
-            </div>
-        </div>
-    </div>
+    <!-- OLD FLOATING CHAT PANEL REMOVED - Now using #ai-assistant-bottom in sidebar -->
 
     <!-- Property Viewer Side Panel -->
     <div id="property-viewer-panel" class="property-viewer">
@@ -5223,10 +5202,13 @@
             border-radius: 2px;
         }
 
-        /* Chat Panel Styles */
+        /* Chat Panel Styles - COMPLETELY DISABLED */
         #chat-panel {
-            /* Hidden - moved to Agents tab */
+            /* REMOVED - Replaced by #ai-assistant-bottom in sidebar */
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
             position: fixed;
             bottom: 80px;
             right: 20px;
@@ -5236,7 +5218,7 @@
             border: 2px solid #2196F3;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            z-index: 3000;
+            z-index: -9999 !important;
             transition: all 0.3s ease;
         }
 
@@ -5813,13 +5795,7 @@
             toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
         }
 
-        // Chat panel toggle
-        function toggleChat() {
-            const panel = document.getElementById('chat-panel');
-            const toggle = document.getElementById('chat-toggle');
-            panel.classList.toggle('collapsed');
-            toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
-        }
+        // OLD toggleChat() removed - using toggleAIAssistant() instead
 
         // Toggle AI Assistant at bottom of sidebar
         function toggleAIAssistant() {
