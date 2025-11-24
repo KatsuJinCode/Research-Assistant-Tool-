@@ -749,6 +749,79 @@ def get_agent_status():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/agents/tracking')
+def get_agent_tracking():
+    """
+    Get detailed agent tracking data including movement history.
+
+    Returns:
+        - Active agents with their current nodes
+        - Completed agents with statistics
+        - Failed agents with error information
+        - Movement history for visualization
+    """
+    try:
+        from research_agent.transcript_manager import get_transcript_manager
+
+        transcript_manager = get_transcript_manager()
+        all_transcripts = transcript_manager.list_all_transcripts()
+
+        # Categorize agents by status
+        active = []
+        completed = []
+        failed = []
+
+        for transcript_summary in all_transcripts:
+            agent_id = transcript_summary['agent_id']
+            # Get full transcript with movement data
+            full_transcript = transcript_manager.get_transcript(agent_id)
+
+            if not full_transcript:
+                continue
+
+            agent_data = {
+                'agent_id': agent_id,
+                'agent_type': full_transcript['agent_type'],
+                'description': full_transcript['description'],
+                'status': full_transcript['status'],
+                'started_at': full_transcript['started_at'],
+                'completed_at': full_transcript['completed_at'],
+                'duration_seconds': full_transcript['duration_seconds'],
+                'current_node_id': full_transcript.get('current_node_id'),
+                'nodes_visited_count': full_transcript.get('nodes_visited_count', 0),
+                'entry_count': full_transcript['entry_count']
+            }
+
+            status = full_transcript['status']
+            if status == 'running':
+                # Add movement history for active agents
+                agent_data['movement_history'] = full_transcript.get('movement_history', [])
+                agent_data['nodes_visited'] = full_transcript.get('nodes_visited', [])
+                active.append(agent_data)
+            elif status == 'completed':
+                agent_data['result'] = full_transcript.get('result')
+                completed.append(agent_data)
+            elif status == 'failed':
+                agent_data['error'] = full_transcript.get('error')
+                failed.append(agent_data)
+
+        return jsonify({
+            'active': active,
+            'completed': completed,
+            'failed': failed,
+            'counts': {
+                'active': len(active),
+                'completed': len(completed),
+                'failed': len(failed),
+                'total': len(all_transcripts)
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting agent tracking: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/graph-stats')
 def get_graph_stats():
     """Get overall graph statistics for the active project database."""

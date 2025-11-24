@@ -49,6 +49,11 @@ class AgentTranscript:
         self.entries: List[Dict] = []
         self.result: Optional[Dict] = None
         self.error: Optional[str] = None
+        # Agent movement tracking
+        self.current_node_id: Optional[str] = None
+        self.previous_node_id: Optional[str] = None
+        self.nodes_visited: List[str] = []
+        self.movement_history: List[Dict] = []  # Track all movements with timestamps
 
     def add_entry(self, level: str, message: str, data: Optional[Dict] = None):
         """Add a log entry to the transcript."""
@@ -72,6 +77,28 @@ class AgentTranscript:
         self.completed_at = datetime.now().isoformat()
         self.error = error
 
+    def move_to_node(self, node_id: str, node_type: str = 'unknown'):
+        """
+        Record agent movement to a new node.
+
+        Args:
+            node_id: The node ID being moved to
+            node_type: Type of node (claim, document, evidence, etc.)
+        """
+        self.previous_node_id = self.current_node_id
+        self.current_node_id = node_id
+
+        if node_id not in self.nodes_visited:
+            self.nodes_visited.append(node_id)
+
+        movement = {
+            'timestamp': datetime.now().isoformat(),
+            'from_node': self.previous_node_id,
+            'to_node': node_id,
+            'node_type': node_type
+        }
+        self.movement_history.append(movement)
+
     def to_dict(self) -> Dict:
         """Convert transcript to dictionary for JSON serialization."""
         duration = None
@@ -91,7 +118,13 @@ class AgentTranscript:
             'entries': self.entries,
             'entry_count': len(self.entries),
             'result': self.result,
-            'error': self.error
+            'error': self.error,
+            # Movement tracking data
+            'current_node_id': self.current_node_id,
+            'previous_node_id': self.previous_node_id,
+            'nodes_visited': self.nodes_visited,
+            'movement_history': self.movement_history,
+            'nodes_visited_count': len(self.nodes_visited)
         }
 
 
@@ -195,6 +228,36 @@ class TranscriptManager:
 
             if self.persist_to_disk:
                 self._persist_transcript(agent_id)
+
+    def move_agent_to_node(self, agent_id: str, node_id: str, node_type: str = 'unknown'):
+        """
+        Record agent movement to a new node.
+
+        Args:
+            agent_id: Agent identifier
+            node_id: The node ID being moved to
+            node_type: Type of node (claim, document, evidence, etc.)
+
+        Returns:
+            Movement data for WebSocket emission, or None if agent not found
+        """
+        with self.lock:
+            if agent_id not in self.transcripts:
+                logger.warning(f"[TranscriptManager] Unknown agent: {agent_id}")
+                return None
+
+            transcript = self.transcripts[agent_id]
+            transcript.move_to_node(node_id, node_type)
+
+            # Return movement data for WebSocket emission
+            return {
+                'agent_id': agent_id,
+                'agent_type': transcript.agent_type,
+                'from_node': transcript.previous_node_id,
+                'to_node': node_id,
+                'node_type': node_type,
+                'timestamp': datetime.now().isoformat()
+            }
 
     def get_transcript(self, agent_id: str) -> Optional[Dict]:
         """
