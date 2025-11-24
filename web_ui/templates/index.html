@@ -280,7 +280,7 @@
             color: #2196F3;
         }
 
-        /* Left panel container */
+        /* Left panel container - RESIZABLE */
         #sidebar {
             width: 350px;
             min-width: 250px;
@@ -289,15 +289,79 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
-        /* Tab content area (top section) */
+        /* Resize handle for sidebar */
+        .sidebar-resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: transparent;
+            cursor: ew-resize;
+            z-index: 100;
+            transition: background 0.2s;
+        }
+
+        .sidebar-resize-handle:hover,
+        .sidebar-resize-handle.resizing {
+            background: #2196F3;
+        }
+
+        /* Tab content area (top section - scrollable) */
         .tab-content-area {
-            flex: 2;
+            flex: 1;
             min-height: 200px;
             overflow-y: auto;
-            padding: 12px;  /* Reduced from 20px */
+            padding: 12px;
             background: #2a2a2a;
+        }
+
+        /* AI Assistant - Fixed at bottom */
+        .ai-assistant-bottom {
+            flex: 0 0 auto;
+            max-height: 400px;
+            min-height: 60px;
+            background: #1a1a1a;
+            border-top: 2px solid #2196F3;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .ai-assistant-bottom.collapsed {
+            min-height: 44px;
+            max-height: 44px;
+        }
+
+        .ai-assistant-header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            user-select: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ai-assistant-header:hover {
+            background: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
+        }
+
+        .ai-assistant-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .ai-assistant-bottom.collapsed .ai-assistant-body {
+            display: none;
         }
 
         /* Individual tab content */
@@ -3677,6 +3741,49 @@
                     <button class="ai-send-btn" id="ai-send-btn" onclick="AIAssistant.sendMessage()">Send</button>
                 </div>
             </div>
+
+            <!-- AI Assistant - Fixed at Bottom of Sidebar -->
+            <div class="ai-assistant-bottom collapsed" id="ai-assistant-bottom">
+                <div class="ai-assistant-header" onclick="toggleAIAssistant()">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 16px;">💬</span>
+                        <span>AI Research Assistant</span>
+                    </div>
+                    <span id="ai-assistant-toggle">▲</span>
+                </div>
+                <div class="ai-assistant-body">
+                    <div style="flex: 1; overflow-y: auto; padding: 10px; background: #1a1a1a;" id="ai-chat-messages-bottom">
+                        <div style="padding: 8px; background: rgba(33, 150, 243, 0.1); border-left: 3px solid #2196F3; border-radius: 4px; margin-bottom: 8px; font-size: 11px; color: #ccc;">
+                            <strong style="color: #2196F3;">👋 Hello!</strong><br>
+                            I can help you navigate, analyze, and organize your research. Ask me anything!
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div style="padding: 8px; background: #222; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 4px;">
+                        <button onclick="AIAssistant.fillPrompt('Summarize the key claims')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                            💬 Summarize
+                        </button>
+                        <button onclick="AIAssistant.fillPrompt('Find contradictions')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                            ⚡ Contradictions
+                        </button>
+                        <button onclick="AIAssistant.fillPrompt('Show strongest evidence')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                            🎯 Evidence
+                        </button>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div style="padding: 8px; background: #1a1a1a; border-top: 1px solid #333; display: flex; gap: 6px;">
+                        <input type="text" id="ai-input-bottom" placeholder="Ask me anything..." style="flex: 1; padding: 6px 10px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 11px;">
+                        <button onclick="AIAssistant.sendMessage()" style="padding: 6px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resize Handle for Sidebar -->
+            <div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
         </div>
 
         <!-- Horizontal Divider (Draggable) -->
@@ -5753,6 +5860,50 @@
             panel.classList.toggle('collapsed');
             toggle.textContent = panel.classList.contains('collapsed') ? '▼' : '▲';
         }
+
+        // Toggle AI Assistant at bottom of sidebar
+        function toggleAIAssistant() {
+            const panel = document.getElementById('ai-assistant-bottom');
+            const toggle = document.getElementById('ai-assistant-toggle');
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '▲' : '▼';
+        }
+
+        // Sidebar resize functionality
+        (function initSidebarResize() {
+            const sidebar = document.getElementById('sidebar');
+            const handle = document.getElementById('sidebar-resize-handle');
+            let isResizing = false;
+
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                handle.classList.add('resizing');
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+
+                const newWidth = e.clientX;
+                const minWidth = 250;
+                const maxWidth = 600;
+
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                    sidebar.style.width = newWidth + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    handle.classList.remove('resizing');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+        })();
 
         // Visualization controls toggle
         function toggleVizControls() {

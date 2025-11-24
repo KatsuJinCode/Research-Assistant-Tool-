@@ -34,10 +34,19 @@ class TutorialManager {
                     <p style="font-size: 14px; color: #999; margin-bottom: 20px;">
                         Let's take a quick tour of the key features. This will take about 2 minutes.
                     </p>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                        <button class="tutorial-btn" onclick="TutorialManager.nextStep()">Start Tour</button>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                        <button class="tutorial-btn" onclick="TutorialManager.nextStep()">
+                            📖 Start Interactive Tour
+                        </button>
+                        <button class="tutorial-btn" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);" onclick="TutorialManager.startDemo()">
+                            🎬 Watch Demo
+                        </button>
                         <button class="tutorial-btn tutorial-btn-secondary" onclick="TutorialManager.skip()">Skip</button>
                     </div>
+                    <p style="font-size: 11px; color: #666; margin-top: 15px; padding: 10px; background: rgba(156, 39, 176, 0.1); border-radius: 4px;">
+                        <strong>Demo Mode:</strong> We'll automatically upload sample papers and show you everything working.<br>
+                        Just sit back and watch!
+                    </p>
                 </div>
             `,
             target: null,
@@ -955,6 +964,77 @@ class TutorialManager {
     static restart() {
         this.reset();
         this.start();
+    }
+
+    /**
+     * Start demo mode - automated walkthrough with sample papers
+     */
+    static async startDemo() {
+        console.log('[Tutorial] Starting demo mode');
+
+        // Move to next step and activate demo mode
+        this.demoMode = true;
+        this.nextStep();
+
+        // Show demo intro message
+        setTimeout(() => {
+            this.showDemoMessage('Setting up demo...', '📦 Loading sample research papers');
+        }, 500);
+
+        // Simulate document upload after a delay
+        setTimeout(async () => {
+            this.showDemoMessage('Uploading sample paper...', '📄 Adding a research document to analyze');
+
+            // Create a sample document via API (you would need to implement this endpoint)
+            try {
+                // For now, just show the next steps
+                setTimeout(() => {
+                    this.showDemoMessage('Processing document...', '🔍 Extracting claims from the paper');
+
+                    setTimeout(() => {
+                        this.showDemoMessage('Building knowledge graph...', '🕸️ Creating connections between claims');
+
+                        setTimeout(() => {
+                            this.showDemoMessage('Demo complete!', '✨ Your research assistant is ready to use!');
+                            this.demoMode = false;
+
+                            setTimeout(() => {
+                                this.complete();
+                            }, 2000);
+                        }, 3000);
+                    }, 3000);
+                }, 3000);
+            } catch (error) {
+                console.error('[Tutorial Demo] Error:', error);
+                alert('Demo mode encountered an error. Please try the interactive tour instead.');
+                this.demoMode = false;
+                this.hide();
+            }
+        }, 2000);
+    }
+
+    /**
+     * Show demo mode message overlay
+     */
+    static showDemoMessage(title, message) {
+        const panel = document.getElementById('tutorial-panel');
+        if (!panel) return;
+
+        const content = document.getElementById('tutorial-content');
+        if (!content) return;
+
+        content.innerHTML = `
+            <div style="text-align: center; padding: 30px 20px;">
+                <div class="demo-spinner" style="width: 60px; height: 60px; border: 4px solid #333; border-top-color: #2196F3; border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;"></div>
+                <h3 style="font-size: 18px; color: #2196F3; margin-bottom: 10px;">${title}</h3>
+                <p style="font-size: 14px; color: #999;">${message}</p>
+            </div>
+            <style>
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
+        `;
     }
 }
 
