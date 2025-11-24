@@ -1,6 +1,6 @@
 {
-  "build_hash": "STRUCTURE_FIX_20251123192116",
-  "timestamp": "2025-11-23T19:21:16.946339",
+  "build_hash": "AI_FIX_20251123194142",
+  "timestamp": "2025-11-23T19:41:42.212225",
   "restart_count": 0,
-  "changes": "FIXED tab-content-area closing early - tab-visualization now properly inside, AI panel correctly positioned"
+  "changes": "FIXED NoneType error in AI assistant - filtered out None values from selected_nodes"
 }

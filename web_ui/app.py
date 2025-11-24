@@ -2990,6 +2990,9 @@ def assistant_chat():
         active_tab = context.get('activeTab', 'documents')
         selected_nodes = context.get('selectedNodes', [])
 
+        # Filter out None values to prevent NoneType errors
+        selected_nodes = [node for node in selected_nodes if node is not None]
+
         # Build detailed selected nodes context
         selected_nodes_context = ""
         if selected_nodes:
