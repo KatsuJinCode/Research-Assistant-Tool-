@@ -3457,6 +3457,49 @@
                     </div>
                 </div>
                 <div id="tab-agents" class="tab-content" style="display:none;">
+                    <!-- Agent Tracking Status -->
+                    <div style="padding: 8px; border-bottom: 1px solid #333;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h3 style="font-size: 12px; color: #999; font-weight: 600; margin: 0;">AGENT STATUS</h3>
+                            <button onclick="AgentTracker.refresh()" style="padding: 3px 8px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
+                                🔄 Refresh
+                            </button>
+                        </div>
+
+                        <!-- Active Agents -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div style="font-size: 10px; color: #4CAF50; font-weight: 600;">▶ ACTIVE</div>
+                                <div id="active-agent-count" style="font-size: 10px; color: #4CAF50; font-weight: 600;">0</div>
+                            </div>
+                            <div id="active-agents-list" style="max-height: 150px; overflow-y: auto;">
+                                <div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No active agents</div>
+                            </div>
+                        </div>
+
+                        <!-- Completed Agents -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div style="font-size: 10px; color: #2196F3; font-weight: 600;">✓ COMPLETED</div>
+                                <div id="completed-agent-count" style="font-size: 10px; color: #2196F3; font-weight: 600;">0</div>
+                            </div>
+                            <div id="completed-agents-list" style="max-height: 150px; overflow-y: auto;">
+                                <div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No completed agents</div>
+                            </div>
+                        </div>
+
+                        <!-- Failed Agents -->
+                        <div style="background: #2a2a2a; border-radius: 4px; padding: 6px; margin-bottom: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div style="font-size: 10px; color: #f44336; font-weight: 600;">✗ FAILED</div>
+                                <div id="failed-agent-count" style="font-size: 10px; color: #f44336; font-weight: 600;">0</div>
+                            </div>
+                            <div id="failed-agents-list" style="max-height: 150px; overflow-y: auto;">
+                                <div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No failed agents</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Agent Animation Controls - Compact Tab Version -->
                     <div style="padding: 8px;">
                         <!-- Enable Toggle -->
@@ -6415,6 +6458,140 @@ Databases: ${fw.source_preferences.databases.join(', ')}
 
     <!-- Agent Mode Indicator (SDK vs CLI) -->
     <script src="{{ url_for('static', filename='js/agent-mode-indicator.js') }}"></script>
+
+    <!-- Agent Tracking System -->
+    <script>
+        const AgentTracker = {
+            refreshInterval: null,
+
+            async fetchAgentData() {
+                try {
+                    const response = await fetch('/api/agents/tracking');
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error('[AgentTracker] Error fetching agent data:', error);
+                    return null;
+                }
+            },
+
+            renderAgentItem(agent, status) {
+                const duration = agent.duration_seconds ?
+                    `${Math.round(agent.duration_seconds)}s` : 'N/A';
+
+                const currentNode = agent.current_node_id ?
+                    `📍 ${agent.current_node_id.substring(0, 12)}...` : '';
+
+                const nodesVisited = agent.nodes_visited_count || 0;
+
+                let statusBadge = '';
+                if (status === 'active') {
+                    statusBadge = `<div style="font-size: 9px; color: #4CAF50;">⏱ Active ${currentNode ? '• ' + currentNode : ''}</div>`;
+                } else if (status === 'completed') {
+                    statusBadge = `<div style="font-size: 9px; color: #2196F3;">✓ ${duration} • ${nodesVisited} nodes</div>`;
+                } else if (status === 'failed') {
+                    const errorPreview = agent.error ? agent.error.substring(0, 40) + '...' : 'Unknown error';
+                    statusBadge = `<div style="font-size: 9px; color: #f44336;" title="${agent.error || ''}">${errorPreview}</div>`;
+                }
+
+                return `
+                    <div style="background: #333; border-radius: 3px; padding: 6px; margin-bottom: 4px; border-left: 3px solid ${
+                        status === 'active' ? '#4CAF50' :
+                        status === 'completed' ? '#2196F3' : '#f44336'
+                    };">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2px;">
+                            <div style="font-size: 11px; color: white; font-weight: 600; flex: 1;">
+                                ${agent.agent_type === 'document_processor' ? '📄' : '🤖'} ${agent.agent_type}
+                            </div>
+                            <div style="font-size: 9px; color: #888;">${agent.agent_id.substring(0, 8)}</div>
+                        </div>
+                        <div style="font-size: 10px; color: #ccc; margin-bottom: 2px;">${agent.description}</div>
+                        ${statusBadge}
+                        ${agent.entry_count ? `<div style="font-size: 9px; color: #888; margin-top: 2px;">${agent.entry_count} log entries</div>` : ''}
+                    </div>
+                `;
+            },
+
+            updateUI(data) {
+                if (!data) return;
+
+                // Update counts
+                document.getElementById('active-agent-count').textContent = data.counts.active;
+                document.getElementById('completed-agent-count').textContent = data.counts.completed;
+                document.getElementById('failed-agent-count').textContent = data.counts.failed;
+
+                // Update tab badge
+                const tabBadge = document.getElementById('agent-tab-badge');
+                if (data.counts.active > 0) {
+                    tabBadge.textContent = data.counts.active;
+                    tabBadge.style.display = 'inline-block';
+                } else {
+                    tabBadge.style.display = 'none';
+                }
+
+                // Render active agents
+                const activeList = document.getElementById('active-agents-list');
+                if (data.active.length === 0) {
+                    activeList.innerHTML = '<div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No active agents</div>';
+                } else {
+                    activeList.innerHTML = data.active.map(agent => this.renderAgentItem(agent, 'active')).join('');
+                }
+
+                // Render completed agents
+                const completedList = document.getElementById('completed-agents-list');
+                if (data.completed.length === 0) {
+                    completedList.innerHTML = '<div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No completed agents</div>';
+                } else {
+                    completedList.innerHTML = data.completed.slice(0, 10).map(agent => this.renderAgentItem(agent, 'completed')).join('');
+                }
+
+                // Render failed agents
+                const failedList = document.getElementById('failed-agents-list');
+                if (data.failed.length === 0) {
+                    failedList.innerHTML = '<div class="empty-state" style="text-align: center; padding: 12px; color: #666; font-size: 11px;">No failed agents</div>';
+                } else {
+                    failedList.innerHTML = data.failed.slice(0, 10).map(agent => this.renderAgentItem(agent, 'failed')).join('');
+                }
+            },
+
+            async refresh() {
+                const data = await this.fetchAgentData();
+                this.updateUI(data);
+            },
+
+            startAutoRefresh(intervalMs = 2000) {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                }
+                this.refresh();  // Initial load
+                this.refreshInterval = setInterval(() => this.refresh(), intervalMs);
+            },
+
+            stopAutoRefresh() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                    this.refreshInterval = null;
+                }
+            }
+        };
+
+        // Auto-refresh when agents tab is active
+        const originalSwitchTab = TabManager.switchTab;
+        TabManager.switchTab = function(tabName) {
+            originalSwitchTab.call(this, tabName);
+
+            if (tabName === 'agents') {
+                AgentTracker.startAutoRefresh();
+            } else {
+                AgentTracker.stopAutoRefresh();
+            }
+        };
+
+        // Initial load if agents tab is already open
+        if (document.querySelector('.tab[data-tab="agents"]').classList.contains('active')) {
+            AgentTracker.startAutoRefresh();
+        }
+    </script>
 
     <!-- Agent Animation Control Panel Functions -->
     <script>

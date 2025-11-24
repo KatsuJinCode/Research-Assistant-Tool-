@@ -628,6 +628,11 @@ const GraphRenderer = {
             labels
                 .attr('x', d => d.x)
                 .attr('y', d => d.y);
+
+            // Update agent marker positions
+            if (typeof AgentVisualizer !== 'undefined') {
+                AgentVisualizer.updateMarkerPositions();
+            }
         });
 
         // Store current graph data
@@ -1920,6 +1925,218 @@ const GraphRenderer = {
 };
 
 /**
+ * Agent Visualizer - Shows agent activity on the graph
+ * Displays which nodes agents are currently processing with visual indicators
+ */
+const AgentVisualizer = {
+    activeAgents: [],
+    refreshInterval: null,
+    agentMarkers: new Map(), // Track agent markers by agent_id
+
+    /**
+     * Fetch active agent data and update visualization
+     */
+    async fetchAndUpdate() {
+        try {
+            const response = await fetch('/api/agents/tracking');
+            if (!response.ok) {
+                console.error('[AgentVisualizer] Failed to fetch agent data:', response.status);
+                return;
+            }
+
+            const data = await response.json();
+            this.activeAgents = data.active || [];
+
+            console.log(`[AgentVisualizer] Fetched ${this.activeAgents.length} active agents`);
+
+            this.updateVisualization();
+        } catch (error) {
+            console.error('[AgentVisualizer] Error fetching agent data:', error);
+        }
+    },
+
+    /**
+     * Update visual indicators for active agents
+     */
+    updateVisualization() {
+        const svg = d3.select('#graph-svg');
+
+        // Remove old agent markers that are no longer active
+        const currentAgentIds = new Set(this.activeAgents.map(a => a.agent_id));
+        for (const [agentId, marker] of this.agentMarkers) {
+            if (!currentAgentIds.has(agentId)) {
+                marker.remove();
+                this.agentMarkers.delete(agentId);
+            }
+        }
+
+        // Update or create markers for each active agent
+        this.activeAgents.forEach(agent => {
+            if (!agent.current_node_id) return;
+
+            // Find the node in the graph
+            const node = GraphRenderer.currentGraphData.nodes.find(n => n.id === agent.current_node_id);
+            if (!node || !node.x || !node.y) return;
+
+            const agentId = agent.agent_id;
+            let marker = this.agentMarkers.get(agentId);
+
+            if (!marker) {
+                // Create new agent marker group
+                const g = svg.select('g');
+                marker = g.append('g')
+                    .attr('class', 'agent-marker')
+                    .attr('data-agent-id', agentId);
+
+                // Add circular badge background
+                marker.append('circle')
+                    .attr('r', 12)
+                    .attr('fill', '#4CAF50')
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .attr('class', 'agent-badge-bg')
+                    .style('filter', 'drop-shadow(0 0 4px rgba(76, 175, 80, 0.6))');
+
+                // Add robot emoji or icon
+                marker.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'middle')
+                    .attr('font-size', '14px')
+                    .attr('class', 'agent-icon')
+                    .text('🤖');
+
+                // Add agent type label below
+                marker.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('y', 20)
+                    .attr('font-size', '9px')
+                    .attr('fill', '#4CAF50')
+                    .attr('font-weight', 'bold')
+                    .attr('class', 'agent-label')
+                    .style('text-shadow', '0 0 3px rgba(0,0,0,0.9)')
+                    .text(this.getAgentLabel(agent.agent_type));
+
+                this.agentMarkers.set(agentId, marker);
+
+                // Fade in animation
+                marker.style('opacity', 0)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 1);
+
+                console.log(`[AgentVisualizer] Created marker for agent ${agentId} on node ${node.id.substring(0, 8)}`);
+            }
+
+            // Update marker position
+            marker.attr('transform', `translate(${node.x}, ${node.y - 25})`);
+
+            // Add pulsing animation to show activity
+            marker.select('.agent-badge-bg')
+                .transition()
+                .duration(1000)
+                .attr('r', 14)
+                .transition()
+                .duration(1000)
+                .attr('r', 12)
+                .on('end', function repeat() {
+                    d3.select(this)
+                        .transition()
+                        .duration(1000)
+                        .attr('r', 14)
+                        .transition()
+                        .duration(1000)
+                        .attr('r', 12)
+                        .on('end', repeat);
+                });
+        });
+    },
+
+    /**
+     * Get short label for agent type
+     */
+    getAgentLabel(agentType) {
+        const labels = {
+            'document_processor': 'DOC',
+            'document_finder': 'FIND',
+            'claim_processor': 'CLAIM',
+            'evidence_finder': 'EVID'
+        };
+        return labels[agentType] || agentType.substring(0, 4).toUpperCase();
+    },
+
+    /**
+     * Update marker positions on graph tick
+     * Should be called from simulation.on('tick')
+     */
+    updateMarkerPositions() {
+        this.activeAgents.forEach(agent => {
+            if (!agent.current_node_id) return;
+
+            const node = GraphRenderer.currentGraphData.nodes.find(n => n.id === agent.current_node_id);
+            if (!node) return;
+
+            const marker = this.agentMarkers.get(agent.agent_id);
+            if (marker) {
+                marker.attr('transform', `translate(${node.x}, ${node.y - 25})`);
+            }
+        });
+    },
+
+    /**
+     * Start auto-refresh of agent visualization
+     */
+    startAutoRefresh(intervalMs = 2000) {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+
+        // Initial fetch
+        this.fetchAndUpdate();
+
+        // Set up periodic refresh
+        this.refreshInterval = setInterval(() => {
+            this.fetchAndUpdate();
+        }, intervalMs);
+
+        console.log('[AgentVisualizer] Auto-refresh started');
+    },
+
+    /**
+     * Stop auto-refresh
+     */
+    stopAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+
+        // Clean up markers
+        for (const marker of this.agentMarkers.values()) {
+            marker.transition()
+                .duration(500)
+                .style('opacity', 0)
+                .remove();
+        }
+        this.agentMarkers.clear();
+
+        console.log('[AgentVisualizer] Auto-refresh stopped');
+    },
+
+    /**
+     * Toggle agent visualization on/off
+     */
+    toggle() {
+        if (this.refreshInterval) {
+            this.stopAutoRefresh();
+            return false;
+        } else {
+            this.startAutoRefresh();
+            return true;
+        }
+    }
+};
+
+/**
  * Advanced Visualization Integration
  * Initialize and connect all visualization systems
  */
@@ -1936,6 +2153,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof HeatmapColorizer !== 'undefined') {
             HeatmapColorizer.init();
             console.log('[Visualization] Heatmap Colorizer initialized');
+        }
+
+        // Start agent visualization
+        if (typeof AgentVisualizer !== 'undefined') {
+            AgentVisualizer.startAutoRefresh();
+            console.log('[Visualization] Agent Visualizer initialized');
         }
 
         console.log('[Visualization] Advanced visualization systems ready');
