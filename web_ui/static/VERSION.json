@@ -1,6 +1,6 @@
 {
-  "build_hash": "DEBUG_LOGGING_20251123204500",
-  "timestamp": "2025-11-23T20:45:00.000000",
+  "build_hash": "CLI_FALLBACK_20251123210000",
+  "timestamp": "2025-11-23T21:00:00.000000",
   "restart_count": 0,
-  "changes": "Added detailed logging to track Claude SDK response processing"
+  "changes": "Added SDK auth test to fail fast and enable automatic CLI fallback"
 }

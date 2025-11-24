@@ -1,0 +1,121 @@
+{
+  "agent_id": "document_processor_20251123_205732_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: children.pdf",
+  "status": "failed",
+  "started_at": "2025-11-23T20:57:32.622089",
+  "completed_at": "2025-11-23T20:57:34.774005",
+  "duration_seconds": 2.151916,
+  "entries": [
+    {
+      "timestamp": "2025-11-23T20:57:32.622089",
+      "level": "info",
+      "message": "Started processing: children.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.688004",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+        "node_data": {
+          "id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+          "title": "children.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.689006",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.732050",
+      "level": "info",
+      "message": "Extracted 280 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "char_count": 280,
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.733556",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.735558",
+      "level": "info",
+      "message": "Preprocessed 279 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "char_count": 279
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.736560",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.759613",
+      "level": "info",
+      "message": "Document title: Untitled Document",
+      "data": {
+        "event": "title_extracted",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "title": "Untitled Document",
+        "node_update": {
+          "node_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+          "node_type": "document",
+          "updates": {
+            "title": "Untitled Document"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.760613",
+      "level": "info",
+      "message": "Extracting claims with AI...",
+      "data": {
+        "event": "claim_extraction_started",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:57:34.766191",
+      "level": "error",
+      "message": "ERROR: Claude Code agent failed to extract claims: \u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response...",
+      "data": {
+        "event": "claim_extraction_failed",
+        "doc_id": "54cd15a2-a0d5-4ab6-971a-a55b178c379c",
+        "error": "\u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response..."
+      }
+    }
+  ],
+  "entry_count": 10,
+  "result": null,
+  "error": "Error processing children.pdf: \u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response..."
+}

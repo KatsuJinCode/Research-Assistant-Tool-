@@ -204,6 +204,20 @@ class ClaudeSDKAdapter(AgentAdapter):
             except Exception as e:
                 raise ValueError(f"Claude SDK initialization failed. Please run 'claude login' or set ANTHROPIC_API_KEY. Error: {str(e)}")
 
+        # Test authentication immediately to fail fast and allow fallback to CLI
+        try:
+            # Make a minimal test call to verify auth works
+            test_response = self.client.messages.create(
+                model=self.model,
+                max_tokens=10,
+                messages=[{"role": "user", "content": "test"}]
+            )
+            logger.info("✓ Claude SDK authentication verified")
+        except Exception as e:
+            error_msg = f"Claude SDK authentication failed: {str(e)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
     def invoke(self, prompt: str, tools: Optional[List[Dict]] = None, timeout: int = 120) -> str:
         """Invoke Claude via SDK"""
         try:
