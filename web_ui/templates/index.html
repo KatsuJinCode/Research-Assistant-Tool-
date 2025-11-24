@@ -63,7 +63,7 @@
         .header-tabs-row {
             display: flex;
             align-items: center;
-            padding: 8px 12px;
+            padding: 6px 12px 6px 0;  /* Reduced padding, no left padding for continuous tabs */
             gap: 8px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
         }
@@ -132,6 +132,7 @@
             display: flex;
             gap: 6px;
             align-items: center;
+            margin-left: auto;  /* Push action buttons to right side */
         }
 
         .header-btn {
@@ -3694,7 +3695,7 @@
             </div>
 
             <!-- AI Assistant - Fixed at Bottom of Sidebar -->
-            <div class="ai-assistant-bottom collapsed" id="ai-assistant-bottom">
+            <div class="ai-assistant-bottom" id="ai-assistant-bottom">
                 <div class="ai-assistant-header" style="cursor: default;">
                     <div style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;" onclick="toggleAIAssistant()">
                         <span style="font-size: 16px;">💬</span>
@@ -3704,7 +3705,7 @@
                         <button onclick="event.stopPropagation(); AIAssistant.clearChat();" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 2px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;" title="Clear chat history">
                             🗑️
                         </button>
-                        <span id="ai-assistant-toggle" onclick="toggleAIAssistant()" style="cursor: pointer;">▲</span>
+                        <span id="ai-assistant-toggle" onclick="toggleAIAssistant()" style="cursor: pointer;">▼</span>
                     </div>
                 </div>
                 <div class="ai-assistant-body">
