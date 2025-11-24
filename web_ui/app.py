@@ -3592,8 +3592,10 @@ def get_active_project():
             record = result.single()
 
             if not record:
-                # No active project, activate default project
+                # No active project, try to activate or create default project
                 logger.info("[API] No active project found, activating default")
+
+                # First try to activate existing default project
                 activate_query = """
                 MATCH (p:Project {id: 'default'})
                 SET p.is_active = true
@@ -3601,6 +3603,25 @@ def get_active_project():
                 """
                 result = session.run(activate_query, {})
                 record = result.single()
+
+                # If no default project exists, create it
+                if not record:
+                    logger.info("[API] No default project exists, creating one")
+                    create_query = """
+                    CREATE (p:Project {
+                        id: 'default',
+                        name: 'Default Project',
+                        description: 'Automatically created default research project',
+                        database_name: 'neo4j',
+                        is_active: true,
+                        created_at: datetime(),
+                        updated_at: datetime()
+                    })
+                    RETURN p
+                    """
+                    result = session.run(create_query, {})
+                    record = result.single()
+                    logger.info("[API] Default project created successfully")
 
             if record:
                 project = dict(record['p'])
@@ -3615,7 +3636,7 @@ def get_active_project():
 
                 return jsonify({'project': project})
             else:
-                logger.error("[API] No default project found in system database")
+                logger.error("[API] Failed to create or activate default project")
                 return jsonify({'error': 'No active project found'}), 404
 
     except Exception as e:

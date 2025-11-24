@@ -96,31 +96,35 @@
             margin-left: auto;  /* Push to right side */
         }
 
-        /* Individual Stat Cards - Horizontal layout with spans */
-        .stat-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 3px;
-            padding: 1px 4px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            white-space: nowrap;
-            font-size: 10px;
+        /* Document Tab Stat Cards */
+        .doc-stat-card {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            transition: all 0.2s;
         }
 
-        .stat-value {
-            font-size: 11px;
+        .doc-stat-card:hover {
+            background: #333;
+            border-color: #555;
+            transform: translateY(-1px);
+        }
+
+        .doc-stat-value {
+            font-size: 20px;
             font-weight: 700;
-            color: white;
+            color: #2196F3;
+            margin-bottom: 2px;
         }
 
-        .stat-label {
-            font-size: 8px;
-            color: rgba(255, 255, 255, 0.7);
-            font-weight: 500;
+        .doc-stat-label {
+            font-size: 10px;
+            color: #999;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            font-weight: 500;
         }
 
         /* Action Buttons Container */
@@ -3119,27 +3123,11 @@
                         <span class="tab-label">Agents</span>
                         <span class="tab-badge" id="agent-tab-badge" style="display:none;">0</span>
                     </div>
+                    <div class="tab" data-tab="visualization" onclick="TabManager.switchTab('visualization')">
+                        <span class="tab-icon">📊</span>
+                        <span class="tab-label">Visualization</span>
+                    </div>
                 </div>
-
-                <!-- Stat Cards -->
-                <div class="stats-container">
-                <div class="stat-card" id="stat-card-documents">
-                    <span class="stat-value" id="stat-nodes">-</span>
-                    <span class="stat-label">Docs</span>
-                </div>
-                <div class="stat-card" id="stat-card-claims">
-                    <span class="stat-value" id="stat-claims">-</span>
-                    <span class="stat-label">Claims</span>
-                </div>
-                <div class="stat-card" id="stat-card-evidence">
-                    <span class="stat-value" id="stat-evidence">-</span>
-                    <span class="stat-label">Evidence</span>
-                </div>
-                <div class="stat-card" id="stat-card-pending">
-                    <span class="stat-value" id="stat-research">-</span>
-                    <span class="stat-label">Pending</span>
-                </div>
-            </div>
 
                 <!-- Action Buttons -->
                 <div class="header-actions">
@@ -3192,6 +3180,26 @@
                             </select>
                             <input type="text" id="url-input" placeholder="Paste URL..." style="flex: 1; padding: 4px 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 11px;">
                             <button id="upload-btn" class="btn btn-sm btn-primary" style="flex: 0 0 auto; padding: 4px 12px; font-size: 11px; margin: 0;">Process</button>
+                        </div>
+                    </div>
+
+                    <!-- Document Stats - Moved from header -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;">
+                        <div class="doc-stat-card" id="stat-card-documents">
+                            <div class="doc-stat-value" id="stat-nodes">-</div>
+                            <div class="doc-stat-label">Documents</div>
+                        </div>
+                        <div class="doc-stat-card" id="stat-card-claims">
+                            <div class="doc-stat-value" id="stat-claims">-</div>
+                            <div class="doc-stat-label">Claims</div>
+                        </div>
+                        <div class="doc-stat-card" id="stat-card-evidence">
+                            <div class="doc-stat-value" id="stat-evidence">-</div>
+                            <div class="doc-stat-label">Evidence</div>
+                        </div>
+                        <div class="doc-stat-card" id="stat-card-pending">
+                            <div class="doc-stat-value" id="stat-research">-</div>
+                            <div class="doc-stat-label">Pending</div>
                         </div>
                     </div>
 
@@ -3544,6 +3552,91 @@
                 </div>
             </div>
 
+                <!-- Visualization Tab -->
+                <div id="tab-visualization" class="tab-content" style="display:none;">
+                    <div style="padding: 12px;">
+                        <!-- Graph Preview -->
+                        <div style="background: #2a2a2a; border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 2px solid #444;">
+                            <h3 style="font-size: 13px; color: #2196F3; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                📊 Graph Preview
+                            </h3>
+                            <div id="graph-thumbnail" style="width: 100%; height: 150px; background: #1a1a1a; border-radius: 6px; border: 1px solid #333; position: relative; overflow: hidden;">
+                                <canvas id="thumbnail-canvas" style="width: 100%; height: 100%;"></canvas>
+                                <div id="thumbnail-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 11px;">
+                                    Preview will appear when graph loads
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button onclick="refreshGraphThumbnail()" style="flex: 1; padding: 6px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    🔄 Refresh
+                                </button>
+                                <button onclick="fitGraphToView()" style="flex: 1; padding: 6px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    🎯 Fit View
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Layout Controls -->
+                        <div style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+                            <h4 style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">LAYOUT</h4>
+                            <select id="layout-selector-tab" onchange="LayoutManager.setLayout(this.value)" style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 11px;">
+                                <option value="force" selected>Force-Directed</option>
+                                <option value="hierarchical">Hierarchical Tree</option>
+                                <option value="circular">Circular</option>
+                                <option value="grid">Grid</option>
+                                <option value="radial">Radial (by Type)</option>
+                            </select>
+                        </div>
+
+                        <!-- Clustering Controls -->
+                        <div style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+                            <h4 style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">CLUSTERING</h4>
+                            <select id="cluster-method-tab" onchange="handleClusterChange(this.value)" style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 11px; margin-bottom: 8px;">
+                                <option value="none" selected>No Clustering</option>
+                                <option value="embedding">By Similarity</option>
+                                <option value="type">By Type</option>
+                                <option value="confidence">By Confidence</option>
+                            </select>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #ccc; cursor: pointer;">
+                                <input type="checkbox" id="show-cluster-hulls-tab" onchange="toggleClusterHulls(this.checked)" style="width: 14px; height: 14px;">
+                                Show Cluster Boundaries
+                            </label>
+                        </div>
+
+                        <!-- Color Scheme Controls -->
+                        <div style="background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+                            <h4 style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">COLOR SCHEME</h4>
+                            <select id="heatmap-scheme-tab" onchange="handleHeatmapChange(this.value)" style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 11px; margin-bottom: 8px;">
+                                <option value="type" selected>By Type (default)</option>
+                                <option value="confidence">Confidence Heatmap</option>
+                                <option value="quality">Quality Score</option>
+                                <option value="investigation">Investigation Value</option>
+                                <option value="recency">Recency</option>
+                                <option value="connectivity">Connections</option>
+                            </select>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #ccc; cursor: pointer;">
+                                <input type="checkbox" id="show-legend-tab" onchange="toggleLegend(this.checked)" style="width: 14px; height: 14px;">
+                                Show Color Legend
+                            </label>
+                        </div>
+
+                        <!-- Simplified Export -->
+                        <div style="background: #2a2a2a; border-radius: 6px; padding: 10px;">
+                            <h4 style="font-size: 11px; color: #999; margin-bottom: 8px; font-weight: 600;">SNAPSHOT</h4>
+                            <p style="font-size: 10px; color: #666; margin-bottom: 8px;">Save current view for sharing or documentation</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                <button onclick="ExportManager.exportAsPNG()" style="padding: 6px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px;">
+                                    📷 PNG
+                                </button>
+                                <button onclick="ExportManager.exportAsJSON()" style="padding: 6px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px;">
+                                    💾 Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Vertical Divider (Draggable) -->
             <div class="vertical-divider" id="vertical-divider"></div>
 
@@ -3594,7 +3687,7 @@
             <svg id="graph-svg"></svg>
 
             <!-- Visualization Controls Panel -->
-            <div id="visualization-controls" class="viz-controls">
+            <div id="visualization-controls" class="viz-controls" style="display: none;">
                 <div class="viz-controls-header">
                     <h3>Visualization</h3>
                     <button class="viz-toggle-btn" onclick="toggleVizControls()">−</button>
@@ -5667,6 +5760,93 @@
             const toggle = panel.querySelector('.viz-toggle-btn');
             panel.classList.toggle('collapsed');
             toggle.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+        }
+
+        // Graph thumbnail preview functions
+        function refreshGraphThumbnail() {
+            const canvas = document.getElementById('thumbnail-canvas');
+            const loading = document.getElementById('thumbnail-loading');
+
+            if (!canvas || !window.Graph) {
+                if (loading) loading.textContent = 'Preview unavailable';
+                return;
+            }
+
+            try {
+                if (loading) loading.textContent = 'Generating preview...';
+
+                // Get graph data
+                const nodes = window.Graph.nodes || [];
+                const links = window.Graph.links || [];
+
+                if (nodes.length === 0) {
+                    if (loading) loading.textContent = 'No graph data yet';
+                    return;
+                }
+
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                // Calculate bounds
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodes.forEach(n => {
+                    if (n.x < minX) minX = n.x;
+                    if (n.x > maxX) maxX = n.x;
+                    if (n.y < minY) minY = n.y;
+                    if (n.y > maxY) maxY = n.y;
+                });
+
+                const width = maxX - minX || 1;
+                const height = maxY - minY || 1;
+                const padding = 10;
+                const scale = Math.min(
+                    (canvas.width - padding * 2) / width,
+                    (canvas.height - padding * 2) / height
+                );
+
+                // Transform coordinates
+                const tx = (x) => (x - minX) * scale + padding;
+                const ty = (y) => (y - minY) * scale + padding;
+
+                // Clear
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw links
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 1;
+                links.forEach(link => {
+                    const source = typeof link.source === 'object' ? link.source : nodes.find(n => n.id === link.source);
+                    const target = typeof link.target === 'object' ? link.target : nodes.find(n => n.id === link.target);
+                    if (source && target && source.x != null && target.x != null) {
+                        ctx.beginPath();
+                        ctx.moveTo(tx(source.x), ty(source.y));
+                        ctx.lineTo(tx(target.x), ty(target.y));
+                        ctx.stroke();
+                    }
+                });
+
+                // Draw nodes
+                nodes.forEach(node => {
+                    if (node.x == null || node.y == null) return;
+                    ctx.fillStyle = node.type === 'document' ? '#9C27B0' : '#2196F3';
+                    ctx.beginPath();
+                    ctx.arc(tx(node.x), ty(node.y), 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (loading) loading.style.display = 'none';
+
+            } catch (error) {
+                console.error('Thumbnail generation failed:', error);
+                if (loading) loading.textContent = 'Preview unavailable';
+            }
+        }
+
+        function fitGraphToView() {
+            if (window.Graph && typeof window.Graph.zoomToFit === 'function') {
+                window.Graph.zoomToFit(400);
+            }
         }
 
         // Investigate claim function for detail panel buttons

@@ -454,6 +454,35 @@ class Neo4jDatabase:
             'relationship_types': rel_counts
         }
 
+    def execute_query(self, query: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Execute an arbitrary Cypher query and return results.
+
+        Args:
+            query: Cypher query string
+            params: Optional query parameters
+
+        Returns:
+            List of result records as dictionaries
+        """
+        params = params or {}
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(query, **params)
+            records = []
+            for record in result:
+                # Convert record to dictionary
+                record_dict = {}
+                for key in record.keys():
+                    value = record[key]
+                    # Handle Neo4j node/relationship objects
+                    if hasattr(value, '__dict__'):
+                        record_dict[key] = dict(value)
+                    else:
+                        record_dict[key] = value
+                records.append(record_dict)
+            return records
+
     def clear_database(self):
         """[WARNING]  Clear all data from database (use with caution!)."""
         query = "MATCH (n) DETACH DELETE n"
