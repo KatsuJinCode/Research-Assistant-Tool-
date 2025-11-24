@@ -1,0 +1,121 @@
+{
+  "agent_id": "document_processor_20251123_203958_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: SHORT-The-Myth-of-Mental-Illness.pdf",
+  "status": "failed",
+  "started_at": "2025-11-23T20:39:58.334253",
+  "completed_at": "2025-11-23T20:40:03.188829",
+  "duration_seconds": 4.854576,
+  "entries": [
+    {
+      "timestamp": "2025-11-23T20:39:58.335255",
+      "level": "info",
+      "message": "Started processing: SHORT-The-Myth-of-Mental-Illness.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-23T20:40:00.380588",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\SHORT-The-Myth-of-Mental-Illness.pdf",
+        "node_data": {
+          "id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+          "title": "SHORT-The-Myth-of-Mental-Illness.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\SHORT-The-Myth-of-Mental-Illness.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:00.381588",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.134668",
+      "level": "info",
+      "message": "Extracted 28531 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "char_count": 28531,
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.135675",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.144699",
+      "level": "info",
+      "message": "Preprocessed 28273 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "char_count": 28273
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.146709",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.174281",
+      "level": "info",
+      "message": "Document title: Untitled Document",
+      "data": {
+        "event": "title_extracted",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "title": "Untitled Document",
+        "node_update": {
+          "node_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+          "node_type": "document",
+          "updates": {
+            "title": "Untitled Document"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.175789",
+      "level": "info",
+      "message": "Extracting claims with AI...",
+      "data": {
+        "event": "claim_extraction_started",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:40:03.181793",
+      "level": "error",
+      "message": "ERROR: Claude Code agent failed to extract claims: \u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response...",
+      "data": {
+        "event": "claim_extraction_failed",
+        "doc_id": "e8a7c06b-ad65-43c1-886e-cac2bf14c54e",
+        "error": "\u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response..."
+      }
+    }
+  ],
+  "entry_count": 10,
+  "result": null,
+  "error": "Error processing SHORT-The-Myth-of-Mental-Illness.pdf: \u274c AGENT ERROR (flat-claim-extraction): Unexpected error after 3 attempts.\n\nException type: TypeError\nError: 'NoneType' object is not subscriptable\n\nLast response:\nNo response..."
+}

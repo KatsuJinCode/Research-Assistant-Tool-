@@ -1,6 +1,6 @@
 {
-  "build_hash": "EXCEPTION_FIX_20251123202800",
-  "timestamp": "2025-11-23T20:28:00.000000",
+  "build_hash": "DEBUG_LOGGING_20251123204500",
+  "timestamp": "2025-11-23T20:45:00.000000",
   "restart_count": 0,
-  "changes": "Fixed NoneType error with comprehensive exception handling and safety checks"
+  "changes": "Added detailed logging to track Claude SDK response processing"
 }

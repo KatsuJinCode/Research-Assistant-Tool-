@@ -146,16 +146,23 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                     current_prompt = enhanced_prompt
 
                 # Invoke agent
+                logger.info(f"{task_type}: Invoking agent adapter...")
                 response = adapter.invoke(current_prompt, tools=None, timeout=120)
+                logger.info(f"{task_type}: Agent adapter returned, type={type(response)}, value={str(response)[:100]}")
 
                 # Validate response is not None
                 if response is None:
                     raise RuntimeError("Agent returned None response")
 
+                if not isinstance(response, str):
+                    raise RuntimeError(f"Agent returned non-string response: type={type(response)}, value={response}")
+
                 logger.info(f"Agent completed {task_type} (attempt {attempt+1}): {len(response)} chars")
 
                 # Parse response - handle CLI wrapper format
+                logger.info(f"{task_type}: Attempting to parse JSON from response")
                 response_data = json.loads(response)
+                logger.info(f"{task_type}: JSON parsed successfully, type={type(response_data)}")
 
                 # Extract actual result from CLI wrapper if present
                 if isinstance(response_data, dict) and 'result' in response_data:
