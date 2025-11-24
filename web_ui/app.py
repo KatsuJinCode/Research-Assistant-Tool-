@@ -88,6 +88,25 @@ except Exception as e:
 # Initialize debugging agent (will be enabled in debug mode before server starts)
 debug_agent = get_debug_agent(socketio=socketio)
 
+# Initialize shared state for route blueprints
+from web_ui.shared import init_shared_state
+init_shared_state(
+    db=db,
+    socketio=socketio,
+    debug_agent=debug_agent,
+    claim_repo=claim_repo,
+    doc_repo=doc_repo,
+    neo4j_client=neo4j_client,
+    db_manager=db_manager,
+    processing_queue=processing_queue,
+    processing_lock=processing_lock
+)
+
+# Register route blueprints
+from web_ui.routes.debug_routes import debug_bp
+app.register_blueprint(debug_bp)
+logger.info("Debug routes blueprint registered")
+
 
 def process_queue_worker():
     """Background worker that processes documents from queue one at a time."""
@@ -5082,59 +5101,7 @@ except Exception as e:
     logger.warning(f"Failed to register activity feed routes: {e}")
 
 
-# Debug agent API routes
-@app.route('/api/debug/status', methods=['GET'])
-def debug_status():
-    """Get debugging agent status"""
-    try:
-        status = debug_agent.get_status()
-        return jsonify(status)
-    except Exception as e:
-        logger.error(f"Error getting debug status: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/debug/toggle', methods=['POST'])
-def debug_toggle():
-    """Toggle debugging agent on/off"""
-    try:
-        enabled = debug_agent.toggle()
-        return jsonify({
-            'enabled': enabled,
-            'message': f"Debugging agent {'enabled' if enabled else 'disabled'}"
-        })
-    except Exception as e:
-        logger.error(f"Error toggling debug agent: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/debug/enable', methods=['POST'])
-def debug_enable():
-    """Enable debugging agent"""
-    try:
-        debug_agent.enable()
-        return jsonify({
-            'enabled': True,
-            'message': 'Debugging agent enabled'
-        })
-    except Exception as e:
-        logger.error(f"Error enabling debug agent: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/debug/disable', methods=['POST'])
-def debug_disable():
-    """Disable debugging agent"""
-    try:
-        debug_agent.disable()
-        return jsonify({
-            'enabled': False,
-            'message': 'Debugging agent disabled'
-        })
-    except Exception as e:
-        logger.error(f"Error disabling debug agent: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
+# Debug agent routes moved to web_ui/routes/debug_routes.py
 
 # Agent mode API route (SDK vs CLI)
 @app.route('/api/agent/mode', methods=['GET'])
