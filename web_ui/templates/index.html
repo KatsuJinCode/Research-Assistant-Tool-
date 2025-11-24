@@ -3697,44 +3697,6 @@
             <!-- Vertical Divider (Draggable) -->
             <div class="vertical-divider" id="vertical-divider"></div>
 
-            <!-- AI Assistant Panel (Bottom Section - Fixed Height) -->
-            <div class="ai-assistant-panel" id="ai-assistant-panel">
-                <div class="ai-header">
-                    <span class="tab-icon">🤖</span>
-                    <span>AI Research Assistant</span>
-                    <button class="ai-help-btn" onclick="AIAssistant.showHelp()" title="How to use the AI Assistant">?</button>
-                    <span class="ai-context-badge" id="ai-context-badge">Documents</span>
-                </div>
-
-                <div class="ai-chat-area" id="ai-chat-area">
-                    <div class="ai-message ai">
-                        <div>Hello! I'm your AI research assistant. I can help you navigate, analyze, and organize your research.</div>
-                        <div class="ai-message-time">Just now</div>
-                    </div>
-                </div>
-
-                <!-- Suggested Prompts - Click to auto-fill input -->
-                <div class="ai-quick-actions" id="ai-quick-actions">
-                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Summarize the key claims in this document')">
-                        <span>💬</span> Summarize key claims
-                    </button>
-                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Find claims that contradict each other')">
-                        <span>⚡</span> Find contradictions
-                    </button>
-                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('Show me the strongest evidence for this claim')">
-                        <span>🎯</span> Show strongest evidence
-                    </button>
-                    <button class="ai-quick-action" onclick="AIAssistant.fillPrompt('What are the research gaps in this topic?')">
-                        <span>🔍</span> Identify research gaps
-                    </button>
-                </div>
-
-                <div class="ai-input-container">
-                    <input type="text" class="ai-input" id="ai-input" placeholder="Ask me anything..." />
-                    <button class="ai-send-btn" id="ai-send-btn" onclick="AIAssistant.sendMessage()">Send</button>
-                </div>
-            </div>
-
             <!-- AI Assistant - Fixed at Bottom of Sidebar -->
             <div class="ai-assistant-bottom collapsed" id="ai-assistant-bottom">
                 <div class="ai-assistant-header" style="cursor: default;">
