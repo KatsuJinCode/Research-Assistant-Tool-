@@ -6302,6 +6302,9 @@ Databases: ${fw.source_preferences.databases.join(', ')}
         });
     </script>
 
+    <!-- Project Manager (loaded before header_manager since header depends on it) -->
+    <script src="{{ url_for('static', filename='js/project_manager.js') }}"></script>
+
     <!-- Header Manager Module -->
     <script src="{{ url_for('static', filename='js/header_manager.js') }}"></script>
 
@@ -6313,9 +6316,6 @@ Databases: ${fw.source_preferences.databases.join(', ')}
 
     <!-- AI Assistant -->
     <script src="{{ url_for('static', filename='js/ai_assistant.js') }}"></script>
-
-    <!-- Project Manager -->
-    <script src="{{ url_for('static', filename='js/project_manager.js') }}"></script>
 
     <!-- Tutorial Manager -->
     <script src="{{ url_for('static', filename='js/tutorial-manager.js') }}"></script>
