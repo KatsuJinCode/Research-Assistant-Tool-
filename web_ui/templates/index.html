@@ -63,7 +63,7 @@
         .header-tabs-row {
             display: flex;
             align-items: center;
-            padding: 6px 12px 6px 0;  /* Reduced padding, no left padding for continuous tabs */
+            padding: 6px 12px 0 0;  /* No bottom or left padding for continuous tabs */
             gap: 8px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
         }
@@ -194,7 +194,7 @@
         }
 
         .tab {
-            padding: 8px 20px;
+            padding: 4px 8px;
             border-radius: 8px 8px 0 0;
             background: rgba(255, 255, 255, 0.08);
             cursor: pointer;
@@ -206,7 +206,7 @@
             font-weight: 500;
             color: rgba(255, 255, 255, 0.7);
             white-space: nowrap;
-            min-height: 38px;
+            min-height: 28px;
             border-top: 2px solid transparent;
             position: relative;
         }

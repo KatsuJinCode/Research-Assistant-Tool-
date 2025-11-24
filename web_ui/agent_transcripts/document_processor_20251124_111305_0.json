@@ -1,0 +1,1374 @@
+{
+  "agent_id": "document_processor_20251124_111305_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: children.pdf",
+  "status": "completed",
+  "started_at": "2025-11-24T11:13:05.970356",
+  "completed_at": "2025-11-24T11:15:42.933054",
+  "duration_seconds": 156.962698,
+  "entries": [
+    {
+      "timestamp": "2025-11-24T11:13:05.971356",
+      "level": "info",
+      "message": "Started processing: children.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.006148",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+        "node_data": {
+          "id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+          "title": "children.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.006148",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.038712",
+      "level": "info",
+      "message": "Extracted 280 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "char_count": 280,
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.039713",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.041218",
+      "level": "info",
+      "message": "Preprocessed 279 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "char_count": 279
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:08.041218",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:14.739392",
+      "level": "info",
+      "message": "Document title: Unknown",
+      "data": {
+        "event": "title_extracted",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "title": "Unknown",
+        "node_update": {
+          "node_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+          "node_type": "document",
+          "updates": {
+            "title": "Unknown"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:14.740392",
+      "level": "info",
+      "message": "Extracting claims with AI...",
+      "data": {
+        "event": "claim_extraction_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:22.812010",
+      "level": "info",
+      "message": "Extracted 8 claims",
+      "data": {
+        "event": "claims_extracted",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "total_claims": 8,
+        "claim_previews": [
+          {
+            "id": null,
+            "preview": {
+              "text": "Artificial consequences are not good for children's development",
+              "type": "interpretive",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "Artificial consequences often 'work' in terms of getting short-term compliance",
+              "type": "factual",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "Artificial consequences undermine intrinsic motivation",
+              "type": "causal",
+              "confidence": 0.9
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "Artificial consequences undermine other qualities needed for meaningful adulthood",
+              "type": "causal",
+              "confidence": 0.85
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "Short-term compliance is different from qualities needed for meaningful adulthood",
+              "type": "interpretive",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "Intrinsic motivation is needed for meaningful adulthood",
+              "type": "interpretive",
+              "confidence": 0.8
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "There is a trade-off between short-term compliance and long-term developmental outcomes",
+              "type": "causal",
+              "confidence": 0.75
+            }
+          },
+          {
+            "id": null,
+            "preview": {
+              "text": "The effectiveness of artificial consequences should be evaluated beyond short-term compliance",
+              "type": "methodological",
+              "confidence": 0.8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:26.899796",
+      "level": "info",
+      "message": "Created claim 1/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "node_data": {
+          "id": "7884de4e-d899-44d8-817c-df4383447422",
+          "text": "Artificial consequences are not good for children's development",
+          "original_text": "Artificial consequences are not good for children's development",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "interpretive",
+          "confidence": 0.9,
+          "word_count_original": 8
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.106249",
+      "level": "info",
+      "message": "Created claim 2/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "node_data": {
+          "id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+          "text": "Artificial consequences often 'work' in terms of getting short-term compliance",
+          "original_text": "Artificial consequences often 'work' in terms of getting short-term compliance",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "factual",
+          "confidence": 0.85,
+          "word_count_original": 10
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.137746",
+      "level": "info",
+      "message": "Created claim 3/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "node_data": {
+          "id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+          "text": "Artificial consequences undermine intrinsic motivation",
+          "original_text": "Artificial consequences undermine intrinsic motivation",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "causal",
+          "confidence": 0.9,
+          "word_count_original": 5
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.155275",
+      "level": "info",
+      "message": "Created claim 4/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "node_data": {
+          "id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+          "text": "Artificial consequences undermine other qualities needed for meaningful adulthood",
+          "original_text": "Artificial consequences undermine other qualities needed for meaningful adulthood",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "causal",
+          "confidence": 0.85,
+          "word_count_original": 9
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.179502",
+      "level": "info",
+      "message": "Created claim 5/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "node_data": {
+          "id": "f8c07018-9499-49a5-959b-d4869f294f84",
+          "text": "Short-term compliance is different from qualities needed for meaningful adulthood",
+          "original_text": "Short-term compliance is different from qualities needed for meaningful adulthood",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "interpretive",
+          "confidence": 0.8,
+          "word_count_original": 10
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.198532",
+      "level": "info",
+      "message": "Created claim 6/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "node_data": {
+          "id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+          "text": "Intrinsic motivation is needed for meaningful adulthood",
+          "original_text": "Intrinsic motivation is needed for meaningful adulthood",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "interpretive",
+          "confidence": 0.8,
+          "word_count_original": 7
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": false
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.233926",
+      "level": "info",
+      "message": "Created claim 7/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "node_data": {
+          "id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+          "text": "There is a trade-off between short-term compliance and long-term developmental outcomes",
+          "original_text": "There is a trade-off between short-term compliance and long-term developmental outcomes",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "causal",
+          "confidence": 0.75,
+          "word_count_original": 11
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": true
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.262977",
+      "level": "info",
+      "message": "Created claim 8/8",
+      "data": {
+        "event": "claim_added",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "node_data": {
+          "id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+          "text": "The effectiveness of artificial consequences should be evaluated beyond short-term compliance",
+          "original_text": "The effectiveness of artificial consequences should be evaluated beyond short-term compliance",
+          "status": "processing",
+          "processing_stage": "pending",
+          "claim_type": "methodological",
+          "confidence": 0.8,
+          "word_count_original": 11
+        },
+        "parent_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "is_skeleton": true,
+        "has_similar": true
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.263977",
+      "level": "info",
+      "message": "Processing claim 1/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:27.264977",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "claim_index": 1,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences are not good for children'...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Artificial consequences are not good for children's development",
+          "word_count": 8
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:42.753421",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "claim_index": 1,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences are not good for children'...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.88,
+            "score_2": 0.92,
+            "score_3": 0.85
+          },
+          "best_candidate": 2,
+          "fidelity_reason": "Candidate 2 preserves the original terminology ('artificial consequences') and the absolute nature of the claim ('negatively affect' captures 'not good') while being concise. Candidate 1 loses the 'artificial' distinction. Candidate 3 is unnecessarily wordy.",
+          "quality_score": 0.35,
+          "quality_reason": "Claim is vague and overgeneralized. Does not specify which developmental domains, which types of artificial consequences, under what conditions, or for which ages. 'Not good' is imprecise. Makes absolute claim without acknowledging nuance in parenting research.",
+          "disposition": "review",
+          "recommendation": "Needs human review to specify: (1) what types of artificial consequences, (2) which developmental outcomes, (3) compared to what alternative, (4) for what age ranges. As stated, too vague to be meaningfully testable or actionable.",
+          "duration_ms": 15488.444328308105
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:42.754421",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "final_text": "Artificial consequences negatively affect children's development",
+        "quality_score": 0.35,
+        "disposition": "review",
+        "total_duration_ms": 15488.444328308105
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:42.760935",
+      "level": "info",
+      "message": "Processed claim 1/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7884de4e-d899-44d8-817c-df4383447422",
+        "updates": {
+          "text": "Artificial consequences negatively affect children's development",
+          "summary": "Artificial consequences negatively affect children's development",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim asserts that artificial consequences (consequences imposed by parents/caregivers rather than naturally occurring from actions) are detrimental to children's development. The term 'artificial consequences' implies manufactured or contrived outcomes imposed externally, as opposed to 'natural consequences' that flow directly from actions. The claim makes a sweeping negative judgment ('not good') without specifying which aspects of development are affected (cognitive, emotional, social, moral), what types of artificial consequences are problematic, or under what conditions. It implicitly assumes a binary between artificial and natural consequences, and suggests natural consequences are preferable. The claim lacks qualifiers - it doesn't say 'may not be good' or 'are sometimes not good' - it presents as absolute. There's no distinction between correlation and causation, nor any acknowledgment that the relationship between discipline methods and developmental outcomes is complex and context-dependent.",
+          "clarified": "Externally-imposed consequences created by caregivers harm children's developmental outcomes compared to naturally-occurring consequences",
+          "candidate_1": "Caregiver-imposed consequences harm child development",
+          "candidate_2": "Artificial consequences negatively affect children's development",
+          "candidate_3": "Manufactured consequences from caregivers harm child developmental outcomes",
+          "score_1": 0.88,
+          "score_2": 0.92,
+          "score_3": 0.85,
+          "fidelity_reason": "Candidate 2 preserves the original terminology ('artificial consequences') and the absolute nature of the claim ('negatively affect' captures 'not good') while being concise. Candidate 1 loses the 'artificial' distinction. Candidate 3 is unnecessarily wordy.",
+          "selected_candidate": "2",
+          "quality_score": 0.35,
+          "quality_reason": "Claim is vague and overgeneralized. Does not specify which developmental domains, which types of artificial consequences, under what conditions, or for which ages. 'Not good' is imprecise. Makes absolute claim without acknowledging nuance in parenting research.",
+          "disposition": "review",
+          "recommendation": "Needs human review to specify: (1) what types of artificial consequences, (2) which developmental outcomes, (3) compared to what alternative, (4) for what age ranges. As stated, too vague to be meaningfully testable or actionable.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 15488.444328308105,
+          "word_count_final": 6,
+          "claim_type": "extracted",
+          "confidence": 0.35,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:13:42.756423"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:42.762983",
+      "level": "info",
+      "message": "Processing claim 2/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:42.763983",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "claim_index": 2,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences often 'work' in terms of g...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Artificial consequences often 'work' in terms of getting short-term compliance",
+          "word_count": 10
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:58.052635",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "claim_index": 2,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences often 'work' in terms of g...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.92,
+            "score_2": 0.88,
+            "score_3": 0.94
+          },
+          "best_candidate": 3,
+          "fidelity_reason": "Candidate 3 best preserves both the qualifier 'often' and the skeptical tone via scare quotes around 'work', while the 'only' captures the implicit limitation that this is where effectiveness ends. Candidate 1 loses the skeptical framing. Candidate 2 is wordier without adding meaning.",
+          "quality_score": 0.75,
+          "quality_reason": "Moderately specific claim about behavioral intervention effectiveness. Testable through behavioral research comparing short vs long-term outcomes. However, 'artificial consequences' would benefit from clearer operational definition.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting detail - likely part of a larger argument about effective vs ineffective discipline or behavioral modification strategies. Would connect to claims about what DOES work long-term.",
+          "duration_ms": 15288.651704788208
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:58.054635",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "final_text": "Artificial consequences often 'work' for short-term compliance only",
+        "quality_score": 0.75,
+        "disposition": "child",
+        "total_duration_ms": 15288.651704788208
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:58.061144",
+      "level": "info",
+      "message": "Processed claim 2/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ef1684da-d368-4482-bd41-4210cfd628a4",
+        "updates": {
+          "text": "Artificial consequences often 'work' for short-term compliance only",
+          "summary": "Artificial consequences often 'work' for short-term compliance only",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim addresses the effectiveness of artificial consequences (externally imposed punishments or rewards not naturally connected to a behavior) in modifying behavior. The key qualifier is 'often' - not always, but frequently. The phrase 'work' is placed in scare quotes, suggesting skepticism about whether this constitutes genuine success. The claim explicitly limits the scope to 'short-term compliance' - meaning immediate behavioral conformity rather than internalized change, long-term behavior modification, or genuine understanding. The implicit assumption is that there's a distinction between short-term compliance and other measures of effectiveness (like long-term behavior change, intrinsic motivation, or genuine learning). This is a qualified empirical claim about behavioral outcomes, not an absolute statement.",
+          "clarified": "Externally imposed consequences unrelated to natural outcomes frequently achieve immediate behavioral compliance but this effectiveness is limited to the short term",
+          "candidate_1": "Artificial consequences often achieve short-term compliance",
+          "candidate_2": "Externally imposed consequences frequently produce short-term behavioral compliance",
+          "candidate_3": "Artificial consequences often 'work' for short-term compliance only",
+          "score_1": 0.92,
+          "score_2": 0.88,
+          "score_3": 0.94,
+          "fidelity_reason": "Candidate 3 best preserves both the qualifier 'often' and the skeptical tone via scare quotes around 'work', while the 'only' captures the implicit limitation that this is where effectiveness ends. Candidate 1 loses the skeptical framing. Candidate 2 is wordier without adding meaning.",
+          "selected_candidate": "3",
+          "quality_score": 0.75,
+          "quality_reason": "Moderately specific claim about behavioral intervention effectiveness. Testable through behavioral research comparing short vs long-term outcomes. However, 'artificial consequences' would benefit from clearer operational definition.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting detail - likely part of a larger argument about effective vs ineffective discipline or behavioral modification strategies. Would connect to claims about what DOES work long-term.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 15288.651704788208,
+          "word_count_final": 8,
+          "claim_type": "extracted",
+          "confidence": 0.75,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:13:58.056635"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:58.063144",
+      "level": "info",
+      "message": "Processing claim 3/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:13:58.064144",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "claim_index": 3,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences undermine intrinsic motiva...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Artificial consequences undermine intrinsic motivation",
+          "word_count": 5
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:14.486429",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "claim_index": 3,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences undermine intrinsic motiva...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.88,
+            "score_2": 0.92,
+            "score_3": 0.9
+          },
+          "best_candidate": 2,
+          "fidelity_reason": "Candidate 2 best captures both key elements: the 'artificial' aspect (external, unconnected to behavior) and the undermining effect on internal drive. It preserves the causal direction and makes explicit what 'artificial' means.",
+          "quality_score": 0.72,
+          "quality_reason": "The claim is moderately specific and testable - it describes a recognized psychological phenomenon (overjustification effect). However, it lacks qualifiers about when/how much this occurs, and 'undermine' is somewhat vague. Research can operationalize these terms, but the claim as stated may overgeneralize.",
+          "disposition": "central",
+          "recommendation": "Keep as central claim - this is a foundational concept in motivation psychology that supports or challenges various educational and behavioral intervention approaches. Consider adding 'can' qualifier if original source allows.",
+          "duration_ms": 16422.284364700317
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:14.488939",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "final_text": "External consequences unconnected to behavior undermine internal drive",
+        "quality_score": 0.72,
+        "disposition": "central",
+        "total_duration_ms": 16422.284364700317
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:14.497955",
+      "level": "info",
+      "message": "Processed claim 3/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "7606c750-1281-460f-94f2-8ca5c1a710b1",
+        "updates": {
+          "text": "External consequences unconnected to behavior undermine internal drive",
+          "summary": "External consequences unconnected to behavior undermine internal drive",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim asserts a causal relationship between artificial consequences (externally imposed rewards or punishments not naturally connected to the behavior) and intrinsic motivation (internal drive to engage in an activity for its own sake). The claim states that artificial consequences actively damage or reduce intrinsic motivation. This reflects the 'overjustification effect' from psychology - the idea that external rewards can shift a person's perceived reason for acting from internal interest to external incentive. Key implicit assumptions: (1) intrinsic motivation exists as a distinct psychological state, (2) artificial consequences are distinguishable from natural consequences, (3) there is a causal mechanism by which external incentives reduce internal drive. The claim is stated as a general truth without qualifiers like 'can' or 'may', implying it always or typically occurs. No conditions are specified regarding age, context, type of activity, or type of artificial consequence.",
+          "clarified": "Externally imposed consequences that lack natural connection to a behavior reduce a person's internal drive to engage in that behavior for its own sake",
+          "candidate_1": "Artificial consequences reduce intrinsic motivation",
+          "candidate_2": "External consequences unconnected to behavior undermine internal drive",
+          "candidate_3": "Imposed consequences diminish intrinsic motivation for the behavior",
+          "score_1": 0.88,
+          "score_2": 0.92,
+          "score_3": 0.9,
+          "fidelity_reason": "Candidate 2 best captures both key elements: the 'artificial' aspect (external, unconnected to behavior) and the undermining effect on internal drive. It preserves the causal direction and makes explicit what 'artificial' means.",
+          "selected_candidate": "2",
+          "quality_score": 0.72,
+          "quality_reason": "The claim is moderately specific and testable - it describes a recognized psychological phenomenon (overjustification effect). However, it lacks qualifiers about when/how much this occurs, and 'undermine' is somewhat vague. Research can operationalize these terms, but the claim as stated may overgeneralize.",
+          "disposition": "central",
+          "recommendation": "Keep as central claim - this is a foundational concept in motivation psychology that supports or challenges various educational and behavioral intervention approaches. Consider adding 'can' qualifier if original source allows.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 16422.284364700317,
+          "word_count_final": 8,
+          "claim_type": "extracted",
+          "confidence": 0.72,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:14:14.490939"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:14.499958",
+      "level": "info",
+      "message": "Processing claim 4/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:14.501964",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "claim_index": 4,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences undermine other qualities ...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Artificial consequences undermine other qualities needed for meaningful adulthood",
+          "word_count": 9
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:30.979965",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "claim_index": 4,
+        "total_claims": 8,
+        "claim_preview": "Artificial consequences undermine other qualities ...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.88,
+            "score_2": 0.92,
+            "score_3": 0.9
+          },
+          "best_candidate": 2,
+          "fidelity_reason": "Candidate 2 best captures the causal mechanism (harm development) and specifies consequences as externally imposed, while remaining concise. Candidate 1 loses the developmental aspect, Candidate 3 adds 'psychological' which narrows scope unnecessarily.",
+          "quality_score": 0.55,
+          "quality_reason": "Claim makes a meaningful causal argument but suffers from vagueness: 'artificial consequences' and 'qualities needed for adulthood' are undefined. Testable only if these terms are operationalized. Direction is clear but specifics are lacking.",
+          "disposition": "review",
+          "recommendation": "Needs human review to either specify which qualities are undermined and what constitutes 'artificial' consequences, or to identify as a parent claim with children specifying these details",
+          "duration_ms": 16478.001594543457
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:30.982671",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "final_text": "Externally imposed consequences harm development of adulthood-required qualities",
+        "quality_score": 0.55,
+        "disposition": "review",
+        "total_duration_ms": 16478.001594543457
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:30.987671",
+      "level": "info",
+      "message": "Processed claim 4/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "ce57b5e7-969e-4410-8a7f-227b417d6415",
+        "updates": {
+          "text": "Externally imposed consequences harm development of adulthood-required qualities",
+          "summary": "Externally imposed consequences harm development of adulthood-required qualities",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim argues that when consequences are artificially imposed (rather than arising naturally from one's actions), they fail to develop or actively damage other psychological or character qualities necessary for mature adulthood. The term 'artificial consequences' implies externally manufactured punishments or rewards disconnected from natural cause-and-effect relationships. 'Other qualities' suggests there are multiple competencies needed for adulthood, and artificial consequences harm some while perhaps addressing others. The claim assumes: (1) there's a distinction between artificial and natural consequences, (2) meaningful adulthood requires specific developmental qualities, (3) the method of consequence delivery affects character development. This is a causal claim - artificial consequences actively undermine (cause harm to) these qualities, not merely correlate with their absence. The claim lacks specificity about which qualities are undermined and what makes consequences 'artificial' versus 'natural.'",
+          "clarified": "Externally imposed consequences that lack natural cause-effect connection to actions actively harm the development of psychological qualities required for mature adulthood",
+          "candidate_1": "Artificial consequences undermine qualities needed for meaningful adulthood",
+          "candidate_2": "Externally imposed consequences harm development of adulthood-required qualities",
+          "candidate_3": "Manufactured consequences undermine psychological qualities needed for mature adulthood",
+          "score_1": 0.88,
+          "score_2": 0.92,
+          "score_3": 0.9,
+          "fidelity_reason": "Candidate 2 best captures the causal mechanism (harm development) and specifies consequences as externally imposed, while remaining concise. Candidate 1 loses the developmental aspect, Candidate 3 adds 'psychological' which narrows scope unnecessarily.",
+          "selected_candidate": "2",
+          "quality_score": 0.55,
+          "quality_reason": "Claim makes a meaningful causal argument but suffers from vagueness: 'artificial consequences' and 'qualities needed for adulthood' are undefined. Testable only if these terms are operationalized. Direction is clear but specifics are lacking.",
+          "disposition": "review",
+          "recommendation": "Needs human review to either specify which qualities are undermined and what constitutes 'artificial' consequences, or to identify as a parent claim with children specifying these details",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 16478.001594543457,
+          "word_count_final": 8,
+          "claim_type": "extracted",
+          "confidence": 0.55,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:14:30.983671"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:30.989672",
+      "level": "info",
+      "message": "Processing claim 5/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:30.991672",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "claim_index": 5,
+        "total_claims": 8,
+        "claim_preview": "Short-term compliance is different from qualities ...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Short-term compliance is different from qualities needed for meaningful adulthood",
+          "word_count": 10
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:47.869896",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "claim_index": 5,
+        "total_claims": 8,
+        "claim_preview": "Short-term compliance is different from qualities ...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.88,
+            "score_2": 0.91,
+            "score_3": 0.85
+          },
+          "best_candidate": 2,
+          "fidelity_reason": "Candidate 2 preserves the key distinction ('distinct from') and retains 'qualities needed for' which maintains the original's directional framing. 'Fulfilling' captures the value-laden 'meaningful' well. Candidate 1 loses some nuance by using 'skills' vs 'qualities'. Candidate 3 substitutes 'obedience' which slightly shifts meaning.",
+          "quality_score": 0.55,
+          "quality_reason": "The claim is conceptually meaningful but somewhat vague. 'Meaningful adulthood' is subjective and undefined. The claim is more of a philosophical distinction than a testable hypothesis. It would benefit from specifying what qualities are meant in each category.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - likely part of a larger argument about education, parenting, or developmental psychology. Would pair well with a parent claim about consequences of compliance-focused approaches.",
+          "duration_ms": 16878.22413444519
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:47.871897",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "final_text": "Compliance traits are distinct from qualities needed for fulfilling adulthood",
+        "quality_score": 0.55,
+        "disposition": "child",
+        "total_duration_ms": 16878.22413444519
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:47.877910",
+      "level": "info",
+      "message": "Processed claim 5/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "f8c07018-9499-49a5-959b-d4869f294f84",
+        "updates": {
+          "text": "Compliance traits are distinct from qualities needed for fulfilling adulthood",
+          "summary": "Compliance traits are distinct from qualities needed for fulfilling adulthood",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim draws a distinction between two categories of behavioral traits or skills: those required for short-term compliance (following rules, obeying authority, meeting immediate expectations) versus those needed for meaningful adulthood (autonomy, critical thinking, self-direction, intrinsic motivation, etc.). The implicit assumption is that these two sets of qualities are not merely different but potentially in tension - that optimizing for short-term compliance may not develop, or may even undermine, the development of qualities needed for meaningful adult life. The claim is stated as a categorical observation rather than presenting evidence. It implies a developmental or educational context where focusing on compliance could be counterproductive to long-term flourishing. The word 'meaningful' is subjective and value-laden, suggesting the speaker has a particular conception of what constitutes a worthwhile adult life.",
+          "clarified": "The behavioral traits required for short-term compliance differ from the qualities necessary for a fulfilling autonomous adulthood",
+          "candidate_1": "Short-term compliance skills differ from meaningful adulthood qualities",
+          "candidate_2": "Compliance traits are distinct from qualities needed for fulfilling adulthood",
+          "candidate_3": "Short-term obedience requires different traits than meaningful adult life",
+          "score_1": 0.88,
+          "score_2": 0.91,
+          "score_3": 0.85,
+          "fidelity_reason": "Candidate 2 preserves the key distinction ('distinct from') and retains 'qualities needed for' which maintains the original's directional framing. 'Fulfilling' captures the value-laden 'meaningful' well. Candidate 1 loses some nuance by using 'skills' vs 'qualities'. Candidate 3 substitutes 'obedience' which slightly shifts meaning.",
+          "selected_candidate": "2",
+          "quality_score": 0.55,
+          "quality_reason": "The claim is conceptually meaningful but somewhat vague. 'Meaningful adulthood' is subjective and undefined. The claim is more of a philosophical distinction than a testable hypothesis. It would benefit from specifying what qualities are meant in each category.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - likely part of a larger argument about education, parenting, or developmental psychology. Would pair well with a parent claim about consequences of compliance-focused approaches.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 16878.22413444519,
+          "word_count_final": 10,
+          "claim_type": "extracted",
+          "confidence": 0.55,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:14:47.874400"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:47.880918",
+      "level": "info",
+      "message": "Processing claim 6/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:14:47.882922",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "claim_index": 6,
+        "total_claims": 8,
+        "claim_preview": "Intrinsic motivation is needed for meaningful adul...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "Intrinsic motivation is needed for meaningful adulthood",
+          "word_count": 7
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:03.782487",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "claim_index": 6,
+        "total_claims": 8,
+        "claim_preview": "Intrinsic motivation is needed for meaningful adul...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.92,
+            "score_2": 0.9,
+            "score_3": 0.88
+          },
+          "best_candidate": 1,
+          "fidelity_reason": "Candidate 1 preserves the necessity relationship ('is necessary for') most directly while being maximally concise. Candidate 2 reverses subject-object which slightly shifts emphasis. Candidate 3 uses 'necessitates' which is slightly more formal but equivalent.",
+          "quality_score": 0.45,
+          "quality_reason": "The claim suffers from undefined key terms. 'Meaningful adulthood' is highly subjective and culturally variable - what counts as meaningful? The claim is not easily testable without operationalizing both 'intrinsic motivation' and 'meaningful adulthood.' It functions more as a philosophical assertion than an empirical claim.",
+          "disposition": "review",
+          "recommendation": "Needs human review to either: (1) specify what 'meaningful adulthood' means in context, (2) identify whether this is a definitional claim or empirical hypothesis, or (3) connect to source material that defines these terms. As-is, too vague for research extraction.",
+          "duration_ms": 15899.56545829773
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:03.784496",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "final_text": "Intrinsic motivation is necessary for meaningful adulthood",
+        "quality_score": 0.45,
+        "disposition": "review",
+        "total_duration_ms": 15899.56545829773
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:03.916055",
+      "level": "info",
+      "message": "Processed claim 6/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "b17f24d4-005f-4d72-bd5e-cedf771426a4",
+        "updates": {
+          "text": "Intrinsic motivation is necessary for meaningful adulthood",
+          "summary": "Intrinsic motivation is necessary for meaningful adulthood",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim asserts that intrinsic motivation is a necessary condition for achieving 'meaningful adulthood.' The term 'needed' implies necessity - without intrinsic motivation, meaningful adulthood cannot occur. However, several concepts are vague: What constitutes 'meaningful adulthood'? Is this about subjective life satisfaction, objective measures of adult functioning, or psychological maturity? 'Intrinsic motivation' refers to motivation arising from internal rewards rather than external incentives, but the claim doesn't specify in what domains (work, relationships, personal growth). The implicit assumption is that external motivation alone is insufficient for whatever 'meaningful' means here. This is a causal claim about necessity, not merely correlation - it states intrinsic motivation is required, not just associated with meaningful outcomes.",
+          "clarified": "Intrinsic motivation is a necessary condition for achieving a psychologically meaningful experience of adulthood",
+          "candidate_1": "Intrinsic motivation is necessary for meaningful adulthood",
+          "candidate_2": "Meaningful adulthood requires intrinsic motivation",
+          "candidate_3": "Achieving meaningful adulthood necessitates intrinsic motivation",
+          "score_1": 0.92,
+          "score_2": 0.9,
+          "score_3": 0.88,
+          "fidelity_reason": "Candidate 1 preserves the necessity relationship ('is necessary for') most directly while being maximally concise. Candidate 2 reverses subject-object which slightly shifts emphasis. Candidate 3 uses 'necessitates' which is slightly more formal but equivalent.",
+          "selected_candidate": "1",
+          "quality_score": 0.45,
+          "quality_reason": "The claim suffers from undefined key terms. 'Meaningful adulthood' is highly subjective and culturally variable - what counts as meaningful? The claim is not easily testable without operationalizing both 'intrinsic motivation' and 'meaningful adulthood.' It functions more as a philosophical assertion than an empirical claim.",
+          "disposition": "review",
+          "recommendation": "Needs human review to either: (1) specify what 'meaningful adulthood' means in context, (2) identify whether this is a definitional claim or empirical hypothesis, or (3) connect to source material that defines these terms. As-is, too vague for research extraction.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 15899.56545829773,
+          "word_count_final": 7,
+          "claim_type": "extracted",
+          "confidence": 0.45,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:15:03.786496"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:03.919562",
+      "level": "info",
+      "message": "Processing claim 7/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:03.921562",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "claim_index": 7,
+        "total_claims": 8,
+        "claim_preview": "There is a trade-off between short-term compliance...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "There is a trade-off between short-term compliance and long-term developmental outcomes",
+          "word_count": 11
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:20.226627",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "claim_index": 7,
+        "total_claims": 8,
+        "claim_preview": "There is a trade-off between short-term compliance...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.92,
+            "score_2": 0.88,
+            "score_3": 0.85
+          },
+          "best_candidate": 1,
+          "fidelity_reason": "Candidate 1 preserves the key qualifier 'may', maintains the trade-off concept through 'compromise', and keeps the temporal distinction between short-term methods and long-term outcomes. Candidate 2 loses some precision with 'trade off against'. Candidate 3 obscures the temporal element.",
+          "quality_score": 0.65,
+          "quality_reason": "Moderately specific but lacks crucial context: what domain (parenting, education), what developmental outcomes specifically, and under what conditions. Testable in principle but would need operationalization.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - likely supports a larger argument about developmental approaches or parenting styles. Would benefit from parent claim specifying the context and specific outcomes being discussed.",
+          "duration_ms": 16305.064916610718
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:20.229133",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "final_text": "Short-term compliance methods may compromise long-term developmental outcomes",
+        "quality_score": 0.65,
+        "disposition": "child",
+        "total_duration_ms": 16305.064916610718
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:20.236645",
+      "level": "info",
+      "message": "Processed claim 7/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "2c53876a-1a26-4d68-ac80-bb7bef584ee4",
+        "updates": {
+          "text": "Short-term compliance methods may compromise long-term developmental outcomes",
+          "summary": "Short-term compliance methods may compromise long-term developmental outcomes",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim asserts an inverse relationship between two distinct outcomes in what appears to be a developmental or educational context: achieving compliance in the short term versus achieving positive developmental outcomes over the long term. The word 'trade-off' implies that optimizing for one necessarily comes at the expense of the other - suggesting these goals are in tension rather than complementary. The implicit assumption is that methods or approaches that produce immediate compliance (likely behavioral compliance, rule-following, obedience) may undermine or interfere with longer-term developmental goals (autonomy, self-regulation, intrinsic motivation, psychological well-being). This is likely drawn from developmental psychology or parenting research. The claim does not specify the domain (parenting, education, therapy), nor does it quantify the trade-off or specify under what conditions it applies. It presents this as a general principle rather than a conditional relationship.",
+          "clarified": "Methods that achieve immediate behavioral compliance may compromise long-term developmental outcomes such as autonomy and self-regulation",
+          "candidate_1": "Short-term compliance methods may compromise long-term developmental outcomes",
+          "candidate_2": "Achieving immediate compliance may trade off against long-term development",
+          "candidate_3": "Compliance-focused approaches may undermine developmental outcomes over time",
+          "score_1": 0.92,
+          "score_2": 0.88,
+          "score_3": 0.85,
+          "fidelity_reason": "Candidate 1 preserves the key qualifier 'may', maintains the trade-off concept through 'compromise', and keeps the temporal distinction between short-term methods and long-term outcomes. Candidate 2 loses some precision with 'trade off against'. Candidate 3 obscures the temporal element.",
+          "selected_candidate": "1",
+          "quality_score": 0.65,
+          "quality_reason": "Moderately specific but lacks crucial context: what domain (parenting, education), what developmental outcomes specifically, and under what conditions. Testable in principle but would need operationalization.",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - likely supports a larger argument about developmental approaches or parenting styles. Would benefit from parent claim specifying the context and specific outcomes being discussed.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 16305.064916610718,
+          "word_count_final": 8,
+          "claim_type": "extracted",
+          "confidence": 0.65,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:15:20.231646"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:20.239148",
+      "level": "info",
+      "message": "Processing claim 8/8",
+      "data": {
+        "event": "claim_processing_started",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "processing_stage": "analysis"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:20.242656",
+      "level": "info",
+      "message": "Normalizing claim (all stages)...",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "claim_index": 8,
+        "total_claims": 8,
+        "claim_preview": "The effectiveness of artificial consequences shoul...",
+        "stage": "normalization",
+        "status": "in_progress",
+        "message": "Analyzing, clarifying, simplifying, and validating...",
+        "data": {
+          "original_text": "The effectiveness of artificial consequences should be evaluated beyond short-term compliance",
+          "word_count": 11
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:36.254850",
+      "level": "success",
+      "message": "\u2713 Normalization complete",
+      "data": {
+        "event": "claim_stage_update",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "claim_index": 8,
+        "total_claims": 8,
+        "claim_preview": "The effectiveness of artificial consequences shoul...",
+        "stage": "normalization",
+        "status": "complete",
+        "data": {
+          "fidelity_scores": {
+            "score_1": 0.92,
+            "score_2": 0.88,
+            "score_3": 0.94
+          },
+          "best_candidate": 3,
+          "fidelity_reason": "Candidate 3 preserves the modal 'should', maintains the focus on evaluation methodology, and keeps 'short-term compliance' as the specific criterion being transcended. Candidate 1 loses the normative 'should'. Candidate 2 adds 'long-term outcomes' which wasn't explicit in the original.",
+          "quality_score": 0.65,
+          "quality_reason": "Moderately specific - it identifies what should be evaluated (artificial consequences) and what criterion is insufficient (short-term compliance), but doesn't specify what additional criteria should be used or what domains this applies to (parenting, corrections, education, etc.)",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - this is a methodological point that would support a larger argument about artificial consequences or behavioral interventions. Needs parent claim about what the alternative evaluation criteria should be or what domain this applies to.",
+          "duration_ms": 16012.193441390991
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:36.256850",
+      "level": "success",
+      "message": "\u2713 Claim processing complete",
+      "data": {
+        "event": "claim_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "final_text": "Artificial consequence evaluation should extend beyond short-term compliance measures",
+        "quality_score": 0.65,
+        "disposition": "child",
+        "total_duration_ms": 16012.193441390991
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:36.264394",
+      "level": "info",
+      "message": "Processed claim 8/8",
+      "data": {
+        "event": "claim_updated",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "claim_id": "1d299e3f-0130-4cce-a1cf-7563f3270491",
+        "updates": {
+          "text": "Artificial consequence evaluation should extend beyond short-term compliance measures",
+          "summary": "Artificial consequence evaluation should extend beyond short-term compliance measures",
+          "status": "complete",
+          "processing_stage": "complete",
+          "analysis": "This claim argues that when assessing artificial consequences (manufactured or imposed consequences, as opposed to natural ones - such as punishments, rewards, or structured interventions), the evaluation criteria should extend beyond whether they produce immediate behavioral compliance. The implicit assumption is that short-term compliance is currently the primary or sole metric used to judge effectiveness, and that this is insufficient. The claim suggests there are longer-term outcomes (behavioral internalization, relationship effects, psychological impacts, skill development, autonomy) that matter for true effectiveness. This is a normative claim about evaluation methodology rather than an empirical claim about outcomes. The word 'should' indicates prescription rather than description of what is currently done. No causal claims are made - it's purely about what ought to be measured.",
+          "clarified": "Artificial consequences should be evaluated using criteria beyond short-term behavioral compliance to assess true effectiveness",
+          "candidate_1": "Artificial consequences require evaluation beyond short-term compliance",
+          "candidate_2": "Effectiveness of artificial consequences should include long-term outcomes beyond compliance",
+          "candidate_3": "Artificial consequence evaluation should extend beyond short-term compliance measures",
+          "score_1": 0.92,
+          "score_2": 0.88,
+          "score_3": 0.94,
+          "fidelity_reason": "Candidate 3 preserves the modal 'should', maintains the focus on evaluation methodology, and keeps 'short-term compliance' as the specific criterion being transcended. Candidate 1 loses the normative 'should'. Candidate 2 adds 'long-term outcomes' which wasn't explicit in the original.",
+          "selected_candidate": "3",
+          "quality_score": 0.65,
+          "quality_reason": "Moderately specific - it identifies what should be evaluated (artificial consequences) and what criterion is insufficient (short-term compliance), but doesn't specify what additional criteria should be used or what domains this applies to (parenting, corrections, education, etc.)",
+          "disposition": "child",
+          "recommendation": "Keep as supporting claim - this is a methodological point that would support a larger argument about artificial consequences or behavioral interventions. Needs parent claim about what the alternative evaluation criteria should be or what domain this applies to.",
+          "duration_analysis_ms": 0,
+          "duration_clarification_ms": 0,
+          "duration_simplification_ms": 0,
+          "duration_validation_ms": 0,
+          "duration_total_ms": 16012.193441390991,
+          "word_count_final": 9,
+          "claim_type": "extracted",
+          "confidence": 0.65,
+          "is_optimal": true,
+          "updated_at": "2025-11-24T19:15:36.259394"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:36.266393",
+      "level": "info",
+      "message": "Checking for duplicate claims...",
+      "data": {
+        "event": "duplicate_detection_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:38.604728",
+      "level": "info",
+      "message": "Skipping claim hierarchy analysis (can run later)",
+      "data": {
+        "event": "optimization_skipped",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:38.609759",
+      "level": "info",
+      "message": "Document processing complete!",
+      "data": {
+        "event": "processing_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:38.612760",
+      "level": "info",
+      "message": "Running cross-document clustering...",
+      "data": {
+        "event": "auto_clustering_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:40.783608",
+      "level": "info",
+      "message": "Created 2 super-claims",
+      "data": {
+        "event": "auto_clustering_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "super_claims": 2,
+        "clusters": 2,
+        "modularity": 0.125,
+        "total_claims": 8
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:40.786608",
+      "level": "info",
+      "message": "Generating embeddings for semantic similarity...",
+      "data": {
+        "event": "embedding_generation_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:42.924045",
+      "level": "info",
+      "message": "Generated 8 embeddings",
+      "data": {
+        "event": "embedding_generation_complete",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "generated": 8,
+        "failed": 0
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:42.926045",
+      "level": "info",
+      "message": "Auto-linking evidence to claims...",
+      "data": {
+        "event": "auto_linking_started",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9"
+      }
+    },
+    {
+      "timestamp": "2025-11-24T11:15:42.930552",
+      "level": "warning",
+      "message": "\u26a0\ufe0f Auto-linking failed: f-string: f-string: unmatched '[' (llm_classifier.py, line 382)",
+      "data": {
+        "event": "auto_linking_failed",
+        "doc_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+        "error": "f-string: f-string: unmatched '[' (llm_classifier.py, line 382)"
+      }
+    }
+  ],
+  "entry_count": 67,
+  "result": {
+    "document_id": "bb97b6f9-90ad-471e-a502-bfa5cc7196d9",
+    "filename": "children.pdf"
+  },
+  "error": null
+}

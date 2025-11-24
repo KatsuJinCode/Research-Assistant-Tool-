@@ -347,10 +347,11 @@ class AutoLinkingPipeline:
                     # Create relationship immediately
                     rel_type = 'SUPPORTED_BY' if relationship == 'SUPPORTS' else 'CONTRADICTED_BY'
 
-                    link_query = f"""
-                    MATCH (c:Claim {{id: $claim_id}})
-                    MATCH (e:Evidence {{id: $evidence_id}})
-                    MERGE (c)-[r:{rel_type} {{
+                    # Build query string without f-string to avoid bracket conflicts
+                    link_query = """
+                    MATCH (c:Claim {id: $claim_id})
+                    MATCH (e:Evidence {id: $evidence_id})
+                    MERGE (c)-[r:REL_TYPE {
                         auto_linked: true,
                         semantic_similarity: $similarity,
                         llm_confidence: $llm_confidence,
@@ -358,9 +359,9 @@ class AutoLinkingPipeline:
                         link_strength: $link_strength,
                         reasoning: $reasoning,
                         created_at: datetime()
-                    }}]->(e)
+                    }]->(e)
                     RETURN r
-                    """
+                    """.replace('REL_TYPE', rel_type)
 
                     result = self.db.execute_query(link_query, {
                         'claim_id': claim_id,
