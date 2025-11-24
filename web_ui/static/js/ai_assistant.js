@@ -378,7 +378,7 @@ const AIAssistant = {
     /**
      * Add user message to chat
      */
-    addUserMessage(text) {
+    addUserMessage(text, skipSave = false) {
         const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (!chatArea) return;
 
@@ -393,15 +393,17 @@ const AIAssistant = {
         chatArea.appendChild(messageDiv);
         this.scrollToBottom();
 
-        // Save to history
-        this.chatHistory.push({ type: 'user', text, timestamp: Date.now() });
-        this.saveChatHistory();
+        // Save to history (unless we're restoring from localStorage)
+        if (!skipSave) {
+            this.chatHistory.push({ type: 'user', text, timestamp: Date.now() });
+            this.saveChatHistory();
+        }
     },
 
     /**
      * Add AI message to chat
      */
-    addAIMessage(text, actions = null) {
+    addAIMessage(text, actions = null, skipSave = false) {
         const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (!chatArea) return;
 
@@ -436,9 +438,11 @@ const AIAssistant = {
         chatArea.appendChild(messageDiv);
         this.scrollToBottom();
 
-        // Save to history
-        this.chatHistory.push({ type: 'ai', text, actions, timestamp: Date.now() });
-        this.saveChatHistory();
+        // Save to history (unless we're restoring from localStorage)
+        if (!skipSave) {
+            this.chatHistory.push({ type: 'ai', text, actions, timestamp: Date.now() });
+            this.saveChatHistory();
+        }
     },
 
     /**
@@ -1343,9 +1347,9 @@ const AIAssistant = {
 
                     this.chatHistory.forEach(msg => {
                         if (msg.type === 'user') {
-                            this.addUserMessage(msg.text);
+                            this.addUserMessage(msg.text, true);  // skipSave=true when restoring
                         } else if (msg.type === 'ai') {
-                            this.addAIMessage(msg.text, msg.actions);
+                            this.addAIMessage(msg.text, msg.actions, true);  // skipSave=true when restoring
                         }
                     });
                 }

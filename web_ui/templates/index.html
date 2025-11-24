@@ -311,6 +311,24 @@
             background: #2196F3;
         }
 
+        /* AI Assistant Vertical Resize Handle */
+        .ai-assistant-resize-handle {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            cursor: ns-resize;
+            z-index: 100;
+            transition: background 0.2s;
+        }
+
+        .ai-assistant-resize-handle:hover,
+        .ai-assistant-resize-handle.resizing {
+            background: #2196F3;
+        }
+
         /* Tab content area (top section - scrollable) */
         .tab-content-area {
             flex: 1;
@@ -322,9 +340,11 @@
 
         /* AI Assistant - Fixed at bottom */
         .ai-assistant-bottom {
+            position: relative;
             flex: 0 0 auto;
-            max-height: 400px;
-            min-height: 60px;
+            max-height: 600px;
+            min-height: 100px;
+            height: 300px;
             background: #1a1a1a;
             border-top: 2px solid #2196F3;
             display: flex;
@@ -3696,6 +3716,7 @@
 
             <!-- AI Assistant - Fixed at Bottom of Sidebar -->
             <div class="ai-assistant-bottom" id="ai-assistant-bottom">
+                <div class="ai-assistant-resize-handle" id="ai-assistant-resize-handle"></div>
                 <div class="ai-assistant-header" style="cursor: default;">
                     <div style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;" onclick="toggleAIAssistant()">
                         <span style="font-size: 16px;">💬</span>
@@ -5829,6 +5850,48 @@
 
                 if (newWidth >= minWidth && newWidth <= maxWidth) {
                     sidebar.style.width = newWidth + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    handle.classList.remove('resizing');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+        })();
+
+        // AI Assistant Vertical Resize
+        (function initAIAssistantResize() {
+            const aiAssistant = document.getElementById('ai-assistant-bottom');
+            const handle = document.getElementById('ai-assistant-resize-handle');
+            let isResizing = false;
+            let startY = 0;
+            let startHeight = 0;
+
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = aiAssistant.offsetHeight;
+                handle.classList.add('resizing');
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+
+                const deltaY = startY - e.clientY;
+                const newHeight = startHeight + deltaY;
+                const minHeight = 100;
+                const maxHeight = 600;
+
+                if (newHeight >= minHeight && newHeight <= maxHeight) {
+                    aiAssistant.style.height = newHeight + 'px';
                 }
             });
 

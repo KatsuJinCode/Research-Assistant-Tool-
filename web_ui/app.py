@@ -3117,6 +3117,10 @@ def clear_all():
     """Clear all data from the database."""
     deleted_count = doc_repo.delete_all_nodes()
 
+    # Emit WebSocket event to update all clients
+    with app.app_context():
+        socketio.emit('graph_updated', {'reason': 'clear_all', 'deleted_count': deleted_count})
+
     return jsonify({
         'status': 'cleared',
         'message': f'All data cleared from database ({deleted_count} nodes deleted)'

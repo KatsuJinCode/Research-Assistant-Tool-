@@ -459,8 +459,12 @@ const GraphRenderer = {
 
                 const summary = d.fullData?.summary;
                 if (!summary && d.type !== 'document') {
-                    if (d.processing || d.fresh) {
+                    // Show different status based on processing state
+                    if (d.processing) {
                         return 'Processing...';
+                    }
+                    if (d.fresh) {
+                        return 'Waiting for processing';
                     }
                     console.warn('Claim missing summary:', d.id);
                     return 'Processing...';
@@ -930,6 +934,10 @@ const GraphRenderer = {
                 Object.assign(node.fullData, updates);
             }
             node.label = updates.summary || updates.text;
+
+            // Clear processing flags when claim is complete
+            node.fresh = false;
+            node.processing = false;
         }
 
         // Update SVG appearance with quality-based color
@@ -968,6 +976,28 @@ const GraphRenderer = {
             .text(truncated)
             .style('opacity', 1)
             .style('font-weight', '700');  // Bold when complete
+
+        // Remove processing overlay if present
+        const processingOverlay = svg.selectAll('g').filter(d => d && d.id === claimId)
+            .select('.processing-overlay');
+
+        if (!processingOverlay.empty()) {
+            processingOverlay.transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+        }
+
+        // Remove processing stage label
+        const stageLabel = svg.selectAll('g').filter(d => d && d.id === claimId)
+            .select('.processing-stage-label');
+
+        if (!stageLabel.empty()) {
+            stageLabel.transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+        }
 
         console.log('✓ Claim node updated to complete state');
     },
@@ -1023,6 +1053,45 @@ const GraphRenderer = {
         const node = this.currentGraphData.nodes.find(n => n.id === docId);
         if (node) {
             node.processing = false;
+
+            // Update the node label text to reflect completion
+            const label = svg.selectAll('text').filter(function() {
+                return d3.select(this).attr('data-node-id') === docId;
+            });
+
+            if (!label.empty()) {
+                // Recalculate label text based on updated node data
+                const summary = node.fullData?.summary;
+                let newText = node.label;
+                if (summary) {
+                    newText = summary.length > 25 ? summary.substring(0, 25) + '...' : summary;
+                } else if (node.type === 'document') {
+                    newText = node.label;
+                }
+                label.text(newText);
+            }
+
+            // Also remove processing overlay if present
+            const processingOverlay = svg.selectAll('g').filter(d => d && d.id === docId)
+                .select('.processing-overlay');
+
+            if (!processingOverlay.empty()) {
+                processingOverlay.transition()
+                    .duration(500)
+                    .attr('opacity', 0)
+                    .remove();
+            }
+
+            // Remove processing stage label
+            const stageLabel = svg.selectAll('g').filter(d => d && d.id === docId)
+                .select('.processing-stage-label');
+
+            if (!stageLabel.empty()) {
+                stageLabel.transition()
+                    .duration(500)
+                    .attr('opacity', 0)
+                    .remove();
+            }
         }
     },
 
