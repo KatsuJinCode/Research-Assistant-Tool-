@@ -1,0 +1,121 @@
+{
+  "agent_id": "document_processor_20251123_200640_0",
+  "agent_type": "document_processor",
+  "description": "Processing document: test_doc.txt",
+  "status": "failed",
+  "started_at": "2025-11-23T20:06:40.077808",
+  "completed_at": "2025-11-23T20:06:42.153626",
+  "duration_seconds": 2.075818,
+  "entries": [
+    {
+      "timestamp": "2025-11-23T20:06:40.077808",
+      "level": "info",
+      "message": "Started processing: test_doc.txt",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.118978",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\test_doc.txt",
+        "node_data": {
+          "id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+          "title": "test_doc.txt",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\test_doc.txt",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.118978",
+      "level": "info",
+      "message": "Extracting text from .TXT file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "file_type": ".txt"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.121487",
+      "level": "info",
+      "message": "Extracted 205 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "char_count": 205,
+        "file_type": ".txt"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.122487",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.123487",
+      "level": "info",
+      "message": "Preprocessed 202 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "char_count": 202
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.123487",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.143534",
+      "level": "info",
+      "message": "Document title: Untitled Document",
+      "data": {
+        "event": "title_extracted",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "title": "Untitled Document",
+        "node_update": {
+          "node_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+          "node_type": "document",
+          "updates": {
+            "title": "Untitled Document"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.145039",
+      "level": "info",
+      "message": "Extracting claims with AI...",
+      "data": {
+        "event": "claim_extraction_started",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T20:06:42.147548",
+      "level": "error",
+      "message": "ERROR: Claude Code agent failed to extract claims: 'NoneType' object is not subscriptable",
+      "data": {
+        "event": "claim_extraction_failed",
+        "doc_id": "963f98a3-339a-46a2-89d2-8df20ae0f2af",
+        "error": "'NoneType' object is not subscriptable"
+      }
+    }
+  ],
+  "entry_count": 10,
+  "result": null,
+  "error": "Error processing test_doc.txt: 'NoneType' object is not subscriptable"
+}

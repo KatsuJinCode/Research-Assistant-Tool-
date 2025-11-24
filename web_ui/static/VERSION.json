@@ -1,6 +1,6 @@
 {
-  "build_hash": "AI_FIX_20251123194142",
-  "timestamp": "2025-11-23T19:41:42.212225",
+  "build_hash": "EXCEPTION_FIX_20251123202800",
+  "timestamp": "2025-11-23T20:28:00.000000",
   "restart_count": 0,
-  "changes": "FIXED NoneType error in AI assistant - filtered out None values from selected_nodes"
+  "changes": "Fixed NoneType error with comprehensive exception handling and safety checks"
 }

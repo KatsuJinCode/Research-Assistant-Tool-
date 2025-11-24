@@ -197,6 +197,33 @@ No explanations, no markdown, no code blocks. Just raw JSON."""
                 # Otherwise, continue to next retry
                 continue
 
+            except Exception as e:
+                # Catch-all for unexpected exceptions (KeyError, TypeError, AttributeError, etc.)
+                last_error = str(e)
+                logger.error(f"{task_type}: Attempt {attempt+1} - UNEXPECTED EXCEPTION: {type(e).__name__}: {e}", exc_info=True)
+
+                # If this was the last attempt, raise the error
+                if attempt == max_retries - 1:
+                    error_msg = (
+                        f"❌ AGENT ERROR ({task_type}): Unexpected error after {max_retries} attempts.\n\n"
+                        f"Exception type: {type(e).__name__}\n"
+                        f"Error: {last_error}\n\n"
+                        f"Last response:\n{last_response_text[:300] if last_response_text else 'No response'}..."
+                    )
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg) from e
+
+                # Otherwise, continue to next retry
+                continue
+
+        # SAFETY: Should never reach here - for loop should always return or raise
+        # If we get here, it means all retries failed but didn't raise properly
+        error_msg = f"CRITICAL BUG: {task_type} completed retry loop without returning or raising"
+        logger.error(error_msg)
+        logger.error(f"last_error: {last_error}")
+        logger.error(f"last_response_text: {last_response_text[:500] if last_response_text else 'None'}")
+        raise RuntimeError(error_msg)
+
     def _extract_json_from_response(self, text: str, task_type: str) -> Dict[str, Any]:
         """
         Robust JSON extraction - tries multiple strategies to find JSON in response.
@@ -569,6 +596,15 @@ CRITICAL MECE (Mutually Exclusive, Comprehensively Exhaustive) Requirements:
 Extract 20-50 claims to ensure comprehensive coverage. Quality over speed - we want ALL substantive content."""
 
         result = self._invoke_agent_with_structured_output(agent_prompt, expected_schema, "flat-claim-extraction")
+
+        # Defensive check - should never be None due to type signature, but check anyway
+        if result is None:
+            error_msg = "CRITICAL: _invoke_agent_with_structured_output returned None (should be impossible)"
+            logger.error(error_msg)
+            logger.error(f"Agent prompt was: {agent_prompt[:200]}...")
+            logger.error(f"Expected schema: {expected_schema}")
+            raise RuntimeError(error_msg)
+
         claims = result.get('claims', [])
 
         if not isinstance(claims, list):
@@ -1562,7 +1598,10 @@ Find the main title/heading at the top of the document. Return just the title te
             logger.info(f"✓ Extracted {len(claims_list)} claims (flat structure)")
         except Exception as e:
             error_msg = f"Claude Code agent failed to extract claims: {str(e)}"
-            logger.error(error_msg)
+            logger.error(error_msg, exc_info=True)  # Log full traceback
+            logger.error(f"Full exception details: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
             self._emit(f"ERROR: {error_msg}", 30, {
                 'event': 'claim_extraction_failed',
                 'doc_id': doc_id,

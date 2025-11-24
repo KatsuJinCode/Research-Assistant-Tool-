@@ -1,0 +1,121 @@
+{
+  "agent_id": "document_processor_20251123_195351_1",
+  "agent_type": "document_processor",
+  "description": "Processing document: children.pdf",
+  "status": "failed",
+  "started_at": "2025-11-23T19:53:51.814586",
+  "completed_at": "2025-11-23T19:53:53.956324",
+  "duration_seconds": 2.141738,
+  "entries": [
+    {
+      "timestamp": "2025-11-23T19:53:51.815593",
+      "level": "info",
+      "message": "Started processing: children.pdf",
+      "data": {}
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.877929",
+      "level": "info",
+      "message": "Creating document node...",
+      "data": {
+        "event": "document_created",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "file_path": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+        "node_data": {
+          "id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+          "title": "children.pdf",
+          "source_file": "C:\\Users\\jpswi\\Research-Assistant-Tool-\\web_ui\\uploads\\children.pdf",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.878932",
+      "level": "info",
+      "message": "Extracting text from .PDF file...",
+      "data": {
+        "event": "text_extraction_started",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.926197",
+      "level": "info",
+      "message": "Extracted 280 characters",
+      "data": {
+        "event": "text_extracted",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "char_count": 280,
+        "file_type": ".pdf"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.927701",
+      "level": "info",
+      "message": "Cleaning extracted text...",
+      "data": {
+        "event": "text_preprocessing_started",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.928705",
+      "level": "info",
+      "message": "Preprocessed 279 characters",
+      "data": {
+        "event": "text_preprocessed",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "char_count": 279
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.929705",
+      "level": "info",
+      "message": "Extracting document title...",
+      "data": {
+        "event": "title_extraction_started",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.943795",
+      "level": "info",
+      "message": "Document title: Untitled Document",
+      "data": {
+        "event": "title_extracted",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "title": "Untitled Document",
+        "node_update": {
+          "node_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+          "node_type": "document",
+          "updates": {
+            "title": "Untitled Document"
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.945300",
+      "level": "info",
+      "message": "Extracting claims with AI...",
+      "data": {
+        "event": "claim_extraction_started",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8"
+      }
+    },
+    {
+      "timestamp": "2025-11-23T19:53:53.948812",
+      "level": "error",
+      "message": "ERROR: Claude Code agent failed to extract claims: 'NoneType' object is not subscriptable",
+      "data": {
+        "event": "claim_extraction_failed",
+        "doc_id": "ebf6b5dc-0ce1-449a-a4d4-daaa9ecf45f8",
+        "error": "'NoneType' object is not subscriptable"
+      }
+    }
+  ],
+  "entry_count": 10,
+  "result": null,
+  "error": "Error processing children.pdf: 'NoneType' object is not subscriptable"
+}
