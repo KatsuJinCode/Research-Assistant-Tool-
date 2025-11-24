@@ -690,6 +690,103 @@ const App = {
             });
         }
 
+        // Generic override control handlers (for all fields) using event delegation
+        document.addEventListener('click', (e) => {
+            // Toggle override controls
+            if (e.target.classList.contains('override-toggle-btn')) {
+                const field = e.target.dataset.field;
+                const controls = e.target.parentElement.querySelector(`.override-controls[data-field="${field}"]`);
+                if (controls) {
+                    controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+                }
+            }
+
+            // Apply override
+            if (e.target.classList.contains('apply-override-btn')) {
+                const field = e.target.dataset.field;
+                const slider = e.target.closest('.override-controls').querySelector(`.override-slider[data-field="${field}"]`);
+                const claimId = document.getElementById('detail-panel').dataset.claimId;
+
+                if (!claimId || !slider) return;
+
+                const overrideValue = parseInt(slider.value) / 100;
+
+                // Map field name to API endpoint and property name
+                const fieldMap = {
+                    'confidence': { endpoint: 'override-confidence', property: 'confidence', aiProperty: 'ai_confidence' },
+                    'quality-score': { endpoint: 'override-quality-score', property: 'quality_score', aiProperty: 'ai_quality_score' },
+                    'specificity': { endpoint: 'override-specificity', property: 'specificity', aiProperty: 'ai_specificity' },
+                    'strength': { endpoint: 'override-strength', property: 'strength', aiProperty: 'ai_strength' },
+                    'investigation-value': { endpoint: 'override-investigation-value', property: 'investigation_value', aiProperty: 'ai_investigation_value' }
+                };
+
+                const fieldConfig = fieldMap[field];
+                if (!fieldConfig) return;
+
+                fetch(`/api/claim/${claimId}/${fieldConfig.endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [fieldConfig.property]: overrideValue })
+                })
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to apply override'))
+                .then(async () => {
+                    // Show reset button
+                    const resetBtn = e.target.closest('.override-controls').querySelector('.reset-override-btn');
+                    if (resetBtn) resetBtn.style.display = 'block';
+
+                    // Reload graph and details
+                    await App.loadGraph();
+
+                    UI.showNotification(`${field.replace(/-/g, ' ')} override applied`, 'success', 3000);
+                })
+                .catch(error => {
+                    console.error(`Error applying ${field} override:`, error);
+                    UI.showNotification(`Failed to apply ${field.replace(/-/g, ' ')} override`, 'error', 5000);
+                });
+            }
+
+            // Reset override
+            if (e.target.classList.contains('reset-override-btn')) {
+                const field = e.target.dataset.field;
+                const claimId = document.getElementById('detail-panel').dataset.claimId;
+
+                if (!claimId) return;
+
+                // Map field name to API endpoint
+                const fieldMap = {
+                    'confidence': 'reset-confidence',
+                    'quality-score': 'reset-quality-score',
+                    'specificity': 'reset-specificity',
+                    'strength': 'reset-strength',
+                    'investigation-value': 'reset-investigation-value'
+                };
+
+                const endpoint = fieldMap[field];
+                if (!endpoint) return;
+
+                fetch(`/api/claim/${claimId}/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to reset override'))
+                .then(async () => {
+                    // Hide reset button and collapse controls
+                    e.target.style.display = 'none';
+                    const controls = e.target.closest('.override-controls');
+                    if (controls) controls.style.display = 'none';
+
+                    // Reload graph and details
+                    await App.loadGraph();
+
+                    UI.showNotification(`${field.replace(/-/g, ' ')} reset to AI value`, 'success', 3000);
+                })
+                .catch(error => {
+                    console.error(`Error resetting ${field} override:`, error);
+                    UI.showNotification(`Failed to reset ${field.replace(/-/g, ' ')}`, 'error', 5000);
+                });
+            }
+        });
+
         console.log('✓ Event listeners setup complete');
     },
 

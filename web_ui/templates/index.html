@@ -3916,13 +3916,13 @@
                     <div class="detail-subtitle">🔍 Provenance</div>
                     <div class="detail-item">
                         <div id="provenance-created-by" style="margin-bottom: 8px;">
-                            <strong>Created by:</strong> <span id="provenance-creator">-</span>
+                            <strong style="color: #333; font-weight: 600;">Created by:</strong> <span id="provenance-creator">-</span>
                         </div>
                         <div id="provenance-discovered-by" style="margin-bottom: 8px; display:none;">
-                            <strong>Discovered by:</strong> <span id="provenance-discoverer">-</span>
+                            <strong style="color: #333; font-weight: 600;">Discovered by:</strong> <span id="provenance-discoverer">-</span>
                         </div>
                         <div id="provenance-lineage" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444; display:none;">
-                            <strong style="font-size: 11px; color: #999;">Lineage Chain:</strong>
+                            <strong style="font-size: 11px; color: #666; font-weight: 600;">Lineage Chain:</strong>
                             <div id="provenance-lineage-list" style="margin-top: 8px; font-size: 12px;"></div>
                         </div>
                     </div>
@@ -5940,12 +5940,17 @@
         function investigateClaim(type) {
             // Get selected claim ID from graph renderer
             if (!GraphRenderer.selectedNodeIds || GraphRenderer.selectedNodeIds.size === 0) {
-                alert('No claim selected. Please select a claim first.');
+                alert('⚠️ No claim selected. Please select a claim first.');
                 return;
             }
 
             const selectedNodes = Array.from(GraphRenderer.selectedNodeIds);
             const selectedClaimId = selectedNodes[0]; // Use first selected node
+
+            // Get claim summary for better user feedback
+            const claimNode = GraphRenderer.graph.nodes.find(n => n.id === selectedClaimId);
+            const claimSummary = claimNode ? (claimNode.summary || claimNode.text || selectedClaimId) : selectedClaimId;
+            const displayText = claimSummary.length > 80 ? claimSummary.substring(0, 80) + '...' : claimSummary;
 
             // Make API call to start investigation
             fetch('/api/investigate-claim', {
@@ -5959,13 +5964,21 @@
             .then(r => r.json())
             .then(result => {
                 if (result.error) {
-                    alert('Error starting investigation: ' + result.error);
+                    alert('❌ Error starting investigation: ' + result.error);
                 } else {
-                    alert(`Investigation started!\n\nType: ${type}\nClaim: ${selectedClaimId}\n\nCheck the Background Agents panel to monitor progress.`);
+                    // Use notification instead of alert for success
+                    const typeLabel = type === 'support' ? 'Supporting Evidence' : 'Contradicting Evidence';
+                    UI.showNotification(`🔬 Investigation started: ${typeLabel}\n📋 Claim: ${displayText}`, 'success', 5000);
+
+                    // Open Background Agents tab to show visual feedback
+                    const agentsTabBtn = document.querySelector('[data-tab="background-agents"]');
+                    if (agentsTabBtn) {
+                        agentsTabBtn.click();
+                    }
                 }
             })
             .catch(err => {
-                alert('Error starting investigation: ' + err.message);
+                alert('❌ Error starting investigation: ' + err.message);
             });
         }
 

@@ -323,6 +323,286 @@ def reset_claim_confidence(claim_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/claim/<claim_id>/override-quality-score', methods=['POST'])
+def override_claim_quality_score(claim_id):
+    """Allow user to manually override the AI-calculated quality score."""
+    data = request.json
+    user_quality_score = data.get('quality_score')
+
+    if user_quality_score is None or not (0 <= user_quality_score <= 1):
+        return jsonify({'error': 'quality_score must be between 0 and 1'}), 400
+
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        SET c.user_quality_score_override = $user_quality_score
+        SET c.quality_override_timestamp = datetime()
+        RETURN c.quality_score as ai_quality_score, c.user_quality_score_override as user_override
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'user_quality_score': user_quality_score
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_quality_score': result[0]['ai_quality_score'],
+                'user_override': result[0]['user_override']
+            })
+        else:
+            return jsonify({'error': 'Failed to update claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error setting quality score override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/reset-quality-score', methods=['POST'])
+def reset_claim_quality_score(claim_id):
+    """Reset claim quality score to AI-calculated value (remove user override)."""
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        REMOVE c.user_quality_score_override
+        REMOVE c.quality_override_timestamp
+        RETURN c.quality_score as ai_quality_score
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_quality_score': result[0]['ai_quality_score']
+            })
+        else:
+            return jsonify({'error': 'Failed to reset claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting quality score override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/override-specificity', methods=['POST'])
+def override_claim_specificity(claim_id):
+    """Allow user to manually override the AI-calculated specificity."""
+    data = request.json
+    user_specificity = data.get('specificity')
+
+    if user_specificity is None or not (0 <= user_specificity <= 1):
+        return jsonify({'error': 'specificity must be between 0 and 1'}), 400
+
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        SET c.user_specificity_override = $user_specificity
+        SET c.specificity_override_timestamp = datetime()
+        RETURN c.specificity as ai_specificity, c.user_specificity_override as user_override
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'user_specificity': user_specificity
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_specificity': result[0]['ai_specificity'],
+                'user_override': result[0]['user_override']
+            })
+        else:
+            return jsonify({'error': 'Failed to update claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error setting specificity override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/reset-specificity', methods=['POST'])
+def reset_claim_specificity(claim_id):
+    """Reset claim specificity to AI-calculated value (remove user override)."""
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        REMOVE c.user_specificity_override
+        REMOVE c.specificity_override_timestamp
+        RETURN c.specificity as ai_specificity
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_specificity': result[0]['ai_specificity']
+            })
+        else:
+            return jsonify({'error': 'Failed to reset claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting specificity override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/override-strength', methods=['POST'])
+def override_claim_strength(claim_id):
+    """Allow user to manually override the AI-calculated strength."""
+    data = request.json
+    user_strength = data.get('strength')
+
+    if user_strength is None or not (0 <= user_strength <= 1):
+        return jsonify({'error': 'strength must be between 0 and 1'}), 400
+
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        SET c.user_strength_override = $user_strength
+        SET c.strength_override_timestamp = datetime()
+        RETURN c.strength as ai_strength, c.user_strength_override as user_override
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'user_strength': user_strength
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_strength': result[0]['ai_strength'],
+                'user_override': result[0]['user_override']
+            })
+        else:
+            return jsonify({'error': 'Failed to update claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error setting strength override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/reset-strength', methods=['POST'])
+def reset_claim_strength(claim_id):
+    """Reset claim strength to AI-calculated value (remove user override)."""
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        REMOVE c.user_strength_override
+        REMOVE c.strength_override_timestamp
+        RETURN c.strength as ai_strength
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_strength': result[0]['ai_strength']
+            })
+        else:
+            return jsonify({'error': 'Failed to reset claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting strength override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/override-investigation-value', methods=['POST'])
+def override_investigation_value(claim_id):
+    """Allow user to manually override the AI-calculated investigation value."""
+    data = request.json
+    user_investigation_value = data.get('investigation_value')
+
+    if user_investigation_value is None or not (0 <= user_investigation_value <= 1):
+        return jsonify({'error': 'investigation_value must be between 0 and 1'}), 400
+
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        SET c.user_investigation_value_override = $user_investigation_value
+        SET c.investigation_override_timestamp = datetime()
+        RETURN c.investigation_value as ai_investigation_value, c.user_investigation_value_override as user_override
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id,
+            'user_investigation_value': user_investigation_value
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_investigation_value': result[0]['ai_investigation_value'],
+                'user_override': result[0]['user_override']
+            })
+        else:
+            return jsonify({'error': 'Failed to update claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error setting investigation value override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/claim/<claim_id>/reset-investigation-value', methods=['POST'])
+def reset_investigation_value(claim_id):
+    """Reset investigation value to AI-calculated value (remove user override)."""
+    claim = claim_repo.get_claim(claim_id)
+    if not claim:
+        return jsonify({'error': 'Claim not found'}), 404
+
+    try:
+        query = """
+        MATCH (c:Claim {id: $claim_id})
+        REMOVE c.user_investigation_value_override
+        REMOVE c.investigation_override_timestamp
+        RETURN c.investigation_value as ai_investigation_value
+        """
+        result = db.execute_query(query, {
+            'claim_id': claim_id
+        })
+
+        if result:
+            return jsonify({
+                'status': 'success',
+                'ai_investigation_value': result[0]['ai_investigation_value']
+            })
+        else:
+            return jsonify({'error': 'Failed to reset claim'}), 500
+
+    except Exception as e:
+        logger.error(f"Error resetting investigation value override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/claim/<claim_id>/evidence/<evidence_id>', methods=['DELETE'])
 def remove_evidence(claim_id, evidence_id):
     """Remove an evidence link from a claim and recalculate confidence."""

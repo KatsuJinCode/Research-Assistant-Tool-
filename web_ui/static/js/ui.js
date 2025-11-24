@@ -17,86 +17,170 @@ const UI = {
             const detailTitle = document.getElementById('detail-claim-text');
 
             // Calculate metrics that drive visual encoding
-            const confidence = claim.confidence || claim.quality_score || 0.5;
+            const hasRealConfidence = claim.confidence !== undefined && claim.confidence !== null;
+            const confidence = hasRealConfidence ? claim.confidence : (claim.quality_score || null);
             const childCount = claim.children ? claim.children.length : 0;
             const evidenceCount = claim.evidence ? claim.evidence.length : 0;
             const supportingEvidence = claim.evidence ? claim.evidence.filter(e => e.type === 'SUPPORTS').length : 0;
             const contradictingEvidence = claim.evidence ? claim.evidence.filter(e => e.type === 'CONTRADICTS').length : 0;
-            const specificity = claim.specificity || 0.5;
+            const hasRealSpecificity = claim.specificity !== undefined && claim.specificity !== null;
+            const specificity = hasRealSpecificity ? claim.specificity : null;
+            const hasRealStrength = claim.strength !== undefined && claim.strength !== null;
+            const strength = hasRealStrength ? claim.strength : null;
 
             // Pre-calculate formatted values
             const nodeSize = this.calculateNodeSize(childCount);
-            const specificityLabel = this.getSpecificityLabel(specificity);
+            const specificityLabel = specificity !== null ? this.getSpecificityLabel(specificity) : 'Not analyzed';
 
             // Get real values from claim data
             const qualityScore = claim.quality_score || 0;
-            const timestamp = claim.created_at || claim.timestamp || 'Unknown';
-            const formattedTime = timestamp !== 'Unknown' ? new Date(timestamp).toLocaleString() : 'Unknown';
-            const investigationValue = claim.investigation_priority || claim.investigation_value || 'Not assessed';
+            const timestamp = claim.created_at || claim.timestamp || null;
+            const formattedTime = timestamp ? new Date(timestamp).toLocaleString() : null;
+            const investigationValue = claim.investigation_priority || claim.investigation_value || null;
 
             // Build clean detail panel
             let detailsHTML = `
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 12px;">
                     <!-- Summary (only shown once, at top) -->
-                    <h3 style="margin-bottom: 15px; line-height: 1.4;">${claim.summary || claim.text || 'Claim'}</h3>
+                    <h3 style="margin-bottom: 10px; line-height: 1.3; font-size: 16px;">${claim.summary || claim.text || 'Claim'}</h3>
 
                     <!-- Metrics Dashboard (User-Friendly) -->
-                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <h4 style="margin-top: 0; margin-bottom: 12px; color: #555;">Assessment</h4>
+                    <div style="background: #f5f5f5; padding: 8px; border-radius: 6px; margin-bottom: 10px;">
+                        <h4 style="margin-top: 0; margin-bottom: 8px; color: #555; font-size: 13px;">Assessment</h4>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
                             <!-- Confidence -->
-                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3;">
-                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Confidence</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(confidence * 100).toFixed(0)}%</div>
-                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    How certain we are this claim is accurate
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #2196F3;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Confidence</div>
+                                <div style="font-size: 18px; font-weight: bold; color: ${confidence !== null ? '#333' : '#999'};">
+                                    ${confidence !== null ? (confidence * 100).toFixed(0) + '%' : '<span style="font-size: 14px;">Not yet assessed</span>'}
+                                </div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    ${confidence !== null ? 'How certain the AI is' : '→ Upload document to assess'}
+                                </div>
+                                <button class="override-toggle-btn" data-field="confidence" style="margin-top: 6px; font-size: 9px; color: #2196F3; background: none; border: none; cursor: pointer; padding: 0; text-align: left;">✎ Adjust</button>
+                                <div class="override-controls" data-field="confidence" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee;">
+                                    <input type="range" class="override-slider" data-field="confidence" min="0" max="100" value="${confidence !== null ? (confidence * 100).toFixed(0) : 50}" style="width: 100%; height: 4px;">
+                                    <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                        <button class="apply-override-btn" data-field="confidence" style="flex: 1; background: #2196F3; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; margin-right: 3px;">Apply</button>
+                                        <button class="reset-override-btn" data-field="confidence" style="flex: 1; background: #999; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; display: none;">Reset</button>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Quality Score -->
-                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Quality Score</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">${(qualityScore * 100).toFixed(0)}%</div>
-                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    Overall quality and clarity of the claim
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #4CAF50;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Quality Score</div>
+                                <div style="font-size: 18px; font-weight: bold; color: ${qualityScore > 0 ? '#333' : '#999'};">
+                                    ${qualityScore > 0 ? (qualityScore * 100).toFixed(0) + '%' : '<span style="font-size: 14px;">Not yet assessed</span>'}
+                                </div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    ${qualityScore > 0 ? 'Overall quality rating' : '→ Upload document to assess'}
+                                </div>
+                                <button class="override-toggle-btn" data-field="quality-score" style="margin-top: 6px; font-size: 9px; color: #4CAF50; background: none; border: none; cursor: pointer; padding: 0; text-align: left;">✎ Adjust</button>
+                                <div class="override-controls" data-field="quality-score" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee;">
+                                    <input type="range" class="override-slider" data-field="quality-score" min="0" max="100" value="${qualityScore > 0 ? (qualityScore * 100).toFixed(0) : 50}" style="width: 100%; height: 4px;">
+                                    <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                        <button class="apply-override-btn" data-field="quality-score" style="flex: 1; background: #4CAF50; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; margin-right: 3px;">Apply</button>
+                                        <button class="reset-override-btn" data-field="quality-score" style="flex: 1; background: #999; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; display: none;">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Specificity -->
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #9C27B0;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Specificity</div>
+                                <div style="font-size: 18px; font-weight: bold; color: ${specificity !== null ? '#333' : '#999'};">
+                                    ${specificity !== null ? (specificity * 100).toFixed(0) + '%' : '<span style="font-size: 14px;">Not analyzed</span>'}
+                                </div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    ${specificity !== null ? 'How specific vs general' : '→ Run analysis to calculate'}
+                                </div>
+                                <button class="override-toggle-btn" data-field="specificity" style="margin-top: 6px; font-size: 9px; color: #9C27B0; background: none; border: none; cursor: pointer; padding: 0; text-align: left;">✎ Adjust</button>
+                                <div class="override-controls" data-field="specificity" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee;">
+                                    <input type="range" class="override-slider" data-field="specificity" min="0" max="100" value="${specificity !== null ? (specificity * 100).toFixed(0) : 50}" style="width: 100%; height: 4px;">
+                                    <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                        <button class="apply-override-btn" data-field="specificity" style="flex: 1; background: #9C27B0; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; margin-right: 3px;">Apply</button>
+                                        <button class="reset-override-btn" data-field="specificity" style="flex: 1; background: #999; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; display: none;">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Strength -->
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #FF9800;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Strength</div>
+                                <div style="font-size: 18px; font-weight: bold; color: ${strength !== null ? '#333' : '#999'};">
+                                    ${strength !== null ? (strength * 100).toFixed(0) + '%' : '<span style="font-size: 14px;">Not analyzed</span>'}
+                                </div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    ${strength !== null ? 'Claim assertiveness' : '→ Run analysis to calculate'}
+                                </div>
+                                <button class="override-toggle-btn" data-field="strength" style="margin-top: 6px; font-size: 9px; color: #FF9800; background: none; border: none; cursor: pointer; padding: 0; text-align: left;">✎ Adjust</button>
+                                <div class="override-controls" data-field="strength" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee;">
+                                    <input type="range" class="override-slider" data-field="strength" min="0" max="100" value="${strength !== null ? (strength * 100).toFixed(0) : 50}" style="width: 100%; height: 4px;">
+                                    <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                        <button class="apply-override-btn" data-field="strength" style="flex: 1; background: #FF9800; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; margin-right: 3px;">Apply</button>
+                                        <button class="reset-override-btn" data-field="strength" style="flex: 1; background: #999; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; display: none;">Reset</button>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Sub-Claims -->
-                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #9C27B0;">
-                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Sub-Claims</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">${childCount}</div>
-                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    More specific claims derived from this one
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #3F51B5;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Sub-Claims</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #333;">${childCount}</div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    More specific derived claims
                                 </div>
                             </div>
 
                             <!-- Evidence -->
-                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #FF9800;">
-                                <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Evidence</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #333;">${evidenceCount}</div>
-                                <div style="font-size: 10px; color: #888; margin-top: 2px;">
-                                    <span style="color: #4CAF50;">✓ ${supportingEvidence} support</span> /
-                                    <span style="color: #F44336;">✗ ${contradictingEvidence} contradict</span>
+                            <div style="background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #00BCD4;">
+                                <div style="font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 3px;">Evidence</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #333;">${evidenceCount}</div>
+                                <div style="font-size: 9px; color: #888; margin-top: 2px;">
+                                    <span style="color: #4CAF50;">✓${supportingEvidence}</span> / <span style="color: #F44336;">✗${contradictingEvidence}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Full Original Text -->
-                    ${claim.text && claim.text !== claim.summary ? `
-                        <div style="background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #ff9800;">
-                            <strong style="color: #856404;">Original Text:</strong>
-                            <div style="margin-top: 6px; color: #856404; font-size: 14px;">${claim.text}</div>
+                    ${claim.text ? `
+                        <div style="background: #fff3cd; padding: 6px; border-radius: 3px; margin-bottom: 8px; border-left: 3px solid #ff9800;">
+                            <strong style="color: #856404; font-size: 10px;">Full Original Text:</strong>
+                            <div style="margin-top: 3px; color: #856404; font-size: 12px; line-height: 1.3;">${claim.text}</div>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div style="background: #f5f5f5; padding: 6px; border-radius: 3px; margin-bottom: 8px; border-left: 3px solid #999;">
+                            <strong style="color: #666; font-size: 10px;">Full Original Text:</strong>
+                            <div style="margin-top: 3px; color: #999; font-size: 11px; font-style: italic;">
+                                Not available - this claim may have been derived or summarized without preserving the original text
+                            </div>
+                        </div>
+                    `}
 
                     <!-- Metadata -->
-                    <div style="font-size: 12px; color: #666; margin-bottom: 15px;">
-                        <div style="margin-bottom: 5px;"><strong>Created:</strong> ${formattedTime}</div>
-                        <div style="margin-bottom: 5px;"><strong>Investigation Priority:</strong> ${investigationValue}</div>
-                        ${claim.disposition ? `<div><strong>Disposition:</strong> ${claim.disposition}</div>` : ''}
+                    <div style="font-size: 10px; color: #666; margin-bottom: 8px; line-height: 1.4;">
+                        <div style="margin-bottom: 3px;">
+                            <strong>Timestamp:</strong> ${formattedTime || '<span style="color: #999; font-style: italic;">Not recorded</span>'}
+                        </div>
+                        <div style="margin-bottom: 3px;">
+                            <strong>Investigation Value:</strong> ${investigationValue || '<span style="color: #999; font-style: italic;">Not yet prioritized → Run investigation</span>'}
+                            <button class="override-toggle-btn" data-field="investigation-value" style="margin-left: 8px; font-size: 9px; color: #FF5722; background: none; border: none; cursor: pointer; padding: 0;">✎ Adjust</button>
+                            <div class="override-controls" data-field="investigation-value" style="display: none; margin-top: 6px; padding: 6px; background: #f9f9f9; border-radius: 3px;">
+                                <input type="range" class="override-slider" data-field="investigation-value" min="0" max="100" value="${investigationValue ? (investigationValue * 100).toFixed(0) : 50}" style="width: 100%; height: 4px;">
+                                <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                    <button class="apply-override-btn" data-field="investigation-value" style="flex: 1; background: #FF5722; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; margin-right: 3px;">Apply</button>
+                                    <button class="reset-override-btn" data-field="investigation-value" style="flex: 1; background: #999; color: white; border: none; padding: 4px; font-size: 9px; border-radius: 3px; cursor: pointer; display: none;">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        ${claim.disposition ? `
+                            <div title="Status or categorization of this claim">
+                                <strong>Status:</strong> <span style="color: #2196F3;">${claim.disposition}</span>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -104,12 +188,12 @@ const UI = {
             // Child Claims
             if (claim.children && claim.children.length > 0) {
                 detailsHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <h4 style="margin-bottom: 8px;">Child Claims (${claim.children.length})</h4>
-                        <ul style="margin: 0; padding-left: 20px;">
+                    <div style="margin-bottom: 10px;">
+                        <h4 style="margin-bottom: 5px; font-size: 13px;">Child Claims (${claim.children.length})</h4>
+                        <ul style="margin: 0; padding-left: 15px;">
                 `;
                 claim.children.forEach(child => {
-                    detailsHTML += `<li style="margin-bottom: 5px;">${child.summary || child.text}</li>`;
+                    detailsHTML += `<li style="margin-bottom: 3px; font-size: 12px;">${child.summary || child.text}</li>`;
                 });
                 detailsHTML += `</ul></div>`;
             }
@@ -117,17 +201,17 @@ const UI = {
             // Evidence Details
             if (claim.evidence && claim.evidence.length > 0) {
                 detailsHTML += `
-                    <div style="margin-bottom: 15px;">
-                        <h4 style="margin-bottom: 8px;">Evidence (${claim.evidence.length})</h4>
+                    <div style="margin-bottom: 10px;">
+                        <h4 style="margin-bottom: 5px; font-size: 13px;">Evidence (${claim.evidence.length})</h4>
                 `;
 
                 // Supporting Evidence
                 const supporting = claim.evidence.filter(e => e.type === 'SUPPORTS');
                 if (supporting.length > 0) {
                     detailsHTML += `
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #4CAF50;">Supporting (${supporting.length}):</strong>
-                            <ul style="margin: 5px 0 0 20px; padding: 0; list-style: none;">
+                        <div style="margin-bottom: 6px;">
+                            <strong style="color: #4CAF50; font-size: 11px;">Supporting (${supporting.length}):</strong>
+                            <ul style="margin: 3px 0 0 15px; padding: 0; list-style: none;">
                     `;
                     supporting.forEach(ev => {
                         detailsHTML += `
@@ -148,8 +232,8 @@ const UI = {
                 if (contradicting.length > 0) {
                     detailsHTML += `
                         <div>
-                            <strong style="color: #F44336;">Contradicting (${contradicting.length}):</strong>
-                            <ul style="margin: 5px 0 0 20px; padding: 0; list-style: none;">
+                            <strong style="color: #F44336; font-size: 11px;">Contradicting (${contradicting.length}):</strong>
+                            <ul style="margin: 3px 0 0 15px; padding: 0; list-style: none;">
                     `;
                     contradicting.forEach(ev => {
                         detailsHTML += `
@@ -607,6 +691,12 @@ const UI = {
             if (provenance.created_by && provenance.created_by.actor) {
                 let creatorHTML = `<span style="color: #2196F3; font-weight: bold;">${provenance.created_by.actor}</span>`;
 
+                // Add timestamp if available
+                if (provenance.created_by.timestamp) {
+                    const createdDate = new Date(provenance.created_by.timestamp);
+                    creatorHTML += `<span style="font-size: 10px; color: #666; margin-left: 6px;">(${createdDate.toLocaleString()})</span>`;
+                }
+
                 // Add clickable agent link if available
                 if (provenance.created_by.agent_id && provenance.created_by.agent_transcript_available) {
                     creatorHTML += ` <a href="#" onclick="UI.showAgentTranscript('${provenance.created_by.agent_id}'); return false;"
@@ -630,6 +720,12 @@ const UI = {
                 const discovererSpan = document.getElementById('provenance-discoverer');
 
                 let discovererHTML = `<span style="color: #FF9800; font-weight: bold;">${provenance.discovered_by.actor}</span>`;
+
+                // Add timestamp if available
+                if (provenance.discovered_by.timestamp) {
+                    const discoveredDate = new Date(provenance.discovered_by.timestamp);
+                    discovererHTML += `<span style="font-size: 10px; color: #666; margin-left: 6px;">(${discoveredDate.toLocaleString()})</span>`;
+                }
 
                 // Add clickable agent link if available
                 if (provenance.discovered_by.agent_id && provenance.discovered_by.agent_transcript_available) {
