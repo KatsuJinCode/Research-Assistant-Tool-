@@ -53,14 +53,10 @@ const AIAssistant = {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Send button
-        const sendBtn = document.getElementById('ai-send-btn');
-        if (sendBtn) {
-            sendBtn.addEventListener('click', () => this.sendMessage());
-        }
+        // Send button (no need for listener, using inline onclick)
 
-        // Input field - Enter key
-        const input = document.getElementById('ai-input');
+        // Input field - Enter key (new bottom panel)
+        const input = document.getElementById('ai-input-bottom');
         if (input) {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -118,7 +114,7 @@ const AIAssistant = {
      * User can edit the prompt before sending
      */
     fillPrompt(promptText) {
-        const input = document.getElementById('ai-input');
+        const input = document.getElementById('ai-input-bottom');
         if (!input) return;
 
         // Fill the input with the suggested prompt
@@ -135,7 +131,7 @@ const AIAssistant = {
      * Send user message
      */
     sendMessage() {
-        const input = document.getElementById('ai-input');
+        const input = document.getElementById('ai-input-bottom');
         if (!input) return;
 
         const message = input.value.trim();
@@ -383,14 +379,15 @@ const AIAssistant = {
      * Add user message to chat
      */
     addUserMessage(text) {
-        const chatArea = document.getElementById('ai-chat-area');
+        const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (!chatArea) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.className = 'ai-message user';
+        messageDiv.style.cssText = 'padding: 8px; background: rgba(33, 150, 243, 0.2); border-radius: 4px; margin-bottom: 8px; font-size: 11px; color: white;';
         messageDiv.innerHTML = `
             <div>${this.escapeHtml(text)}</div>
-            <div class="ai-message-time">${this.getTimeStamp()}</div>
+            <div style="font-size: 9px; color: #999; margin-top: 4px;">${this.getTimeStamp()}</div>
         `;
 
         chatArea.appendChild(messageDiv);
@@ -405,11 +402,12 @@ const AIAssistant = {
      * Add AI message to chat
      */
     addAIMessage(text, actions = null) {
-        const chatArea = document.getElementById('ai-chat-area');
+        const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (!chatArea) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.className = 'ai-message ai';
+        messageDiv.style.cssText = 'padding: 8px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid #2196F3; border-radius: 4px; margin-bottom: 8px; font-size: 11px; color: #ccc;';
 
         // Convert markdown-like formatting
         const formattedText = this.formatText(text);
@@ -420,11 +418,11 @@ const AIAssistant = {
 
         // Add action buttons if provided
         if (actions && actions.length > 0) {
-            html += '<div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">';
+            html += '<div style="display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;">';
             actions.forEach(action => {
                 html += `
                     <button onclick="AIAssistant.handleActionButton('${action.action}')"
-                            style="padding: 6px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-size: 12px;">
+                            style="padding: 4px 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 10px;">
                         ${action.text}
                     </button>
                 `;
@@ -432,7 +430,7 @@ const AIAssistant = {
             html += '</div>';
         }
 
-        html += `<div class="ai-message-time">${this.getTimeStamp()}</div>`;
+        html += `<div style="font-size: 9px; color: #666; margin-top: 4px;">${this.getTimeStamp()}</div>`;
 
         messageDiv.innerHTML = html;
         chatArea.appendChild(messageDiv);
@@ -479,14 +477,14 @@ const AIAssistant = {
      * Show typing indicator
      */
     showTypingIndicator() {
-        const chatArea = document.getElementById('ai-chat-area');
+        const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (!chatArea) return;
 
         const indicator = document.createElement('div');
         indicator.id = 'ai-typing-indicator';
-        indicator.className = 'ai-message ai';
+        indicator.style.cssText = 'padding: 8px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid #2196F3; border-radius: 4px; margin-bottom: 8px; font-size: 11px;';
         indicator.innerHTML = `
-            <div style="display: flex; gap: 4px; align-items: center;">
+            <div style="display: flex; gap: 4px; align-items: center; color: #2196F3;">
                 <span style="animation: pulse 1.4s infinite;">●</span>
                 <span style="animation: pulse 1.4s infinite 0.2s;">●</span>
                 <span style="animation: pulse 1.4s infinite 0.4s;">●</span>
@@ -511,7 +509,7 @@ const AIAssistant = {
      * Scroll chat to bottom
      */
     scrollToBottom() {
-        const chatArea = document.getElementById('ai-chat-area');
+        const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (chatArea) {
             setTimeout(() => {
                 chatArea.scrollTop = chatArea.scrollHeight;
@@ -911,6 +909,7 @@ const AIAssistant = {
             const button = document.createElement('button');
             button.className = 'ai-quick-action';
             button.onclick = () => this.fillPrompt(suggestion.prompt);
+            button.style.cssText = 'padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer; white-space: nowrap;';
             button.innerHTML = `
                 <span>${suggestion.icon}</span> ${suggestion.text}
             `;
@@ -1338,7 +1337,7 @@ const AIAssistant = {
                 this.chatHistory = JSON.parse(saved);
 
                 // Restore chat display
-                const chatArea = document.getElementById('ai-chat-area');
+                const chatArea = document.getElementById('ai-chat-messages-bottom');
                 if (chatArea) {
                     chatArea.innerHTML = ''; // Clear welcome message
 
@@ -1363,7 +1362,7 @@ const AIAssistant = {
         this.chatHistory = [];
         this.saveChatHistory();
 
-        const chatArea = document.getElementById('ai-chat-area');
+        const chatArea = document.getElementById('ai-chat-messages-bottom');
         if (chatArea) {
             chatArea.innerHTML = '';
         }

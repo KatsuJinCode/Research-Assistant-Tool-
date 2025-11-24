@@ -3744,12 +3744,17 @@
 
             <!-- AI Assistant - Fixed at Bottom of Sidebar -->
             <div class="ai-assistant-bottom collapsed" id="ai-assistant-bottom">
-                <div class="ai-assistant-header" onclick="toggleAIAssistant()">
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="ai-assistant-header" style="cursor: default;">
+                    <div style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;" onclick="toggleAIAssistant()">
                         <span style="font-size: 16px;">💬</span>
                         <span>AI Research Assistant</span>
                     </div>
-                    <span id="ai-assistant-toggle">▲</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button onclick="event.stopPropagation(); AIAssistant.clearChat();" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 2px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;" title="Clear chat history">
+                            🗑️
+                        </button>
+                        <span id="ai-assistant-toggle" onclick="toggleAIAssistant()" style="cursor: pointer;">▲</span>
+                    </div>
                 </div>
                 <div class="ai-assistant-body">
                     <div style="flex: 1; overflow-y: auto; padding: 10px; background: #1a1a1a;" id="ai-chat-messages-bottom">
@@ -3760,14 +3765,14 @@
                     </div>
 
                     <!-- Quick Actions -->
-                    <div style="padding: 8px; background: #222; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 4px;">
-                        <button onclick="AIAssistant.fillPrompt('Summarize the key claims')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                    <div id="ai-quick-actions" style="padding: 8px; background: #222; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 4px;">
+                        <button onclick="AIAssistant.fillPrompt('Summarize the key claims')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer; white-space: nowrap;">
                             💬 Summarize
                         </button>
-                        <button onclick="AIAssistant.fillPrompt('Find contradictions')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                        <button onclick="AIAssistant.fillPrompt('Find contradictions')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer; white-space: nowrap;">
                             ⚡ Contradictions
                         </button>
-                        <button onclick="AIAssistant.fillPrompt('Show strongest evidence')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                        <button onclick="AIAssistant.fillPrompt('Show strongest evidence')" style="padding: 3px 8px; background: #333; border: 1px solid #444; color: #999; border-radius: 3px; font-size: 9px; cursor: pointer; white-space: nowrap;">
                             🎯 Evidence
                         </button>
                     </div>
